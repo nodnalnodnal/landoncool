@@ -5,7 +5,7 @@ body{margin:0;min-height:100vh;background:#ffd6e8;background-image:radial-gradie
 .egg{width:300px;height:360px;background:radial-gradient(circle at 35% 25%,#b8f0ff,#3aa3d8 60%,#1f6f9e);border-radius:50% 50% 46% 46%/58% 58% 42% 42%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(0,0,0,.25),inset -10px -14px 20px rgba(0,0,0,.2)}
 .brand{font:bold 14px Arial;color:#fff;margin-bottom:8px;letter-spacing:1px}
 .lcd{width:180px;height:150px;background:#9aab84;border:6px solid #2d4b5e;border-radius:10px;box-shadow:inset 2px 2px 6px rgba(0,0,0,.4);position:relative;overflow:hidden}
-.lcd canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.lcd canvas{width:100%;height:100%;display:block}
 .btns{display:flex;gap:16px;margin-top:16px}
 .btns button{width:44px;height:44px;border-radius:50%;border:0;background:radial-gradient(circle at 40% 35%,#ffe066,#e0a400);box-shadow:0 4px 0 #9a7000;cursor:pointer;font:bold 10px Arial;color:#5a3f00}
 .btns button:active{transform:translateY(3px);box-shadow:0 1px 0 #9a7000}
@@ -14,7 +14,7 @@ body{margin:0;min-height:100vh;background:#ffd6e8;background-image:radial-gradie
 #msg{margin-top:6px;font-size:13px;color:#6a2a48;min-height:1.2em;text-align:center}
 a{color:#6a2a48;font-size:12px}
 </style></head><body>
-<div class="egg"><div class="brand">cowgotchi</div><div class="lcd"><canvas id="c" width="36" height="30"></canvas></div>
+<div class="egg"><div class="brand">cowgotchi</div><div class="lcd"><canvas id="c" width="180" height="150"></canvas></div>
 <div class="btns"><button id="feed">feed</button><button id="play">play</button><button id="clean">clean</button></div></div>
 <div class="stats"><div id="age"></div>food<div class="bar"><div id="b1"></div></div>fun<div class="bar"><div id="b2"></div></div>clean<div class="bar"><div id="b3"></div></div></div>
 <div id="msg"></div>
@@ -32,17 +32,17 @@ function tick(){const now=Date.now(),dt=(now-s.t)/H;s.t=now;if(s.dead)return;
   save()}
 function save(){try{localStorage.setItem(K,JSON.stringify(s))}catch(e){}}
 const c=document.getElementById('c'),x=c.getContext('2d'),msg=document.getElementById('msg');
-const cow=["..........k..k","....kwwwwwwwwk","kwwkkwwwwwwewe","kwwkkwwwwkwwww","wwwwwwkkwwwppp","wwkkwwkkwwwpkp","wwkkwwwwwwwppp","wwwwwppwww....","w.w.......w.w.","w.w.......w.w."];
+const img={};['cow-lcd','grave-lcd','poop-lcd','grass-lcd','ball-lcd'].forEach(n=>{img[n]=new Image();img[n].src='/sprites/'+n+'.png'});
 let f=0,anim=null,animT=0;
-function px(X,Y,w,h){x.fillRect(X,Y,w||1,h||1)}
-function draw(){f++;x.fillStyle='#9aab84';x.fillRect(0,0,36,30);x.fillStyle='#1e2a14';
-  if(s.dead){x.fillRect(14,8,8,14);x.fillRect(12,10,12,2);x.fillStyle='#9aab84';x.fillRect(15,13,6,1);x.fillRect(15,15,6,1);x.fillStyle='#1e2a14';x.fillRect(8,22,20,2);return}
-  const bob=Math.floor(f/20)%2,ox=10+(Math.floor(f/40)%2?2:0),oy=10+bob;
-  cow.forEach((r,y)=>[...r].forEach((ch,X)=>{if(ch==='k'||ch==='e'||ch==='p')px(ox+X,oy+y);else if(ch==='w'&&(X===0||y===9||r[X-1]==='.'||r[X+1]==='.'||r[X+1]===undefined||y===0||cow[y-1][X]==='.'||cow[y+1]&&cow[y+1][X]==='.'))px(ox+X,oy+y)}));
-  for(let i=0;i<s.poops;i++){px(2+i*4,25,3,2);px(3+i*4,24)}
-  if(s.food<25&&f%60<30){px(30,3,2,5);px(30,9,2,2)}
-  if(anim&&animT-->0){if(anim==='feed'){px(28,14-(animT%10<5?1:0),4,3)}if(anim==='play'){px(4+Math.floor(animT/3)%28,4,2,2)}if(anim==='clean'){for(let i=0;i<5;i++)px((animT*2+i*7)%36,2+i*5,2,1)}}else anim=null;
-  if(s.fun<25){px(ox+5,oy-4);px(ox+7,oy-5);px(ox+9,oy-4)}}
+function put(n,X,Y,w){const m=img[n];if(m.complete&&m.naturalWidth)x.drawImage(m,X,Y,w,w*m.naturalHeight/m.naturalWidth)}
+function draw(){f++;x.fillStyle='#9aab84';x.fillRect(0,0,180,150);x.fillStyle='#1e2a14';x.font='bold 20px "Courier New",monospace';
+  if(s.dead){put('grave-lcd',55,30,70);return}
+  const bob=Math.floor(f/20)%2*3,ox=22+(Math.floor(f/40)%2?8:0);
+  put('cow-lcd',ox,30+bob,120);
+  for(let i=0;i<s.poops;i++)put('poop-lcd',8+i*30,118,24);
+  if(s.food<25&&f%60<30)x.fillText('!',160,24);
+  if(s.fun<25)x.fillText('...',ox+60,24);
+  if(anim&&animT-->0){if(anim==='feed')put('grass-lcd',140,90-(animT%10<5?3:0),32);if(anim==='play')put('ball-lcd',10+(animT*4)%150,8,20);if(anim==='clean'){for(let i=0;i<5;i++)x.fillRect((animT*6+i*35)%180,10+i*25,10,2)}}else anim=null}
 function ui(){tick();const d=s.dead?(s.dead-s.born):(Date.now()-s.born);
   document.getElementById('age').textContent=s.dead?'rip. lived '+(d/H/24).toFixed(1)+' days':'age: '+(d/H/24).toFixed(2)+' days';
   ['food','fun','clean'].forEach((k,i)=>document.getElementById('b'+(i+1)).style.width=s[k]+'%');

@@ -14,7 +14,7 @@ h1{font:bold 20px Verdana,sans-serif;margin:0 0 4px}
 #cps{color:#555}
 #cow{background:none;border:0;padding:0;margin:20px auto;cursor:pointer;display:block;transition:transform .05s}
 #cow:active{transform:scale(.94)}
-#cow svg{width:220px;height:auto;display:block;shape-rendering:crispEdges}
+#cow img{width:240px;height:auto;display:block;user-select:none;-webkit-user-drag:none}
 #cow:focus-visible{outline:2px dotted #000}
 .pop{position:fixed;font:bold 16px Verdana;color:#0a0;pointer-events:none;animation:up .8s forwards}
 @keyframes up{to{transform:translateY(-50px);opacity:0}}
@@ -44,13 +44,7 @@ button.buy:disabled{color:#999;text-decoration:none;cursor:default}
 </div>
 <div class="links">saves automatically &nbsp; <a href="#" id="reset">wipe save</a> &nbsp; <a href="/">landon.cool</a></div>
 <script>
-const map=[
-"...............k..k.","..............kwwwwk","..............wewwew","kwwwkkwwwwwkwwwwwwww","kkwwkkwwwwkkwwwppppp","wwwwwwwwkkkwwwwpkkpp",
-"wwkkwwwwkkwwwwwwpppp","wwkkkwwwwwwwkkwwww..","wwwwwwwppwwwkkwwww..","ww.ww....pp...ww.ww.","ww.ww.........ww.ww.","gg.gg.........gg.gg."];
-const col={k:'#1b1b1b',w:'#f4f4f4',p:'#f2a3b3',g:'#5a4632',e:'#000'};
-let s='<svg viewBox="0 0 20 12" xmlns="http://www.w3.org/2000/svg">';
-map.forEach((r,y)=>[...r].forEach((ch,x)=>{if(col[ch])s+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${col[ch]}"/>`}));
-document.getElementById('cow').innerHTML=s+'</svg>';
+document.getElementById('cow').innerHTML='<img src="/sprites/cow.png" alt="cow" draggable="false">';
 
 const items=[
  {id:'hay',name:'hay bale',desc:'cows like it',base:15,cps:.1},

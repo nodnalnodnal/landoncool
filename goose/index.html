@@ -24,16 +24,14 @@ const notes=['honk','i am the goose now','this is my page','you dropped this: no
 function A(){return ac=ac||new (window.AudioContext||window.webkitAudioContext)()}
 function honk(){try{const a=A(),t=a.currentTime,o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),gn=a.createGain();o.type=o2.type='sawtooth';o.frequency.setValueAtTime(420,t);o.frequency.linearRampToValueAtTime(330,t+.18);o2.frequency.setValueAtTime(427,t);o2.frequency.linearRampToValueAtTime(320,t+.18);f.type='bandpass';f.frequency.value=900;f.Q.value=2;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.35,t+.02);gn.gain.linearRampToValueAtTime(0,t+.22);o.connect(f);o2.connect(f);f.connect(gn);gn.connect(a.destination);o.start(t);o2.start(t);o.stop(t+.25);o2.stop(t+.25)}catch(e){}
   honks++;cnt.firstChild.textContent='honks: '+honks+' \u00a0 '}
-addEventListener('pointerdown',e=>{if(Math.hypot(e.clientX-g.x,e.clientY-(g.y-20))<45){honk();g.state='flee';g.timer=60;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}});
+addEventListener('pointerdown',e=>{if(Math.hypot(e.clientX-g.x,e.clientY-(g.y-50))<55){honk();g.state='flee';g.timer=60;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}});
 function pick(){const r=Math.random();
   if(r<.25){g.state='cursor';g.timer=400}
   else if(r<.45&&document.querySelectorAll('.note').length<8){g.state='fetch';const n=document.createElement('div');n.className='note';n.textContent=notes[Math.floor(Math.random()*notes.length)];n.style.left=(innerWidth+20)+'px';n.style.top=(Math.random()*(innerHeight-140))+'px';document.body.appendChild(n);g.carry=n;g.x=innerWidth+40;g.y=parseFloat(n.style.top)+60;g.tx=60+Math.random()*(innerWidth-260);g.ty=80+Math.random()*(innerHeight-200)}
   else{g.state='wander';g.timer=150+Math.random()*200;g.tx=40+Math.random()*(innerWidth-80);g.ty=60+Math.random()*(innerHeight-80)}}
 pick();
-function drawGoose(){const p=4;x.save();x.translate(Math.round(g.x),Math.round(g.y));x.scale(g.face*p,p);
-  const leg=Math.floor(g.step/6)%2;x.fillStyle='#f28c1c';x.fillRect(-2+leg,-1,1,3);x.fillRect(1-leg,-1,1,3);x.fillRect(-3+leg,1,2,1);x.fillRect(1-leg,1,2,1);
-  x.fillStyle='#fff';x.fillRect(-6,-8,10,7);x.fillRect(-7,-7,2,4);x.fillStyle='#ddd';x.fillRect(-5,-6,6,3);x.fillStyle='#fff';x.fillRect(2,-15,3,8);x.fillRect(2,-17,5,3);
-  x.fillStyle='#000';x.fillRect(5,-16,1,1);x.fillStyle='#f28c1c';x.fillRect(7,-16,3,2);x.restore()}
+const gi=[0,1].map(i=>{const m=new Image();m.src='/sprites/goose-'+i+'.png';return m});
+function drawGoose(){const f=gi[Math.floor(g.step/8)%2];if(!f.complete)return;x.save();x.translate(Math.round(g.x),Math.round(g.y));x.scale(g.face,1);x.drawImage(f,-48,-98);x.restore()}
 (function loop(){
   x.clearRect(0,0,c.width,c.height);
   let spd=1.6;
@@ -44,7 +42,7 @@ function drawGoose(){const p=4;x.save();x.translate(Math.round(g.x),Math.round(g
   else if(g.state==='fetch'){g.carry=null;pick()}
   else if(g.state==='wander'&&--g.timer<0)pick();
   if(g.carry){g.carry.style.left=(g.x-(g.face>0?-30:150))+'px';g.carry.style.top=(g.y-60)+'px'}
-  if(grab>0){grab--;g.tx=g.x+(g.face*-3);cx=g.x+g.face*40;cy=g.y-64;if(!grab){g.state='flee';g.timer=40;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}}
+  if(grab>0){grab--;g.tx=g.x+(g.face*-3);cx=g.x+g.face*40;cy=g.y-80;if(!grab){g.state='flee';g.timer=40;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}}
   else{cx+=(mx-cx)*.6;cy+=(my-cy)*.6}
   drawGoose();fc.style.left=(cx-7)+'px';fc.style.top=cy+'px';fc.style.transform='rotate(-25deg)';
   requestAnimationFrame(loop)})();

@@ -5,8 +5,8 @@ body{margin:0;min-height:100vh;background:#ffe9a8;background-image:repeating-con
 #total{font-size:clamp(36px,9vw,72px);font-weight:bold;-webkit-text-stroke:2px #3a2a10;color:#fff;margin:0}
 .sub{font-size:15px;margin-bottom:20px}
 #stage{position:relative;width:300px;height:320px;cursor:pointer;touch-action:manipulation}
-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-#bat{position:absolute;right:-30px;top:-40px;width:180px;transform-origin:85% 85%;transform:rotate(25deg);transition:transform .07s;pointer-events:none}
+#guy{position:absolute;left:20px;top:10px;width:260px}#bumps,#stars{position:absolute;inset:0;pointer-events:none}#bumps img{position:absolute}#stars span{position:absolute;font:bold 26px Arial;color:#ffd400;-webkit-text-stroke:1px #000}img{user-select:none;-webkit-user-drag:none}
+#bat{position:absolute;right:-60px;top:-50px;width:180px;transform-origin:85% 85%;transform:rotate(25deg);transition:transform .07s;pointer-events:none}
 #bat.hit{transform:rotate(-38deg)}
 .pow{position:absolute;font:bold 34px "Arial Black",Arial;color:#ff3b2f;-webkit-text-stroke:2px #3a2a10;pointer-events:none;animation:pw .5s forwards}
 @keyframes pw{from{transform:scale(.4) rotate(-10deg)}to{transform:scale(1.3) rotate(8deg) translateY(-30px);opacity:0}}
@@ -14,24 +14,18 @@ svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 a{color:#3a2a10;font-size:12px;margin-top:20px}
 </style></head><body>
 <h1 id="total">...</h1><div class="sub">total bonks, everyone ever</div>
-<div id="stage"><svg viewBox="0 0 300 320">
-<ellipse cx="150" cy="300" rx="90" ry="12" fill="rgba(0,0,0,.15)"/>
-<rect x="95" y="200" width="110" height="100" rx="30" fill="#4a7fd4"/>
-<circle id="head" cx="150" cy="150" r="72" fill="#f1c9a0" stroke="#3a2a10" stroke-width="4"/>
-<g id="face"><circle cx="125" cy="148" r="7" fill="#3a2a10"/><circle cx="175" cy="148" r="7" fill="#3a2a10"/><path id="mouth" d="M128 182 Q150 192 172 182" stroke="#3a2a10" stroke-width="4" fill="none" stroke-linecap="round"/></g>
-<g id="bumps"></g><g id="stars"></g></svg>
-<svg id="bat" viewBox="0 0 200 200"><rect x="20" y="40" width="150" height="40" rx="20" fill="#c08a4a" stroke="#3a2a10" stroke-width="4" transform="rotate(35 100 60)"/><rect x="140" y="120" width="50" height="20" rx="8" fill="#6b4520" stroke="#3a2a10" stroke-width="4" transform="rotate(35 165 130)"/></svg></div>
+<div id="stage"><img id="guy" src="/sprites/guy.png" alt="" draggable="false"><div id="bumps"></div><div id="stars"></div><img id="bat" src="/sprites/bat.png" alt="" draggable="false"></div>
 <div id="mine"></div><a href="/">landon.cool</a>
 <script>
-const API='https://api.landon.cool/api/bonk',T=document.getElementById('total'),M=document.getElementById('mine'),bat=document.getElementById('bat'),stage=document.getElementById('stage'),bumps=document.getElementById('bumps'),stars=document.getElementById('stars'),mouth=document.getElementById('mouth');
+const API='https://api.landon.cool/api/bonk',T=document.getElementById('total'),M=document.getElementById('mine'),bat=document.getElementById('bat'),stage=document.getElementById('stage'),bumps=document.getElementById('bumps'),stars=document.getElementById('stars'),guy=document.getElementById('guy');new Image().src='/sprites/guy-ouch.png';
 let pending=0,total=null,mine=0;try{mine=+localStorage.getItem('bonks')||0}catch(e){}
 const words=['bonk','bonk!','bonk!!','bonk.','*bonk*','ow','bonk?'];
 let ac;function sfx(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(70,t+.12);g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.2)}catch(e){}}
 function render(){if(total!==null)T.textContent=(total+pending).toLocaleString();M.textContent='you bonked '+mine.toLocaleString()+' times';
-  const n=Math.min(mine,400),sz=10+Math.sqrt(n)*3.2;bumps.innerHTML=mine?`<circle cx="160" cy="${84-sz*.35}" r="${sz}" fill="#f7b3a0" stroke="#3a2a10" stroke-width="3"/>`+(mine>50?`<circle cx="118" cy="${90-sz*.2}" r="${sz*.6}" fill="#f7b3a0" stroke="#3a2a10" stroke-width="3"/>`:'')+(mine>200?`<circle cx="196" cy="${100-sz*.2}" r="${sz*.5}" fill="#f7b3a0" stroke="#3a2a10" stroke-width="3"/>`:''):''}
+  const n=Math.min(mine,400),sz=26+Math.sqrt(n)*5;bumps.innerHTML=mine?`<img src="/sprites/bump.png" style="left:${160-sz/2}px;top:${72-sz*.7}px;width:${sz}px">`+(mine>50?`<img src="/sprites/bump.png" style="left:${96-sz*.3}px;top:${80-sz*.4}px;width:${sz*.6}px">`:'')+(mine>200?`<img src="/sprites/bump.png" style="left:${196-sz*.25}px;top:${90-sz*.4}px;width:${sz*.5}px">`:''):''}
 stage.addEventListener('pointerdown',e=>{pending++;mine++;try{localStorage.setItem('bonks',mine)}catch(_){}sfx();bat.classList.add('hit');setTimeout(()=>bat.classList.remove('hit'),90);
-  mouth.setAttribute('d','M130 186 Q150 176 170 186');setTimeout(()=>mouth.setAttribute('d','M128 182 Q150 192 172 182'),300);
-  stars.innerHTML='';for(let i=0;i<3;i++){const a=Date.now()/200+i*2.1;stars.innerHTML+=`<text x="${150+Math.cos(a)*80}" y="${70+Math.sin(a)*14}" font-size="22" fill="#f2b705" stroke="#3a2a10" stroke-width="1">*</text>`}setTimeout(()=>stars.innerHTML='',600);
+  guy.src='/sprites/guy-ouch.png';clearTimeout(window.__o);window.__o=setTimeout(()=>guy.src='/sprites/guy.png',350);
+  stars.innerHTML='';for(let i=0;i<3;i++){const a=Date.now()/200+i*2.1;stars.innerHTML+=`<span style="left:${140+Math.cos(a)*90}px;top:${40+Math.sin(a)*16}px">*</span>`}setTimeout(()=>stars.innerHTML='',600);
   const p=document.createElement('div');p.className='pow';p.textContent=words[Math.floor(Math.random()*words.length)];const r=stage.getBoundingClientRect();p.style.left=(e.clientX-r.left-30)+'px';p.style.top=(e.clientY-r.top-30)+'px';stage.appendChild(p);setTimeout(()=>p.remove(),500);render()});
 async function sync(){const n=pending;pending=0;try{const j=await(await fetch(API,n?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({n})}:{})).json();total=j.count}catch(e){pending+=n}render()}
 render();sync();setInterval(sync,1500);
