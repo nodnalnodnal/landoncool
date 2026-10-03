@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>the button</title>
+<style>
+body{margin:0;min-height:100vh;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;user-select:none;-webkit-user-select:none}
+#total{font:900 clamp(48px,12vw,140px)/1 "Arial Black",Arial,sans-serif;letter-spacing:-.04em;margin:0}
+p{margin:6px 0;font-size:15px}
+.base{margin:50px 0 30px;width:260px;height:260px;border-radius:50%;background:#bdbdbd;border:6px solid #888;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -10px 0 #999}
+button{width:200px;height:200px;border-radius:50%;border:0;cursor:pointer;background:#e0201b;box-shadow:0 14px 0 #8f0f0b,inset 0 8px 0 rgba(255,255,255,.25);transform:translateY(-8px);transition:transform .04s,box-shadow .04s;-webkit-tap-highlight-color:transparent}
+button:active,button.down{transform:translateY(4px);box-shadow:0 2px 0 #8f0f0b,inset 0 8px 0 rgba(255,255,255,.15)}
+button:focus-visible{outline:4px dashed #000;outline-offset:20px}
+#status{color:#999;font-size:13px;min-height:1em}
+</style>
+</head>
+<body>
+<p>everyone who has ever been here has pressed it</p>
+<h1 id="total">...</h1>
+<p>times</p>
+<div class="base"><button id="b" aria-label="press the button"></button></div>
+<p id="mine"></p>
+<p id="status"></p>
+<script>
+const b=document.getElementById('b'),T=document.getElementById('total'),M=document.getElementById('mine'),S=document.getElementById('status');
+let pending=0,total=null,mine=0;
+try{mine=+localStorage.getItem('btn')||0}catch(e){}
+function render(){
+  if(total!==null)T.textContent=(total+pending).toLocaleString();
+  M.textContent=mine?('you did '+mine.toLocaleString()+' of those'):'you have not pressed it yet';
+}
+function press(){pending++;mine++;try{localStorage.setItem('btn',mine)}catch(e){}render()}
+b.addEventListener('pointerdown',press);
+addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();b.classList.add('down');press()}});
+addEventListener('keyup',()=>b.classList.remove('down'));
+async function sync(){
+  const n=pending;pending=0;
+  try{
+    const r=await fetch('/api/button',n?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({n})}:{});
+    const j=await r.json();total=j.count;S.textContent='';
+  }catch(e){pending+=n;S.textContent='cant reach the server right now, your presses will send when it comes back'}
+  render();
+}
+render();sync();setInterval(sync,1500);
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

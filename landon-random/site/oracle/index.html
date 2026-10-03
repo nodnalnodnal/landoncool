@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>the oracle</title>
+<style>
+body{margin:0;min-height:100vh;background:#1e5b3a;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 4px);font-family:Georgia,"Times New Roman",serif;color:#e8e2c8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.ball{width:min(320px,80vw);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,#666 0,#222 18%,#050505 55%,#000 100%);box-shadow:0 30px 40px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;position:relative}
+.ball.shake{animation:sh .7s}
+@keyframes sh{10%{transform:translate(-14px,4px) rotate(-6deg)}25%{transform:translate(12px,-6px) rotate(5deg)}40%{transform:translate(-10px,2px) rotate(-4deg)}55%{transform:translate(9px,5px) rotate(3deg)}70%{transform:translate(-5px,-3px)}85%{transform:translate(3px,1px)}}
+.win{width:46%;aspect-ratio:1;border-radius:50%;background:#0b0f2b;border:6px solid #1c1c1c;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.eight{width:80%;aspect-ratio:1;border-radius:50%;background:#f3f3f3;color:#000;font:bold 64px Georgia,serif;display:flex;align-items:center;justify-content:center}
+.tri{width:0;height:0;border-left:62px solid transparent;border-right:62px solid transparent;border-top:108px solid #1d35c4;position:relative;opacity:0;transition:opacity 1.2s}
+.tri.on{opacity:.95}
+.tri span{position:absolute;top:-102px;left:-42px;width:84px;text-align:center;color:#dfe6ff;font:bold 11px/1.15 Arial,sans-serif;word-wrap:break-word}
+form{margin-top:40px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+input{font:18px Georgia,serif;padding:8px 10px;width:min(340px,80vw);background:#f3eedb;border:2px solid #0f3a22;color:#111}
+button{font:18px Georgia,serif;padding:8px 18px;background:#0f3a22;color:#e8e2c8;border:2px solid #0a2817;cursor:pointer}
+p{opacity:.7;font-size:14px}
+a{color:#e8e2c8}
+</style>
+</head>
+<body>
+<div class="ball" id="ball"><div class="win" id="win"><div class="eight">8</div></div></div>
+<form id="f" autocomplete="off"><input id="q" placeholder="ask it something" maxlength="120"><button>shake</button></form>
+<p><a href="/">landon.cool</a></p>
+<script>
+const A=['yes but you wont like it','absolutely not. stop asking','ask your mom','the cows say yes','its already happening','no. but also yes. mostly no','go outside first, then ask again','i was asleep. what','signs point to minecraft','that is a skill issue','100%','lol','the answer is behind you','my lawyer says no comment','only on tuesdays','yes, if you do a backflip','outlook spicy','reply hazy, try again after a snack','you already know','i would rather not say','in this economy?','sure, why not','the stars say no and the stars are rude','yes. tell no one','cannot predict now. busy','that is between you and god','ask me again in 30 seconds'];
+const ball=document.getElementById('ball'),win=document.getElementById('win'),q=document.getElementById('q');
+let asked={},last=-1;
+document.getElementById('f').onsubmit=e=>{
+  e.preventDefault();
+  const k=q.value.trim().toLowerCase().replace(/[^a-z0-9 ]/g,'');
+  let ans;
+  if(!k)ans='you have to actually ask something';
+  else if(asked[k])ans='asked that already. still: '+asked[k];
+  else{let i;do{i=Math.floor(Math.random()*A.length)}while(i===last);last=i;ans=A[i];asked[k]=ans}
+  ball.classList.remove('shake');void ball.offsetWidth;ball.classList.add('shake');
+  win.innerHTML='<div class="tri"><span></span></div>';
+  win.querySelector('span').textContent=ans;
+  setTimeout(()=>win.querySelector('.tri').classList.add('on'),750);
+};
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

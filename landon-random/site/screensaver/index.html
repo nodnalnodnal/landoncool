@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>screensaver</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}
+#c{position:fixed;left:0;top:0;will-change:transform}
+#c svg{display:block;width:150px;height:90px;shape-rendering:crispEdges}
+#stats{position:fixed;left:10px;bottom:8px;color:#444;font:12px "Courier New",monospace;transition:opacity 1s}
+#corner{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#fff;font:900 14vw "Arial Black",Arial;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<div id="corner">corner!!</div>
+<div id="stats"></div>
+<script>
+const map=[
+"...............k..k.","..............kwwwwk","..............wewwew","kwwwkkwwwwwkwwwwwwww","kkwwkkwwwwkkwwwppppp","wwwwwwwwkkkwwwwpkkpp",
+"wwkkwwwwkkwwwwwwpppp","wwkkkwwwwwwwkkwwww..","wwwwwwwppwwwkkwwww..","ww.ww....pp...ww.ww.","ww.ww.........ww.ww.","gg.gg.........gg.gg."];
+let s='<svg viewBox="0 0 20 12" xmlns="http://www.w3.org/2000/svg">';
+map.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch!=='.')s+=`<rect class="${ch}" x="${x}" y="${y}" width="1.02" height="1.02"/>`}));
+const C=document.getElementById('c');C.innerHTML=s+'</svg>';
+const st=document.createElement('style');document.head.appendChild(st);
+const pal=['#ff3b3b','#ffd400','#2bff5a','#29b6ff','#c13bff','#ff8a00','#ffffff','#ff5fd2'];
+let pi=6;
+function paint(){st.textContent=`.w{fill:${pal[pi]}}.k{fill:#000}.e{fill:#000}.p{fill:#f2a3b3}.g{fill:#555}.k{fill:${pi==6?'#1b1b1b':'#000'}}`}
+paint();
+const W=150,H=90;
+let x=Math.random()*(innerWidth-W),y=Math.random()*(innerHeight-H),vx=2.2,vy=2.2,bounces=0,corners=0;
+try{corners=+localStorage.getItem('corners')||0}catch(e){}
+const S=document.getElementById('stats'),K=document.getElementById('corner');
+function stat(){S.textContent='bounces '+bounces+'   corners (all time) '+corners+'   click for fullscreen'}
+stat();
+let lastWall=-99,frame=0,idle;
+function hit(){
+  pi=(pi+1+Math.floor(Math.random()*(pal.length-1)))%pal.length;paint();bounces++;
+  if(frame-lastWall<4){corners++;try{localStorage.setItem('corners',corners)}catch(e){}K.style.display='flex';setTimeout(()=>K.style.display='none',1500)}
+  lastWall=frame;stat();
+}
+(function L(){
+  frame++;x+=vx;y+=vy;
+  const mx=innerWidth-W,my=innerHeight-H;
+  if(x<=0||x>=mx){vx*=-1;x=Math.max(0,Math.min(x,mx));hit()}
+  if(y<=0||y>=my){vy*=-1;y=Math.max(0,Math.min(y,my));hit()}
+  C.style.transform=`translate(${x}px,${y}px)`;
+  requestAnimationFrame(L);
+})();
+function wake(){S.style.opacity=1;clearTimeout(idle);idle=setTimeout(()=>S.style.opacity=0,2500)}
+addEventListener('pointermove',wake);wake();
+addEventListener('click',()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen()});
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>the void</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{position:fixed;inset:0}
+form{position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center}
+input{background:none;border:0;outline:0;color:#bbb;font:italic 32px Georgia,serif;text-align:center;width:90%;caret-color:#666}
+input::placeholder{color:#333}
+#n{position:fixed;bottom:12px;right:14px;color:#2a2a2a;font:13px Georgia,serif}
+a{color:#2a2a2a}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<form id="f" autocomplete="off"><input id="i" maxlength="60" placeholder="say something to the void" autofocus></form>
+<div id="n"></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),inp=document.getElementById('i'),n=document.getElementById('n');
+let P=[],eaten=0;
+try{eaten=+localStorage.getItem('void')||0}catch(e){}
+function count(){n.textContent=eaten?('the void has eaten '+eaten+(eaten==1?' thing':' things')):''}
+count();
+function size(){c.width=innerWidth;c.height=innerHeight}
+size();addEventListener('resize',size);
+document.getElementById('f').onsubmit=e=>{
+  e.preventDefault();
+  const t=inp.value.trim();if(!t)return;
+  inp.value='';
+  const o=document.createElement('canvas');o.width=c.width;o.height=c.height;
+  const ox=o.getContext('2d');
+  ox.font='italic 32px Georgia,serif';ox.textAlign='center';ox.textBaseline='middle';ox.fillStyle='#bbb';
+  ox.fillText(t,c.width/2,c.height/2);
+  const w=ox.measureText(t).width,left=c.width/2-w/2;
+  const d=ox.getImageData(0,0,o.width,o.height).data;
+  for(let yy=Math.floor(c.height/2)-30;yy<c.height/2+30;yy+=2)for(let xx=Math.floor(left)-2;xx<left+w+2;xx+=2){
+    if(d[(yy*o.width+xx)*4+3]>120)P.push({x:xx,y:yy,vx:0,vy:0,l:1,d:(xx-left)/w*70+Math.random()*25});
+  }
+  eaten++;try{localStorage.setItem('void',eaten)}catch(e){}
+  setTimeout(count,2500);
+};
+(function loop(){
+  x.clearRect(0,0,c.width,c.height);
+  for(let i=P.length-1;i>=0;i--){
+    const p=P[i];
+    if(p.d>0)p.d--;else{
+      p.vx+=(Math.random()-.5)*.25+.015;p.vy+=(Math.random()-.5)*.25-.025;
+      p.x+=p.vx;p.y+=p.vy;p.l-=.007;
+      if(p.l<=0){P.splice(i,1);continue}
+    }
+    x.fillStyle='rgba(187,187,187,'+p.l+')';x.fillRect(p.x,p.y,2,2);
+  }
+  requestAnimationFrame(loop);
+})();
+addEventListener('click',()=>inp.focus());
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

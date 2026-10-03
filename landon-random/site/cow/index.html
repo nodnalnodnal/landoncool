@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;cursor:crosshair}
+body{background:#6fae3c;background-image:radial-gradient(#5f9c31 1.5px,transparent 1.6px),radial-gradient(#7dbb47 1px,transparent 1.2px);background-size:23px 19px,31px 27px;background-position:0 0,11px 7px;font-family:Verdana,Geneva,sans-serif}
+#sky{position:fixed;left:0;right:0;top:0;height:22vh;background:#8fd0ff;border-bottom:4px solid #4f8a23}
+#cow{position:fixed;left:0;top:0;will-change:transform;cursor:pointer}
+#cow svg{display:block;width:160px;height:auto;shape-rendering:crispEdges;transition:transform .15s}
+#bubble{position:absolute;bottom:100%;left:50%;margin-bottom:6px;background:#fff;border:2px solid #000;padding:3px 9px;font-size:16px;white-space:nowrap;display:none;transform:translateX(-50%)}
+#info{position:fixed;left:10px;bottom:8px;color:#1f3d0c;font-size:12px}
+#sun{position:fixed;right:40px;top:28px;width:56px;height:56px;background:#ffe14d;border:4px solid #f0b400}
+</style>
+</head>
+<body>
+<div id="sky"></div><div id="sun"></div>
+<div id="cow"><div id="bubble"></div><div id="flip"></div></div>
+<div id="info">click the cow</div>
+<script>
+const map=[
+"...............k..k.",
+"..............kwwwwk",
+"..............wewwew",
+"kwwwkkwwwwwkwwwwwwww",
+"kkwwkkwwwwkkwwwppppp",
+"wwwwwwwwkkkwwwwpkkpp",
+"wwkkwwwwkkwwwwwwpppp",
+"wwkkkwwwwwwwkkwwww..",
+"wwwwwwwppwwwkkwwww..",
+"ww.ww....pp...ww.ww.",
+"ww.ww.........ww.ww.",
+"gg.gg.........gg.gg."];
+const col={k:'#1b1b1b',w:'#f4f4f4',p:'#f2a3b3',g:'#5a4632',e:'#000'};
+let s='<svg viewBox="0 0 20 12" xmlns="http://www.w3.org/2000/svg">';
+map.forEach((r,y)=>[...r].forEach((ch,x)=>{if(col[ch])s+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${col[ch]}"/>`}));
+document.getElementById('flip').innerHTML=s+'</svg>';
+const cow=document.getElementById('cow'),svg=cow.querySelector('svg'),bub=document.getElementById('bubble'),info=document.getElementById('info');
+let cx=innerWidth/2-80,cy=innerHeight/2,tx=cx,ty=cy,face=1,t=0,moos=0,bt;
+addEventListener('pointermove',e=>{tx=e.clientX-80;ty=e.clientY-50});
+(function loop(){
+  const dx=tx-cx,dy=ty-cy;
+  cx+=dx*.035;cy+=dy*.035;
+  cy=Math.max(innerHeight*.22-40,cy);
+  const moving=Math.abs(dx)+Math.abs(dy)>6;
+  if(Math.abs(dx)>4){const f=dx>0?1:-1;if(f!==face){face=f;svg.style.transform=`scaleX(${face})`}}
+  t+=moving?.3:0;
+  cow.style.transform=`translate(${cx}px,${cy+(moving?Math.abs(Math.sin(t))*-4:0)}px)`;
+  requestAnimationFrame(loop);
+})();
+let ac;
+function moo(){
+  ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  const a=ac,t=a.currentTime,base=95+Math.random()*35;
+  const o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),g=a.createGain();
+  o.type=o2.type='sawtooth';o2.detune.value=9;
+  [o,o2].forEach(z=>{z.frequency.setValueAtTime(base*1.2,t);z.frequency.linearRampToValueAtTime(base*1.45,t+.25);z.frequency.linearRampToValueAtTime(base,t+1.1)});
+  f.type='lowpass';f.Q.value=7;f.frequency.setValueAtTime(350,t);f.frequency.linearRampToValueAtTime(1300,t+.3);f.frequency.linearRampToValueAtTime(280,t+1.1);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.12);g.gain.setValueAtTime(.28,t+.8);g.gain.linearRampToValueAtTime(0,t+1.2);
+  o.connect(f);o2.connect(f);f.connect(g);g.connect(a.destination);
+  o.start(t);o2.start(t);o.stop(t+1.25);o2.stop(t+1.25);
+}
+const words=['moo','mooo','moooooo','moo?','m o o','moo!!','moo (sad)','muu','moo. thats it'];
+cow.addEventListener('pointerdown',e=>{
+  e.stopPropagation();moo();moos++;
+  bub.textContent=words[Math.floor(Math.random()*words.length)];bub.style.display='block';
+  clearTimeout(bt);bt=setTimeout(()=>bub.style.display='none',1300);
+  info.textContent='you have mooed the cow '+moos+(moos==1?' time':' times');
+});
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

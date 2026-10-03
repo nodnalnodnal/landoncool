@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow clicker</title>
+<style>
+body{margin:0;background:#e9e9e9;font:13px Verdana,Geneva,sans-serif;color:#000}
+.wrap{max-width:760px;margin:16px auto;background:#fff;border:1px solid #999;display:flex;flex-wrap:wrap}
+.l{flex:1 1 300px;padding:16px;text-align:center;border-right:1px solid #ccc}
+.r{flex:1 1 300px;padding:0}
+h1{font:bold 20px Verdana,sans-serif;margin:0 0 4px}
+#count{font:bold 28px Verdana,sans-serif;margin:10px 0 0}
+#cps{color:#555}
+#cow{background:none;border:0;padding:0;margin:20px auto;cursor:pointer;display:block;transition:transform .05s}
+#cow:active{transform:scale(.94)}
+#cow svg{width:220px;height:auto;display:block;shape-rendering:crispEdges}
+#cow:focus-visible{outline:2px dotted #000}
+.pop{position:fixed;font:bold 16px Verdana;color:#0a0;pointer-events:none;animation:up .8s forwards}
+@keyframes up{to{transform:translateY(-50px);opacity:0}}
+table{width:100%;border-collapse:collapse}
+th{background:#d6dde8;text-align:left;padding:6px 8px;font-size:12px;border-bottom:1px solid #999}
+td{padding:7px 8px;border-bottom:1px solid #ddd;vertical-align:top}
+td small{color:#666}
+td.own{text-align:right;font-weight:bold;color:#777;width:30px}
+button.buy{font:12px Verdana;cursor:pointer;width:100%;text-align:left;background:none;border:0;padding:0;color:#0033cc;text-decoration:underline}
+button.buy:disabled{color:#999;text-decoration:none;cursor:default}
+#news{border-top:1px solid #999;width:100%;padding:8px 12px;background:#ffffe0;font-style:italic;color:#444}
+.links{text-align:center;color:#888;font-size:11px;margin:10px}
+.links a{color:#666}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="l">
+<h1>cow clicker</h1>
+<div id="count">0 cows</div>
+<div id="cps">0 per second</div>
+<button id="cow" aria-label="click the cow"></button>
+<div id="clickp" style="color:#555"></div>
+</div>
+<div class="r"><table><thead><tr><th>stuff</th><th></th></tr></thead><tbody id="shop"></tbody></table></div>
+<div id="news">local man has 0 cows. neighbors unconcerned.</div>
+</div>
+<div class="links">saves automatically &nbsp; <a href="#" id="reset">wipe save</a> &nbsp; <a href="/">landon.cool</a></div>
+<script>
+const map=[
+"...............k..k.","..............kwwwwk","..............wewwew","kwwwkkwwwwwkwwwwwwww","kkwwkkwwwwkkwwwppppp","wwwwwwwwkkkwwwwpkkpp",
+"wwkkwwwwkkwwwwwwpppp","wwkkkwwwwwwwkkwwww..","wwwwwwwppwwwkkwwww..","ww.ww....pp...ww.ww.","ww.ww.........ww.ww.","gg.gg.........gg.gg."];
+const col={k:'#1b1b1b',w:'#f4f4f4',p:'#f2a3b3',g:'#5a4632',e:'#000'};
+let s='<svg viewBox="0 0 20 12" xmlns="http://www.w3.org/2000/svg">';
+map.forEach((r,y)=>[...r].forEach((ch,x)=>{if(col[ch])s+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${col[ch]}"/>`}));
+document.getElementById('cow').innerHTML=s+'</svg>';
+
+const items=[
+ {id:'hay',name:'hay bale',desc:'cows like it',base:15,cps:.1},
+ {id:'greg',name:'farmhand named greg',desc:'he does his best',base:100,cps:1},
+ {id:'milk',name:'milking machine',desc:'loud. effective.',base:1100,cps:8},
+ {id:'barn',name:'second barn',desc:'for the overflow cows',base:12000,cps:47},
+ {id:'church',name:'cow church',desc:'they pray for more cows',base:130000,cps:260},
+ {id:'vat',name:'cloning vat',desc:'ethics optional',base:1400000,cps:1400},
+ {id:'reactor',name:'moo-clear reactor',desc:'powered by pure moo',base:20000000,cps:7800},
+ {id:'god',name:'the cow god',desc:'it has noticed you',base:330000000,cps:44000}
+];
+let st={cows:0,total:0,own:{},finger:0,t:Date.now()};
+try{const sv=JSON.parse(localStorage.getItem('cowclicker'));if(sv)st=Object.assign(st,sv)}catch(e){}
+const cost=it=>Math.ceil(it.base*Math.pow(1.15,st.own[it.id]||0));
+const fcost=()=>Math.ceil(50*Math.pow(4,st.finger));
+const cps=()=>items.reduce((a,it)=>a+(st.own[it.id]||0)*it.cps,0);
+const cpc=()=>Math.pow(2,st.finger);
+function fmt(n){if(n<1000)return n<10&&n%1?n.toFixed(1):Math.floor(n).toString();const u=['k','m','b','t','qa','qi'];let i=-1;while(n>=1000&&i<u.length-1){n/=1000;i++}return n.toFixed(n<10?2:n<100?1:0)+u[i]}
+// offline earnings, capped at 8 hours
+const away=Math.min((Date.now()-st.t)/1000,8*3600);
+if(away>30&&cps()>0){const g=away*cps();st.cows+=g;st.total+=g;setTimeout(()=>news('while you were gone the cows made '+fmt(g)+' more cows. nobody knows how.'),300)}
+
+const shop=document.getElementById('shop');
+function buildShop(){
+  shop.innerHTML='';
+  const fr=document.createElement('tr');fr.innerHTML=`<td><button class="buy" data-f="1"></button><small>double cows per click</small></td><td class="own" id="fo"></td>`;shop.appendChild(fr);
+  items.forEach(it=>{const tr=document.createElement('tr');tr.innerHTML=`<td><button class="buy" data-id="${it.id}"></button><small>${it.desc}. +${fmt(it.cps)}/s each</small></td><td class="own" id="o-${it.id}"></td>`;shop.appendChild(tr)});
+}
+buildShop();
+shop.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.f){const c=fcost();if(st.cows>=c){st.cows-=c;st.finger++}}
+  else{const it=items.find(i=>i.id===b.dataset.id),c=cost(it);if(st.cows>=c){st.cows-=c;st.own[it.id]=(st.own[it.id]||0)+1}}
+  render();
+});
+function render(){
+  document.getElementById('count').textContent=fmt(st.cows)+(Math.floor(st.cows)==1?' cow':' cows');
+  document.getElementById('cps').textContent=fmt(cps())+' per second';
+  document.getElementById('clickp').textContent=fmt(cpc())+' per click';
+  const fb=shop.querySelector('[data-f]');fb.textContent='stronger finger ('+fmt(fcost())+')';fb.disabled=st.cows<fcost();
+  document.getElementById('fo').textContent=st.finger||'';
+  items.forEach((it,i)=>{
+    const b=shop.querySelector(`[data-id="${it.id}"]`),tr=b.closest('tr');
+    const seen=i===0||(st.own[items[i-1].id]||0)>0||st.total>=it.base*.5;
+    tr.style.display=seen?'':'none';
+    b.textContent=it.name+' ('+fmt(cost(it))+')';b.disabled=st.cows<cost(it);
+    document.getElementById('o-'+it.id).textContent=st.own[it.id]||'';
+  });
+}
+document.getElementById('cow').addEventListener('click',e=>{
+  const g=cpc();st.cows+=g;st.total+=g;render();
+  const p=document.createElement('div');p.className='pop';p.textContent='+'+fmt(g);
+  const x=e.clientX||innerWidth/2,y=e.clientY||innerHeight/2;
+  p.style.left=(x-10+Math.random()*20)+'px';p.style.top=(y-20)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),800);
+});
+let last=performance.now();
+setInterval(()=>{const now=performance.now(),dt=(now-last)/1000;last=now;const g=cps()*dt;st.cows+=g;st.total+=g;render()},100);
+function save(){st.t=Date.now();try{localStorage.setItem('cowclicker',JSON.stringify(st))}catch(e){}}
+setInterval(save,5000);addEventListener('beforeunload',save);
+document.getElementById('reset').onclick=e=>{e.preventDefault();if(confirm('wipe all your cows? this cant be undone')){try{localStorage.removeItem('cowclicker')}catch(_){}location.reload()}};
+
+const N=document.getElementById('news');
+function news(t){N.textContent=t}
+const lines=[
+ c=>c<10&&'local man has '+Math.floor(c)+' cows. neighbors unconcerned.',
+ c=>c<100&&'"its just a few cows" says local man, owner of '+Math.floor(c)+' cows.',
+ c=>c<1000&&'neighbors begin to express mild concern about the cows.',
+ c=>c<1e4&&'town council holds emergency meeting about "the cow situation".',
+ c=>c<1e5&&'cows now outnumber people in the county. cows have not commented.',
+ c=>c<1e6&&'scientists baffled as cow population defies several laws of physics.',
+ c=>c<1e7&&'world leaders meet to discuss cows. the cows were not invited. the cows are upset.',
+ c=>'there is nothing left but cows. it is beautiful. moo.',
+ ()=>'greg says he needs a raise. greg will not be getting a raise.',
+ ()=>'study finds 9 out of 10 cows prefer being clicked.',
+ ()=>'cow spotted wearing sunglasses. authorities say "let her cook".'
+];
+setInterval(()=>{const c=st.total;const opts=lines.map(f=>f(c)).filter(Boolean);const first=opts[0],rest=opts.slice(1);news(Math.random()<.6||!rest.length?first:rest[Math.floor(Math.random()*rest.length)])},9000);
+render();
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>

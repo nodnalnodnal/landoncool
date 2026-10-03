@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>local forecast</title>
+<style>
+body{margin:0;min-height:100vh;background:#1b2a8f;background-image:linear-gradient(180deg,#24379f 0,#1b2a8f 30%,#3a1f7a 100%);color:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 22px 10px;border-bottom:3px solid #e8a33a}
+.top h1{margin:0;font-size:28px;color:#ffd84a;text-shadow:2px 2px 0 #000}
+#clock{font-size:20px;text-shadow:2px 2px 0 #000}
+main{flex:1;padding:20px 22px;max-width:900px;width:100%;box-sizing:border-box;margin:0 auto}
+.now{display:flex;gap:30px;align-items:center;flex-wrap:wrap;background:rgba(0,0,40,.35);border:2px solid #6f86e8;padding:18px}
+#temp{font-size:88px;font-weight:bold;text-shadow:3px 3px 0 #000;line-height:1}
+.now .d{font-size:22px;text-shadow:2px 2px 0 #000;line-height:1.5}
+.now .d span{color:#ffd84a}
+h2{color:#ffd84a;font-size:20px;text-shadow:2px 2px 0 #000;margin:26px 0 10px}
+.days{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.day{background:rgba(0,0,40,.35);border:2px solid #6f86e8;padding:12px;text-shadow:1px 1px 0 #000}
+.day b{display:block;color:#ffd84a;font-size:18px;margin-bottom:6px}
+.day .hi{font-size:30px;font-weight:bold;margin:6px 0}
+.day .c{font-size:15px;line-height:1.35}
+.tick{background:#e8a33a;color:#000;font-weight:bold;font-size:18px;overflow:hidden;white-space:nowrap;padding:8px 0}
+.tick span{display:inline-block;padding-left:100%;animation:t 40s linear infinite}
+@keyframes t{to{transform:translateX(-100%)}}
+#loc-btn{background:#ffd84a;color:#000;border:2px solid #000;font:bold 15px Arial;padding:6px 12px;cursor:pointer;margin-top:10px}
+a{color:#ffd84a}
+</style>
+</head>
+<body>
+<div class="top"><h1 id="where">your local forecast</h1><div id="clock"></div></div>
+<main>
+<div class="now">
+  <div id="temp">--</div>
+  <div class="d"><div id="cond">checking the sky...</div><div>feels like: <span id="feels"></span></div><div>wind: <span id="wind"></span></div><div>humidity: <span id="hum"></span></div></div>
+</div>
+<button id="loc-btn" hidden>use my real location</button>
+<h2>extended forecast</h2>
+<div class="days" id="days"></div>
+<p style="font-size:13px;opacity:.6;margin-top:30px">the temperature is real. nothing else is. <a href="/">landon.cool</a></p>
+</main>
+<div class="tick"><span id="tick"></span></div>
+<script>
+let city='your area',lat=null,lon=null;
+function rng(seed){let h=1779033703^seed.length;for(let i=0;i<seed.length;i++){h=Math.imul(h^seed.charCodeAt(i),3432918353);h=h<<13|h>>>19}return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
+const conds=['97% chance of frogs','light drizzle of mayonnaise','scattered geese','fog, but it is judging you','wind from the south. smells like a cvs','partly cloudy with a chance of your ex texting','hail (small, polite)','a single cloud shaped like your dad','100% humidity. you are now soup','sunny. too sunny. suspiciously sunny','light snow, but only on your car','thunder with no lightning. just noise','raining upward','overcast, mildly disappointed','clear skies, unclear intentions','tornado watch (the tornado is watching you)','a brief shower of loose change','heavy pollen, sneezing mandatory','cloudy with a chance of meatballs (copyright pending)','the sky is doing something weird. dont look'];
+const feels=['a tuesday','wet socks','451 degrees','your mom\'s basement','a gas station hot dog','the inside of a dog\'s mouth','minus 4, emotionally','a sauna run by bees','fine. it feels fine','the middle of a group project'];
+const winds=['nw at 3 mph','se at 140 mph','straight down','in circles','from behind you','none. it is holding its breath','east, then it changed its mind'];
+const ticks=['advisory: a large dog has been spotted in the area. it is friendly. this is not a drill','reminder: it is illegal to be outside without a jacket if your mom said so','residents are advised to keep pets indoors due to elevated levels of vibes','traffic is bad because everyone is looking at the frogs','storm chasers have caught the storm. the storm is fine. the storm says hi'];
+function build(realTemp){
+  const today=new Date().toDateString(),r=rng(today+city);
+  const pick=a=>a[Math.floor(r()*a.length)];
+  document.getElementById('where').textContent='local forecast for '+city;
+  document.getElementById('temp').textContent=realTemp!=null?Math.round(realTemp)+'\u00b0':Math.floor(r()*90+10)+'\u00b0';
+  document.getElementById('cond').textContent=pick(conds);
+  document.getElementById('feels').textContent=pick(feels);
+  document.getElementById('wind').textContent=pick(winds);
+  document.getElementById('hum').textContent=Math.floor(r()*400)+'%';
+  const D=document.getElementById('days');D.innerHTML='';
+  const names=['tonight','tomorrow'];const wd=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  for(let i=2;i<5;i++)names.push(wd[(new Date().getDay()+i)%7]);
+  const temps=[72,-4,451,3,69,1000,58,'idk',88,-40,12,77];
+  names.forEach(n=>{const d=document.createElement('div');d.className='day';
+    const hi=pick(temps);
+    d.innerHTML='<b></b><div class="hi"></div><div class="c"></div>';
+    d.querySelector('b').textContent=n;d.querySelector('.hi').textContent=typeof hi==='number'?hi+'\u00b0':hi;d.querySelector('.c').textContent=pick(conds);
+    D.appendChild(d)});
+  document.getElementById('tick').textContent=ticks.join('   ...   ');
+}
+async function real(la,lo){
+  lat=la;lon=lo;let t=null;
+  try{const g=await(await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)).json();city=(g.city||g.locality||g.principalSubdivision||city).toLowerCase()}catch(e){}
+  try{const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m&temperature_unit=fahrenheit`)).json();t=w.current.temperature_2m}catch(e){}
+  build(t);
+}
+function ask(){navigator.geolocation.getCurrentPosition(p=>{document.getElementById('loc-btn').hidden=true;real(p.coords.latitude,p.coords.longitude)},()=>{document.getElementById('loc-btn').hidden=false})}
+try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';const c=tz.split('/').pop().replace(/_/g,' ').toLowerCase();if(c)city=c}catch(e){}
+build(null);
+if(navigator.geolocation)ask();
+document.getElementById('loc-btn').onclick=ask;
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}).toLowerCase()},1000);
+</script>
+<script src="/konami.js"></script>
+</body>
+</html>
