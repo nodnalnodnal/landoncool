@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>updating</title>
+<style>
+html,body{margin:0;height:100%;background:#0063b1;color:#fff;font-family:"Segoe UI","Segoe UI Light",Tahoma,Arial,sans-serif;overflow:hidden;cursor:none}
+.c{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:300}
+.dots{position:relative;width:48px;height:48px;margin-bottom:40px}
+.dots i{position:absolute;inset:0;animation:o 4.2s cubic-bezier(.55,.1,.45,.9) infinite}
+.dots i:before{content:"";position:absolute;left:50%;top:0;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#fff}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}.dots i:nth-child(4){animation-delay:.45s}.dots i:nth-child(5){animation-delay:.6s}
+@keyframes o{0%{transform:rotate(0);opacity:1}60%{transform:rotate(540deg);opacity:1}75%{transform:rotate(720deg);opacity:0}100%{transform:rotate(720deg);opacity:0}}
+.t{font-size:clamp(18px,2.4vw,28px);line-height:1.5}
+.s{font-size:clamp(14px,1.6vw,18px);margin-top:30px;opacity:.9}
+#hint{position:fixed;bottom:12px;width:100%;text-align:center;font-size:12px;opacity:.35;transition:opacity 1s}
+</style></head><body>
+<div class="c"><div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
+<div class="t">working on updates <span id="p">34</span>% complete.<br>don't turn off your computer.</div>
+<div class="s">this will take a while</div></div>
+<div id="hint">click to go fullscreen. esc to leave. landon.cool</div>
+<script>
+let p=34;const P=document.getElementById('p'),h=document.getElementById('hint');
+setTimeout(()=>h.style.opacity=0,5000);
+addEventListener('click',()=>{document.documentElement.requestFullscreen?.();h.style.opacity=0});
+setInterval(()=>{if(p<35&&Math.random()<.02){p=35;P.textContent=p;setTimeout(()=>{p=34;P.textContent=p},4000)}},60000);
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.fullscreenElement)location.href='/'});
+</script>
+<script src="/konami.js"></script>
+</body></html>

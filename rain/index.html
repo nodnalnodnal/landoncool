@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>rain</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#11161c}
+canvas{position:fixed;inset:0}
+#glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 15% 100%,rgba(255,170,80,.45),transparent 60%);opacity:0;transition:opacity 1.2s}
+body.lamp #glow{opacity:1}
+.frame{position:fixed;inset:0;pointer-events:none;border:clamp(20px,4vw,46px) solid #2a1f17;box-shadow:inset 0 0 0 6px #1a130d}
+.frame:before,.frame:after{content:"";position:absolute;background:#2a1f17;box-shadow:0 0 0 3px #1a130d}
+.frame:before{left:50%;top:0;bottom:0;width:clamp(10px,1.6vw,18px);transform:translateX(-50%)}
+.frame:after{top:50%;left:0;right:0;height:clamp(10px,1.6vw,18px);transform:translateY(-50%)}
+.ui{position:fixed;left:0;right:0;bottom:clamp(30px,5vw,60px);display:flex;justify-content:center;gap:10px;z-index:3}
+.ui button{background:rgba(0,0,0,.45);color:#ccd;border:1px solid #445;font:13px Georgia,serif;padding:6px 14px;cursor:pointer}
+.lampbox{position:fixed;left:clamp(40px,7vw,90px);bottom:clamp(20px,4vw,46px);z-index:2;width:60px;height:110px;cursor:pointer}
+.shade{position:absolute;left:5px;top:0;width:50px;height:40px;background:#6b5a3a;clip-path:polygon(20% 0,80% 0,100% 100%,0 100%);transition:background .6s}
+body.lamp .shade{background:#ffcf7a;box-shadow:0 0 40px #ffb04a}
+.pole{position:absolute;left:28px;top:40px;width:4px;height:60px;background:#222}.base{position:absolute;left:14px;bottom:0;width:32px;height:8px;background:#222;border-radius:4px}
+a{position:fixed;right:clamp(30px,5vw,60px);top:clamp(26px,4.5vw,52px);z-index:3;color:#556;font:12px Georgia}
+</style></head><body>
+<canvas id="bg"></canvas><canvas id="c"></canvas><div id="glow"></div><div class="frame"></div>
+<div class="lampbox" id="lamp" title="lamp"><div class="shade"></div><div class="pole"></div><div class="base"></div></div>
+<div class="ui"><button id="snd">sound: off</button></div><a href="/">landon.cool</a>
+<script>
+const bg=document.getElementById('bg'),bx=bg.getContext('2d'),c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,drops=[],streaks=[];
+function size(){W=bg.width=c.width=innerWidth;H=bg.height=c.height=innerHeight;
+  const g=bx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1b2430');g.addColorStop(1,'#0c1015');bx.fillStyle=g;bx.fillRect(0,0,W,H);
+  let s=5;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  for(let i=0;i<14;i++){const bw=40+r()*120,bh=H*(.2+r()*.45),bxp=r()*W;bx.fillStyle='#0a0d12';bx.fillRect(bxp,H-bh,bw,bh);
+    for(let j=0;j<12;j++)if(r()<.35){bx.fillStyle=r()<.7?'rgba(255,200,120,.55)':'rgba(170,200,255,.4)';bx.fillRect(bxp+6+r()*(bw-16),H-bh+8+r()*(bh-20),6,8)}}
+  bx.filter='blur(6px)';bx.drawImage(bg,0,0);bx.filter='none'}
+size();addEventListener('resize',size);
+for(let i=0;i<180;i++)drops.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*2.2+.6});
+let flash=0;
+(function L(){x.clearRect(0,0,W,H);
+  if(Math.random()<.35&&drops.length<260)drops.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.6});
+  for(const d of drops){x.fillStyle='rgba(200,215,235,.35)';x.beginPath();x.ellipse(d.x,d.y,d.r,d.r*1.2,0,0,7);x.fill();x.fillStyle='rgba(255,255,255,.5)';x.fillRect(d.x-d.r*.3,d.y-d.r*.5,1,1);
+    if(d.r>2.2||Math.random()<.002){d.r+=.004;streaks.push({x:d.x,y:d.y,r:d.r,v:1+Math.random()*2,life:0});d.y=-10;d.x=Math.random()*W;d.r=Math.random()*1.5+.6}}
+  for(let i=streaks.length-1;i>=0;i--){const s=streaks[i];s.y+=s.v;s.x+=Math.sin(s.y/30)*.3;s.life++;x.strokeStyle='rgba(200,215,235,.25)';x.lineWidth=s.r*1.2;x.beginPath();x.moveTo(s.x,s.y);x.lineTo(s.x,s.y-Math.min(40,s.life));x.stroke();
+    x.fillStyle='rgba(210,225,245,.45)';x.beginPath();x.arc(s.x,s.y,s.r*1.1,0,7);x.fill();if(s.y>H+20)streaks.splice(i,1)}
+  if(flash>0){x.fillStyle=`rgba(220,230,255,${flash})`;x.fillRect(0,0,W,H);flash-=.04}
+  requestAnimationFrame(L)})();
+let ac,on=false,master;
+function thunder(){flash=.5;setTimeout(()=>flash=.35,120);if(!on)return;const t=ac.currentTime+1.2+Math.random()*2,b=ac.createBuffer(1,ac.sampleRate*4,ac.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<d.length;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*6*Math.pow(1-i/d.length,2)}
+  const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=180;g.gain.value=.9;s.connect(f);f.connect(g);g.connect(master);s.start(t)}
+setInterval(()=>{if(Math.random()<.25)thunder()},20000);
+document.getElementById('snd').onclick=e=>{ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  if(!master){master=ac.createGain();master.connect(ac.destination);const b=ac.createBuffer(2,ac.sampleRate*4,ac.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let l=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;l=(l+.06*w)/1.06;d[i]=l*2.2+w*.05+(Math.random()<.0009?(Math.random()-.5)*.6:0)}}
+    const s=ac.createBufferSource(),f=ac.createBiquadFilter();s.buffer=b;s.loop=true;f.type='lowpass';f.frequency.value=2600;s.connect(f);f.connect(master);s.start()}
+  on=!on;master.gain.setTargetAtTime(on?.6:0,ac.currentTime,.4);e.target.textContent='sound: '+(on?'on':'off')};
+document.getElementById('lamp').onclick=()=>document.body.classList.toggle('lamp');
+</script>
+<script src="/konami.js"></script>
+</body></html>

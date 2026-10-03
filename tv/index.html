@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>tv</title>
+<style>
+body{margin:0;min-height:100vh;background:#3d3428;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.06) 0 1px,transparent 1px 5px);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Arial,sans-serif;padding:16px;box-sizing:border-box}
+.tv{background:linear-gradient(#6b4a2b,#4a321c);padding:26px;border-radius:22px;box-shadow:0 14px 30px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.15);display:flex;gap:20px;max-width:100%}
+.scr{background:#111;border-radius:40px/30px;padding:12px;box-shadow:inset 0 0 20px #000}
+canvas{display:block;width:min(560px,62vw);aspect-ratio:4/3;border-radius:34px/26px;filter:contrast(1.1) saturate(1.2)}
+.side{display:flex;flex-direction:column;align-items:center;gap:14px;background:#2b2b2b;padding:14px 10px;border-radius:8px}
+.knob{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#999,#333);border:3px solid #111;cursor:pointer;position:relative;transition:transform .2s}
+.knob:after{content:"";position:absolute;left:50%;top:4px;width:4px;height:16px;background:#ddd;margin-left:-2px}
+.lbl{color:#aaa;font-size:11px}
+#ch{font:bold 22px "Courier New",monospace;color:#3f3;background:#000;padding:2px 6px;border:2px inset #444}
+.grill{width:54px;height:80px;background:repeating-linear-gradient(0deg,#111 0 3px,#3a3a3a 3px 6px);border-radius:4px}
+p{color:#c9b897;font-size:12px}a{color:#c9b897}
+</style></head><body>
+<div class="tv"><div class="scr"><canvas id="c" width="320" height="240"></canvas></div>
+<div class="side"><div id="ch">01</div><div class="knob" id="up" title="channel up"></div><div class="lbl">channel</div><div class="knob" id="dn" title="channel down" style="transform:rotate(200deg)"></div><div class="grill"></div></div></div>
+<p>click the knobs or use arrow keys. <a href="/">landon.cool</a></p>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),W=320,H=240,chEl=document.getElementById('ch');
+let ch=1,stat=0,t=0,ac,noiseNode;
+const fish=Array.from({length:6},(_,i)=>({x:Math.random()*W,y:40+Math.random()*150,v:(Math.random()*.8+.3)*(i%2?1:-1),c:['#ff8c1a','#ffd400','#3cf','#f5a'][i%4]}));
+const chans=[
+ ()=>{x.fillStyle='#0a4f7a';x.fillRect(0,0,W,H);x.fillStyle='#c9a46b';x.fillRect(0,210,W,30);for(let i=0;i<5;i++){x.fillStyle='#2a8a3a';const sx=40+i*60;for(let j=0;j<6;j++){x.fillRect(sx+Math.sin(t/20+j)*4,210-j*12,6,12)}}
+   fish.forEach(f=>{f.x+=f.v;if(f.x>W+20)f.x=-20;if(f.x<-20)f.x=W+20;x.fillStyle=f.c;x.beginPath();x.ellipse(f.x,f.y+Math.sin(t/15+f.x/30)*3,12,7,0,0,7);x.fill();x.beginPath();const d=f.v>0?-1:1;x.moveTo(f.x+d*10,f.y);x.lineTo(f.x+d*20,f.y-7);x.lineTo(f.x+d*20,f.y+7);x.fill()});
+   x.fillStyle='rgba(255,255,255,.5)';for(let i=0;i<8;i++){const by=(H-((t*1.2+i*40)%H));x.beginPath();x.arc(250+Math.sin(by/10)*4,by,2+i%3,0,7);x.fill()}
+   label('ch 1: fish')},
+ ()=>{const cols=['#c0c0c0','#c0c000','#00c0c0','#00c000','#c000c0','#c00000','#0000c0'];cols.forEach((cc,i)=>{x.fillStyle=cc;x.fillRect(i*W/7,0,W/7+1,H*.7)});x.fillStyle='#111';x.fillRect(0,H*.7,W,H*.3);
+   x.fillStyle='#fff';x.font='bold 16px Arial';x.textAlign='center';x.fillText('please stand by',W/2,H*.85);x.fillText('we lost the remote',W/2,H*.85+20);x.textAlign='left';beep(1000)},
+ ()=>{x.fillStyle='#120804';x.fillRect(0,0,W,H);x.fillStyle='#3a2a1e';x.fillRect(40,60,240,180);x.fillStyle='#120804';x.fillRect(70,90,180,150);
+   for(let i=0;i<40;i++){const fx=90+Math.random()*140,fh=40+Math.random()*70*(1-Math.abs(fx-160)/90);const g=x.createLinearGradient(0,230,0,230-fh);g.addColorStop(0,'#ff5a00');g.addColorStop(.6,'#ffb000');g.addColorStop(1,'rgba(255,240,150,0)');x.fillStyle=g;x.fillRect(fx,230-fh,5,fh)}
+   x.fillStyle='#4a2a14';x.fillRect(95,222,130,10);label('ch 3: log')},
+ ()=>{x.fillStyle='#002200';x.fillRect(0,0,W,H);x.strokeStyle='#0a0';for(let r=30;r<130;r+=30){x.beginPath();x.arc(W/2,H/2,r,0,7);x.stroke()}
+   const a=t/30;x.strokeStyle='#3f3';x.beginPath();x.moveTo(W/2,H/2);x.lineTo(W/2+Math.cos(a)*120,H/2+Math.sin(a)*120);x.stroke();
+   x.fillStyle='rgba(60,255,60,.7)';[[200,80],[100,160],[230,170]].forEach(([px,py],i)=>{x.beginPath();x.arc(px,py,4,0,7);x.fill();x.font='10px monospace';x.fillText(['cow','cow?','big cow'][i],px+6,py)});label('ch 4: cow radar')},
+ ()=>{x.fillStyle='#1d3b8f';x.fillRect(0,0,W,H);x.fillStyle='#ffd400';x.font='bold 18px Arial';x.fillText('rock shop live',14,30);
+   x.save();x.translate(150,130);x.rotate(t/80);x.fillStyle='#777';x.beginPath();x.moveTo(-40,-20);x.lineTo(10,-38);x.lineTo(45,-5);x.lineTo(30,30);x.lineTo(-25,35);x.closePath();x.fill();x.fillStyle='#999';x.fillRect(-10,-10,14,8);x.restore();
+   x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('one (1) rock',190,110);x.fillStyle='#ffd400';x.fillText('$19.99',200,140);x.fillStyle='#fff';x.font='12px Arial';x.fillText('call now. operators are bored.',150,210);label('ch 5')},
+ ()=>{x.fillStyle='#000';x.fillRect(0,0,W,H);x.fillStyle='#fff';x.font='bold 54px "Courier New",monospace';x.textAlign='center';const d=new Date();x.fillText(d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}).toLowerCase(),W/2,H/2+18);x.font='14px Arial';x.fillText('the clock channel. it is just a clock',W/2,H-30);x.textAlign='left'},
+ ()=>{x.fillStyle='#2b0a3d';x.fillRect(0,0,W,H);x.fillStyle='#555';x.fillRect(130,20,60,20);x.fillRect(125,200,70,30);x.fillStyle='rgba(200,180,255,.15)';x.fillRect(135,40,50,160);
+   for(let i=0;i<4;i++){const by=120+Math.sin(t/60+i*1.7)*70,bx=160+Math.sin(t/45+i)*10;x.fillStyle='#ff3fa0';x.beginPath();x.ellipse(bx,by,14+i*2,18+Math.sin(t/20+i)*4,0,0,7);x.fill()}label('ch 7: lava')},
+ ()=>{x.fillStyle='#8a1010';x.fillRect(0,0,W,H);x.fillStyle='#fff';x.fillRect(0,170,W,26);x.fillStyle='#111';x.font='bold 13px Arial';const msg='breaking: nothing is happening. more at 11. still nothing. ';const w=x.measureText(msg).width;x.fillText(msg+msg,-(t*1.2%w),188);
+   x.fillStyle='#ddd';x.fillRect(110,50,100,110);x.fillStyle='#e8c39e';x.beginPath();x.arc(160,85,24,0,7);x.fill();x.fillStyle='#223';x.fillRect(130,112,60,48);x.fillStyle='#fff';x.font='bold 18px Arial';x.fillText('news 8',12,30);label('')}
+];
+function label(s){if(!s)return;x.fillStyle='rgba(0,0,0,.4)';x.fillRect(W-110,H-22,104,16);x.fillStyle='#fff';x.font='11px monospace';x.fillText(s,W-106,H-10)}
+let lastBeep=0;function beep(f){if(!ac||t-lastBeep<240)return;lastBeep=t;const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.03;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+1)}
+function staticFx(){const im=x.createImageData(W,H);for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255}x.putImageData(im,0,0)}
+function hiss(){if(!ac)return;const n=ac.createBuffer(1,ac.sampleRate*.4,ac.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=ac.createBufferSource(),g=ac.createGain();g.gain.value=.08;s.buffer=n;s.connect(g);g.connect(ac.destination);s.start()}
+function go(d){ac=ac||new (window.AudioContext||window.webkitAudioContext)();ch=((ch-1+d+chans.length)%chans.length)+1;chEl.textContent=String(ch).padStart(2,'0');stat=14;hiss()}
+document.getElementById('up').onclick=()=>go(1);document.getElementById('dn').onclick=()=>go(-1);
+addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight')go(1);if(e.key==='ArrowDown'||e.key==='ArrowLeft')go(-1)});
+(function L(){t++;if(stat>0){stat--;staticFx()}else chans[ch-1]();
+  x.fillStyle='rgba(0,0,0,.12)';for(let y=0;y<H;y+=2)x.fillRect(0,y,W,1);requestAnimationFrame(L)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

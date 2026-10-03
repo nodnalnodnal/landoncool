@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>goose</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:#e8e4d8;font-family:Tahoma,Verdana,sans-serif;cursor:none}
+.doc{position:absolute;left:8%;top:10%;width:min(420px,80vw);background:#fff;border:1px solid #999;box-shadow:2px 2px 0 #bbb;padding:20px;font-size:14px;line-height:1.6;color:#333}
+.doc h2{margin:0 0 8px;font-size:16px}
+.note{position:absolute;width:140px;min-height:100px;background:#fff7a1;padding:10px;font:15px "Comic Sans MS","Comic Neue",cursive;box-shadow:1px 2px 5px rgba(0,0,0,.25);z-index:3}
+canvas{position:fixed;inset:0;z-index:5;pointer-events:none}
+#fc{position:fixed;z-index:6;pointer-events:none;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:18px solid #000;transform-origin:50% 0;filter:drop-shadow(1px 1px 0 #fff)}
+#cnt{position:fixed;right:10px;bottom:8px;font-size:12px;color:#777}
+a{color:#777;cursor:none}
+</style></head><body>
+<div class="doc"><h2>very important document</h2>this is a normal page. nothing is wrong. please continue working. there is no goose here and there never was a goose.<br><br>if you see a goose, do not engage the goose. the goose wants you to engage.</div>
+<div id="cnt">honks: 0 &nbsp; <a href="/">escape</a></div>
+<canvas id="c"></canvas><div id="fc"></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),fc=document.getElementById('fc'),cnt=document.getElementById('cnt');
+function size(){c.width=innerWidth;c.height=innerHeight}size();addEventListener('resize',size);
+let mx=innerWidth/2,my=innerHeight/2,cx=mx,cy=my,grab=0,honks=0,ac;
+const g={x:60,y:innerHeight-80,tx:200,ty:200,face:1,state:'wander',timer:0,carry:null,step:0};
+addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY});
+const notes=['honk','i am the goose now','this is my page','you dropped this: nothing','do not look at me','peace was never an option','honk honk','where is the bread'];
+function A(){return ac=ac||new (window.AudioContext||window.webkitAudioContext)()}
+function honk(){try{const a=A(),t=a.currentTime,o=a.createOscillator(),o2=a.createOscillator(),f=a.createBiquadFilter(),gn=a.createGain();o.type=o2.type='sawtooth';o.frequency.setValueAtTime(420,t);o.frequency.linearRampToValueAtTime(330,t+.18);o2.frequency.setValueAtTime(427,t);o2.frequency.linearRampToValueAtTime(320,t+.18);f.type='bandpass';f.frequency.value=900;f.Q.value=2;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.35,t+.02);gn.gain.linearRampToValueAtTime(0,t+.22);o.connect(f);o2.connect(f);f.connect(gn);gn.connect(a.destination);o.start(t);o2.start(t);o.stop(t+.25);o2.stop(t+.25)}catch(e){}
+  honks++;cnt.firstChild.textContent='honks: '+honks+' \u00a0 '}
+addEventListener('pointerdown',e=>{if(Math.hypot(e.clientX-g.x,e.clientY-(g.y-20))<45){honk();g.state='flee';g.timer=60;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}});
+function pick(){const r=Math.random();
+  if(r<.25){g.state='cursor';g.timer=400}
+  else if(r<.45&&document.querySelectorAll('.note').length<8){g.state='fetch';const n=document.createElement('div');n.className='note';n.textContent=notes[Math.floor(Math.random()*notes.length)];n.style.left=(innerWidth+20)+'px';n.style.top=(Math.random()*(innerHeight-140))+'px';document.body.appendChild(n);g.carry=n;g.x=innerWidth+40;g.y=parseFloat(n.style.top)+60;g.tx=60+Math.random()*(innerWidth-260);g.ty=80+Math.random()*(innerHeight-200)}
+  else{g.state='wander';g.timer=150+Math.random()*200;g.tx=40+Math.random()*(innerWidth-80);g.ty=60+Math.random()*(innerHeight-80)}}
+pick();
+function drawGoose(){const p=4;x.save();x.translate(Math.round(g.x),Math.round(g.y));x.scale(g.face*p,p);
+  const leg=Math.floor(g.step/6)%2;x.fillStyle='#f28c1c';x.fillRect(-2+leg,-1,1,3);x.fillRect(1-leg,-1,1,3);x.fillRect(-3+leg,1,2,1);x.fillRect(1-leg,1,2,1);
+  x.fillStyle='#fff';x.fillRect(-6,-8,10,7);x.fillRect(-7,-7,2,4);x.fillStyle='#ddd';x.fillRect(-5,-6,6,3);x.fillStyle='#fff';x.fillRect(2,-15,3,8);x.fillRect(2,-17,5,3);
+  x.fillStyle='#000';x.fillRect(5,-16,1,1);x.fillStyle='#f28c1c';x.fillRect(7,-16,3,2);x.restore()}
+(function loop(){
+  x.clearRect(0,0,c.width,c.height);
+  let spd=1.6;
+  if(g.state==='cursor'){g.tx=cx;g.ty=cy+20;spd=2.6;g.timer--;if(Math.hypot(g.x-g.tx,g.y-g.ty)<12){if(!grab){honk();grab=160}}if(g.timer<0&&!grab)pick()}
+  if(g.state==='flee'){spd=4;g.timer--;if(g.timer<0)pick()}
+  const dx=g.tx-g.x,dy=g.ty-g.y,d=Math.hypot(dx,dy);
+  if(d>3){g.x+=dx/d*Math.min(spd,d);g.y+=dy/d*Math.min(spd,d);g.step++;if(Math.abs(dx)>1)g.face=dx>0?1:-1}
+  else if(g.state==='fetch'){g.carry=null;pick()}
+  else if(g.state==='wander'&&--g.timer<0)pick();
+  if(g.carry){g.carry.style.left=(g.x-(g.face>0?-30:150))+'px';g.carry.style.top=(g.y-60)+'px'}
+  if(grab>0){grab--;g.tx=g.x+(g.face*-3);cx=g.x+g.face*40;cy=g.y-64;if(!grab){g.state='flee';g.timer=40;g.tx=Math.random()*innerWidth;g.ty=Math.random()*innerHeight}}
+  else{cx+=(mx-cx)*.6;cy+=(my-cy)*.6}
+  drawGoose();fc.style.left=(cx-7)+'px';fc.style.top=cy+'px';fc.style.transform='rotate(-25deg)';
+  requestAnimationFrame(loop)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

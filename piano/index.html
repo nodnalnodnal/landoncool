@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>piano</title>
+<style>
+body{margin:0;min-height:100vh;background:#2a1a10;font-family:Georgia,serif;color:#e8d8b8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.case{background:linear-gradient(#3b2414,#24150b);padding:30px 18px 18px;border-radius:6px 6px 2px 2px;box-shadow:0 10px 30px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.08);max-width:100%;overflow-x:auto}
+.brand{text-align:center;font:italic 22px Georgia,serif;color:#c9a96a;margin:-14px 0 14px;letter-spacing:2px}
+.keys{position:relative;display:flex;height:200px;user-select:none;-webkit-user-select:none;touch-action:none}
+.w{width:46px;height:200px;background:linear-gradient(#fdfdf8,#e8e6dc);border:1px solid #333;border-top:0;border-radius:0 0 5px 5px;box-sizing:border-box;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:11px Arial;color:#999}
+.w.on{background:linear-gradient(#e6e3d4,#d2cebd)}
+.b{position:absolute;width:30px;height:124px;background:linear-gradient(#333,#000);border-radius:0 0 4px 4px;z-index:2;top:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;box-sizing:border-box;font:10px Arial;color:#777;box-shadow:inset 0 -6px 0 #222}
+.b.on{background:#222;box-shadow:inset 0 -2px 0 #222}
+#cnt{margin-top:22px;font-size:15px}
+#moo{font-size:40px;height:50px;margin-top:6px;color:#f2c94c}
+a{color:#c9a96a}
+</style></head><body>
+<div class="case"><div class="brand">the moonway</div><div class="keys" id="k"></div></div>
+<div id="cnt"></div><div id="moo"></div>
+<p style="font-size:13px;opacity:.6">keys: a w s e d f t g y h u j k o l p ; &nbsp; <a href="/">landon.cool</a></p>
+<script>
+const map='awsedftgyhujkolp;';
+const K=document.getElementById('k'),cnt=document.getElementById('cnt'),mooEl=document.getElementById('moo');
+const notes=[];let wi=0;
+for(let i=0;i<17;i++){const n=i%12,black=[1,3,6,8,10].includes(n);const el=document.createElement('div');el.className=black?'b':'w';el.textContent=map[i];
+  if(black){el.style.left=(wi*46-15)+'px'}else wi++;
+  K.appendChild(el);notes.push({el,f:261.63*Math.pow(2,i/12)});
+  el.addEventListener('pointerdown',e=>{e.preventDefault();play(i)})}
+let ac,count=0;
+try{count=+localStorage.getItem('piano')||0}catch(e){}
+function A(){return ac=ac||new (window.AudioContext||window.webkitAudioContext)()}
+function tone(f){const a=A(),t=a.currentTime,g=a.createGain(),lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(f*8,t);lp.frequency.exponentialRampToValueAtTime(f*2,t+1);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32,t+.006);g.gain.exponentialRampToValueAtTime(.001,t+2.2);
+  [[1,'triangle',1],[2,'sine',.35],[3,'sine',.12],[1.002,'sawtooth',.06]].forEach(([m,ty,v])=>{const o=a.createOscillator(),og=a.createGain();o.type=ty;o.frequency.value=f*m;og.gain.value=v;o.connect(og);og.connect(lp);o.start(t);o.stop(t+2.3)});
+  lp.connect(g);g.connect(a.destination)}
+function moo(f){const a=A(),t=a.currentTime,base=f/2,o=a.createOscillator(),fl=a.createBiquadFilter(),g=a.createGain();o.type='sawtooth';
+  o.frequency.setValueAtTime(base*1.1,t);o.frequency.linearRampToValueAtTime(base*1.25,t+.25);o.frequency.linearRampToValueAtTime(base*.9,t+1);
+  fl.type='lowpass';fl.Q.value=7;fl.frequency.setValueAtTime(350,t);fl.frequency.linearRampToValueAtTime(1300,t+.3);fl.frequency.linearRampToValueAtTime(280,t+1);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.1);g.gain.linearRampToValueAtTime(0,t+1.15);o.connect(fl);fl.connect(g);g.connect(a.destination);o.start(t);o.stop(t+1.2)}
+function play(i){const n=notes[i];count++;try{localStorage.setItem('piano',count)}catch(e){}
+  if(count%20===0){moo(n.f);mooEl.textContent='moo';setTimeout(()=>mooEl.textContent='',900)}else tone(n.f);
+  n.el.classList.add('on');setTimeout(()=>n.el.classList.remove('on'),150);show()}
+function show(){const left=20-count%20;cnt.textContent=count&&left===20?'that one was a moo':left+' notes until the moo'}
+show();
+addEventListener('keydown',e=>{if(e.repeat)return;const i=map.indexOf(e.key.toLowerCase());if(i>=0)play(i)});
+</script>
+<script src="/konami.js"></script>
+</body></html>

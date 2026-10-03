@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>i rate things</title>
+<style>
+body{margin:0;background:#f1ede4;color:#1a1a1a;font-family:Georgia,"Times New Roman",serif}
+.col{max-width:620px;margin:0 auto;padding:40px 22px}
+.mast{border-top:4px double #1a1a1a;border-bottom:1px solid #1a1a1a;text-align:center;padding:8px 0;margin-bottom:26px}
+.mast h1{font:bold 34px/1 "Times New Roman",serif;margin:0;letter-spacing:-.5px}
+.mast small{font-size:12px;color:#555}
+form{display:flex;gap:8px}
+input{flex:1;font:18px Georgia,serif;padding:8px;border:1px solid #1a1a1a;background:#fffdf6}
+button{font:bold 15px Georgia,serif;background:#1a1a1a;color:#f1ede4;border:0;padding:0 16px;cursor:pointer}
+#out{margin-top:30px;min-height:120px}
+.score{font:bold 72px/1 "Times New Roman",serif;float:left;margin:0 16px 0 0;border-right:1px solid #999;padding-right:16px}
+.thing{font-style:italic;font-size:22px;margin:4px 0 8px}
+.rev{font-size:17px;line-height:1.5}
+.by{clear:both;padding-top:14px;font-size:12px;color:#666}
+.old{margin-top:30px;border-top:1px solid #bbb;font-size:14px}
+.old div{padding:6px 0;border-bottom:1px dotted #bbb}
+a{color:#1a1a1a}
+</style></head><body><div class="col">
+<div class="mast"><h1>i rate things</h1><small>the only critic that has rated everything. est. today</small></div>
+<form id="f" autocomplete="off"><input id="q" placeholder="type literally anything" maxlength="60"><button>rate it</button></form>
+<div id="out"></div>
+<div class="old" id="old"></div>
+<p style="font-size:12px;color:#666;margin-top:30px">ratings are final. <a href="/">landon.cool</a></p>
+</div>
+<script>
+function h(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619);return x>>>0}
+const good=['bold','structurally sound','emotionally available','well seasoned','ahead of its time','clean','honest','surprisingly aerodynamic','legally distinct','brave'],
+bad=['unhinged','a little damp','too loud','structurally unsound','overrated by birds','suspicious','lukewarm','spiritually beige','a fire hazard','vibes only'],
+ends=['would recommend to a stranger.','i have been thinking about it since.','my cousin disagrees but he is wrong.','it knows what it did.','do not show this to your mom.','the cows approve.','i will not be elaborating.','points deducted for no reason.','i stand by this.','history will judge us both.'];
+function rate(t){const k=t.toLowerCase().trim(),r=h(k),p=a=>a[(r>>>(a.length%7))%a.length];
+  let s=r%11;if(/cow|moo/.test(k))s=10;if(/landon/.test(k))s=11;if(/homework|taxes|monday/.test(k))s=Math.min(s,2);
+  const g=good[r%good.length],b=bad[(r>>>5)%bad.length],e=ends[(r>>>9)%ends.length];
+  const body=s>=8?`${g}, ${g===b?'':'a little '+b+', '}but mostly ${g}. ${e}`:s>=4?`${g} in places but ${b} in others. ${e}`:`${b}. just ${b}. ${e}`;
+  return{s,body}}
+const out=document.getElementById('out'),old=document.getElementById('old');
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const t=document.getElementById('q').value.trim();if(!t)return;
+  const {s,body}=rate(t);
+  if(out.dataset.t){const d=document.createElement('div');d.textContent=out.dataset.t+': '+out.dataset.s+'/10';old.prepend(d)}
+  out.dataset.t=t;out.dataset.s=s;
+  out.innerHTML='<div class="score"></div><div class="thing"></div><div class="rev"></div><div class="by">reviewed by the staff (one guy)</div>';
+  out.querySelector('.score').textContent=s+'/10';out.querySelector('.thing').textContent=t;
+  out.querySelector('.rev').textContent=body.charAt(0).toLowerCase()+body.slice(1);
+  document.getElementById('q').value=''};
+</script>
+<script src="/konami.js"></script>
+</body></html>

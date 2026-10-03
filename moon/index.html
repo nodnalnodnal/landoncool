@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>moon</title>
+<style>
+body{margin:0;min-height:100vh;background:#070b1c;color:#c9cbd6;font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;text-align:center}
+#stars{position:fixed;inset:0;z-index:0}
+.c{position:relative;z-index:1;padding:40px 16px;max-width:560px;margin:0 auto}
+canvas#m{width:min(300px,70vw);height:auto}
+h1{font-weight:normal;font-size:30px;margin:14px 0 2px}
+.sub{font-size:14px;color:#7c8099}
+form{margin-top:40px}
+input{background:transparent;border:0;border-bottom:1px solid #4a4f6a;color:#e8e8f0;font:18px "Palatino Linotype",Palatino,Georgia,serif;text-align:center;width:240px;outline:0;padding:4px}
+button{background:none;border:1px solid #4a4f6a;color:#c9cbd6;font:15px Georgia,serif;padding:4px 12px;cursor:pointer;margin-left:6px}
+#horo{margin-top:24px;font-size:18px;line-height:1.6;font-style:italic;min-height:3em}
+a{color:#7c8099}
+</style></head><body>
+<canvas id="stars"></canvas>
+<div class="c">
+<canvas id="m" width="300" height="300"></canvas>
+<h1 id="name"></h1><div class="sub" id="pct"></div>
+<form id="f" autocomplete="off"><input id="u" placeholder="minecraft username" maxlength="16"><button>read it</button></form>
+<div id="horo"></div>
+<p class="sub" style="margin-top:40px">the moon is real. the horoscope is not. <a href="/">landon.cool</a></p>
+</div>
+<script>
+const S=document.getElementById('stars'),sx=S.getContext('2d');
+function stars(){S.width=innerWidth;S.height=innerHeight;let r=7;const R=()=>(r=(r*16807)%2147483647)/2147483647;for(let i=0;i<220;i++){sx.fillStyle=`rgba(255,255,255,${R()*.7+.1})`;sx.fillRect(R()*S.width,R()*S.height,R()<.1?2:1,R()<.1?2:1)}}
+stars();addEventListener('resize',stars);
+const syn=29.530588853,ref=Date.UTC(2000,0,6,18,14)/864e5;
+const age=((Date.now()/864e5-ref)%syn+syn)%syn,ph=age/syn,illum=(1-Math.cos(ph*2*Math.PI))/2;
+const names=['new moon','waxing crescent','first quarter','waxing gibbous','full moon','waning gibbous','last quarter','waning crescent'];
+document.getElementById('name').textContent=names[Math.floor((ph*8+.5)%8)];
+document.getElementById('pct').textContent=Math.round(illum*100)+'% lit, day '+age.toFixed(1)+' of '+syn.toFixed(1);
+const m=document.getElementById('m'),x=m.getContext('2d'),R=130,cx=150,cy=150;
+x.fillStyle='#1a1d2c';x.beginPath();x.arc(cx,cy,R,0,7);x.fill();
+x.save();x.beginPath();
+const waxing=ph<.5,k=Math.cos(ph*2*Math.PI); // terminator x scale
+x.arc(cx,cy,R,-Math.PI/2,Math.PI/2,!waxing);
+x.ellipse(cx,cy,Math.abs(k)*R,R,0,Math.PI/2,-Math.PI/2,(waxing?k>0:k<0));
+x.closePath();x.fillStyle='#e9e4cf';x.fill();x.clip();
+let s=3;const r2=()=>(s=(s*48271)%2147483647)/2147483647;
+for(let i=0;i<26;i++){const a=r2()*7,d=Math.sqrt(r2())*R*.9,rr=4+r2()*16;x.fillStyle=`rgba(150,140,115,${.15+r2()*.25})`;x.beginPath();x.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,rr,0,7);x.fill()}
+x.restore();
+function hh(t){let v=2166136261;for(const c of t)v=Math.imul(v^c.charCodeAt(0),16777619);return v>>>0}
+const A=['a creeper is thinking about you','you will find diamonds, but only one','someone will steal your bed today','today is a good day to place a torch you will regret','an enderman respects you, from a distance','your next mining trip will end in gravel','a villager will rip you off and you will thank him','do not trust the next pig you see','you will die to fall damage in a way that is funny','the moon says: go touch grass blocks','you will lose your items in lava, emotionally','a friend will build something ugly near your base'],
+B=['lucky block: dirt','lucky number: 64','lucky biome: mushroom island','avoid: sand','lucky mob: the axolotl','avoid: anyone named steve','lucky item: a single stick'];
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const u=document.getElementById('u').value.trim();if(!u)return;
+  const v=hh(u.toLowerCase()+new Date().toDateString()+names[Math.floor((ph*8+.5)%8)]);
+  document.getElementById('horo').textContent=`${u}, under the ${document.getElementById('name').textContent}: ${A[v%A.length]}. ${B[(v>>>8)%B.length]}.`};
+</script>
+<script src="/konami.js"></script>
+</body></html>

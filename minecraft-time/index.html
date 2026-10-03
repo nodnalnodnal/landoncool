@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>minecraft time</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+#hud{position:fixed;left:14px;top:12px;font:bold 18px "Courier New",monospace;color:#fff;text-shadow:2px 2px 0 #3f3f3f;line-height:1.5}
+#hud small{font-size:13px;color:#ddd}
+a{position:fixed;right:12px;bottom:10px;color:#fff;font:12px "Courier New",monospace;text-shadow:1px 1px 0 #000}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<a href="/">landon.cool</a>
+<script>
+// minecraft day = 24000 ticks = 20 real minutes. tick 0 = 6:00 am. synced to real time so everyone sees the same sky
+const c=document.getElementById('c'),x=c.getContext('2d'),hud=document.getElementById('hud');
+const PX=4;let W,H;function size(){W=c.width=Math.ceil(innerWidth/PX);H=c.height=Math.ceil(innerHeight/PX)}size();addEventListener('resize',size);
+const lerp=(a,b,t)=>a+(b-a)*t,mix=(c1,c2,t)=>c1.map((v,i)=>Math.round(lerp(v,c2[i],t)));
+const day=[120,167,255],night=[8,10,24],dusk=[255,140,70];
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const stars=Array.from({length:120},()=>[rnd(),rnd()*.6]);
+const ground=Array.from({length:400},(_,i)=>Math.floor(Math.sin(i*.3)*2+Math.sin(i*.07)*4));
+function draw(){
+  const ticks=(Date.now()/50)%24000,days=Math.floor(Date.now()/1200000);
+  const ang=(ticks/24000)*Math.PI*2; // 0 = sunrise on the east (left)
+  const sunH=Math.sin(ang); // >0 day
+  const tDay=Math.max(0,Math.min(1,(sunH+.2)/.4));
+  let sky=mix(night,day,tDay);const edge=1-Math.min(1,Math.abs(sunH)/.25);if(edge>0)sky=mix(sky,dusk,edge*.45);
+  x.fillStyle=`rgb(${sky})`;x.fillRect(0,0,W,H);
+  if(tDay<1){x.fillStyle=`rgba(255,255,255,${1-tDay})`;stars.forEach(([sx,sy])=>x.fillRect(Math.floor(sx*W),Math.floor(sy*H),1,1))}
+  const cx=W/2,cy=H*.78,R=Math.min(W*.45,H*.7),S=Math.max(8,Math.floor(Math.min(W,H)/9));
+  const sx=cx-Math.cos(ang)*R,sy=cy-Math.sin(ang)*R;
+  x.fillStyle='#fff6a0';x.fillRect(Math.floor(sx-S/2),Math.floor(sy-S/2),S,S);x.fillStyle='#ffe23a';x.fillRect(Math.floor(sx-S/2)+2,Math.floor(sy-S/2)+2,S-4,S-4);
+  const mx=cx+Math.cos(ang)*R,my=cy+Math.sin(ang)*R,ms=Math.floor(S*.8);
+  x.fillStyle='#e8e8f0';x.fillRect(Math.floor(mx-ms/2),Math.floor(my-ms/2),ms,ms);x.fillStyle='#b8b8c8';x.fillRect(Math.floor(mx-ms/4),Math.floor(my-ms/4),3,3);x.fillRect(Math.floor(mx+ms/6),Math.floor(my),2,2);
+  const gy=Math.floor(H*.78),dark=.35+.65*tDay;
+  for(let i=0;i<W;i++){const h=gy+ground[i%ground.length];x.fillStyle=`rgb(${mix([0,0,0],[95,159,53],dark)})`;x.fillRect(i,h,1,3);x.fillStyle=`rgb(${mix([0,0,0],[134,96,67],dark)})`;x.fillRect(i,h+3,1,H-h)}
+  const hrs=(Math.floor(ticks/1000)+6)%24,mins=Math.floor((ticks%1000)/1000*60);
+  const phase=ticks<12000?'day':ticks<13000?'sunset':ticks<23000?'night':'sunrise';
+  hud.innerHTML='';[`day ${days%100000}`,`${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}  (tick ${Math.floor(ticks)})`,phase+(ticks>=12542&&ticks<=23460?'  you can sleep now':'')].forEach((s,i)=>{const d=document.createElement('div');d.textContent=s;if(i==2)d.innerHTML='<small></small>',d.firstChild.textContent=s;hud.appendChild(d)});
+  requestAnimationFrame(draw)}
+draw();
+</script>
+<script src="/konami.js"></script>
+</body></html>

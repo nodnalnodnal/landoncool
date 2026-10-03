@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>hold the button</title>
+<style>
+body{margin:0;min-height:100vh;background:#111;color:#ff3b2f;font-family:"Courier New",monospace;display:flex;flex-direction:column;align-items:center;padding:30px 12px;box-sizing:border-box}
+h1{font:bold 22px "Courier New",monospace;color:#ffb000;margin:0 0 20px}
+#t{font:bold clamp(48px,14vw,110px)/1 "Courier New",monospace;text-shadow:0 0 12px rgba(255,59,47,.6);letter-spacing:-2px}
+#b{margin:30px 0;width:180px;height:180px;border-radius:50%;border:8px solid #333;background:radial-gradient(circle at 40% 35%,#3c3,#080);color:#031;font:bold 22px Arial;cursor:pointer;box-shadow:0 8px 0 #050;user-select:none;-webkit-user-select:none;touch-action:none}
+#b.on{transform:translateY(6px);box-shadow:0 2px 0 #050;background:radial-gradient(circle at 40% 35%,#6f6,#0a0)}
+input{background:#000;border:1px solid #444;color:#ffb000;font:16px "Courier New",monospace;padding:6px;text-align:center;width:200px}
+#msg{color:#aaa;min-height:1.4em;margin:10px;text-align:center}
+table{border-collapse:collapse;margin-top:16px;min-width:300px}
+td{padding:4px 12px;border-bottom:1px solid #222;color:#ff6a5f}
+td:first-child{color:#666}td:last-child{text-align:right;color:#ffb000}
+a{color:#666}
+</style></head><body>
+<h1>hold the button as long as you can</h1>
+<input id="n" maxlength="20" placeholder="your name">
+<div id="t">0.00</div>
+<button id="b">hold</button>
+<div id="msg">leaving the tab or letting go ends it</div>
+<table id="board"></table>
+<p><a href="/">landon.cool</a></p>
+<script>
+const API='https://api.landon.cool/api/hold',B=document.getElementById('b'),T=document.getElementById('t'),M=document.getElementById('msg'),N=document.getElementById('n');
+try{N.value=localStorage.getItem('holdname')||''}catch(e){}
+N.oninput=()=>{try{localStorage.setItem('holdname',N.value)}catch(e){}};
+let token=null,start=0,raf,holding=false;
+function fmt(ms){const s=ms/1000;if(s<60)return s.toFixed(2);const m=Math.floor(s/60);if(m<60)return m+':'+String(Math.floor(s%60)).padStart(2,'0');return Math.floor(m/60)+'h '+(m%60)+'m'}
+function board(b){const t=document.getElementById('board');t.innerHTML='';b.forEach((r,i)=>{const tr=document.createElement('tr');[i+1+'.',r.name,fmt(r.ms)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});t.appendChild(tr)})}
+async function down(e){e.preventDefault();if(holding)return;if(!N.value.trim()){M.textContent='put a name in first';N.focus();return}
+  holding=true;B.classList.add('on');start=performance.now();M.textContent='keep holding...';
+  (function L(){T.textContent=fmt(performance.now()-start);raf=requestAnimationFrame(L)})();
+  try{const j=await(await fetch(API+'/start',{method:'POST'})).json();if(j.error){M.textContent=j.error;stop(true)}else{token=j.token;if(!holding)up()}}catch(e){M.textContent='cant reach the server, this one wont count'}}
+async function up(){if(!holding)return stop(true);holding=false;cancelAnimationFrame(raf);B.classList.remove('on');
+  if(!token)return;const tk=token;token=null;
+  try{const j=await(await fetch(API+'/end',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:tk,name:N.value})})).json();
+    if(j.ms!=null){T.textContent=fmt(j.ms);M.textContent=j.rank&&j.rank<=20?'you placed #'+j.rank+'!!':j.ms<1000?'that was barely a hold':'not on the board. hold longer';board(j.board)}else M.textContent=j.error||''}catch(e){M.textContent='cant reach the server'}}
+function stop(){holding=false;cancelAnimationFrame(raf);B.classList.remove('on')}
+B.addEventListener('pointerdown',down);addEventListener('pointerup',up);addEventListener('pointercancel',up);
+addEventListener('blur',up);document.addEventListener('visibilitychange',()=>{if(document.hidden)up()});
+B.addEventListener('contextmenu',e=>e.preventDefault());
+fetch(API).then(r=>r.json()).then(j=>board(j.board)).catch(()=>M.textContent='leaderboard server is down');
+</script>
+<script src="/konami.js"></script>
+</body></html>

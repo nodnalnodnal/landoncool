@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>scream</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#ddd;font-family:Impact,"Arial Narrow Bold",sans-serif;user-select:none;-webkit-user-select:none}
+#a{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;white-space:nowrap;letter-spacing:-2px;color:#fff;pointer-events:none}
+#meter{position:fixed;left:50%;bottom:90px;width:min(400px,80vw);height:16px;transform:translateX(-50%);border:2px solid #444}
+#fill{height:100%;width:0;background:linear-gradient(90deg,#3c3,#ff0 60%,#f30)}
+#hint{position:fixed;bottom:40px;width:100%;text-align:center;font:14px Arial,sans-serif;color:#666}
+#v{position:fixed;top:18%;width:100%;text-align:center;font:20px Georgia,serif;color:#aaa;font-style:italic;padding:0 20px;box-sizing:border-box}
+a{position:fixed;right:12px;top:10px;color:#444;font:12px Arial}
+</style></head><body>
+<div id="v"></div><div id="a"></div><div id="meter"><div id="fill"></div></div>
+<div id="hint">hold space (or hold the screen) to scream into the void</div><a href="/">leave</a>
+<script>
+const A=document.getElementById('a'),F=document.getElementById('fill'),V=document.getElementById('v');
+let on=false,t0=0,lvl=0,ac,src,g;
+function start(){if(on)return;on=true;t0=performance.now();V.textContent='';
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const b=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<d.length;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3}
+    src=ac.createBufferSource();src.buffer=b;src.loop=true;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=500;g=ac.createGain();g.gain.value=0;src.connect(f);f.connect(g);g.connect(ac.destination);src.start()}catch(e){}}
+function stop(){if(!on)return;on=false;const s=(performance.now()-t0)/1000;try{g.gain.setTargetAtTime(0,ac.currentTime,.1);src.stop(ac.currentTime+.5)}catch(e){}
+  const score=Math.min(100,lvl*100),v=score<10?'the void did not hear anything. try being louder':score<30?'the void heard a whisper. it said "what"':score<55?'the void heard you. it is mildly concerned':score<80?'the void is impressed. the void has neighbors though':score<98?'the void had to turn its music down':'the void screamed back. you won. or lost. hard to say';
+  V.textContent=v+' ('+Math.round(score)+'/100 after '+s.toFixed(1)+'s)';}
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)start()}});addEventListener('keyup',e=>{if(e.code==='Space')stop()});
+addEventListener('pointerdown',e=>{if(e.target.tagName!=='A')start()});addEventListener('pointerup',stop);addEventListener('blur',stop);
+(function L(){if(on){const s=(performance.now()-t0)/1000;lvl=Math.min(1,1-Math.exp(-s/4)+Math.sin(s*7)*.03+Math.random()*.02)}else lvl*=.93;
+  F.style.width=(lvl*100)+'%';const n=Math.floor(lvl*30);A.textContent=lvl>.02?'a'.repeat(1+n)+'h'.repeat(Math.floor(n/3)):'';
+  A.style.fontSize=(30+lvl*90)+'px';A.style.transform=`translate(${(Math.random()-.5)*lvl*24}px,${(Math.random()-.5)*lvl*24}px)`;A.style.opacity=.3+lvl*.7;
+  if(g&&on)g.gain.value=lvl*.5;requestAnimationFrame(L)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

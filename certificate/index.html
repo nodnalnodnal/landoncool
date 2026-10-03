@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>certificate</title>
+<style>
+body{margin:0;background:#3a4a3a;font-family:Georgia,serif;padding:24px 10px;box-sizing:border-box}
+.ctl{max-width:760px;margin:0 auto 18px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.ctl input{font:16px Georgia,serif;padding:6px;width:220px}
+.ctl button{font:15px Georgia,serif;padding:6px 14px;cursor:pointer}
+#cert{max-width:760px;margin:0 auto;aspect-ratio:11/8.5;background:#fbf7ea;padding:18px;box-sizing:border-box;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.b1{height:100%;box-sizing:border-box;border:10px solid transparent;border-image:repeating-linear-gradient(45deg,#1d4d3a 0 6px,#c9a24a 6px 9px,#1d4d3a 9px 15px) 10;padding:6px}
+.b2{height:100%;box-sizing:border-box;border:2px solid #1d4d3a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4% 6%;position:relative;background:radial-gradient(ellipse at center,rgba(201,162,74,.08),transparent 70%)}
+.t1{font:normal clamp(22px,4.6vw,44px) "Old English Text MT","Goudy Old Style",Georgia,serif;color:#1d4d3a}
+.t2{font:italic clamp(12px,1.8vw,16px) Georgia,serif;margin:2% 0}
+.nm{font:italic clamp(26px,5.4vw,52px) "Brush Script MT","Segoe Script",cursive;color:#222;border-bottom:1px solid #333;padding:0 30px;min-width:50%}
+.for{font:clamp(13px,2vw,18px) Georgia,serif;margin-top:3%;max-width:80%}
+.foot{display:flex;justify-content:space-between;width:100%;margin-top:6%;align-items:flex-end}
+.sig{text-align:center;font-size:clamp(10px,1.4vw,13px);width:30%}
+.sig b{display:block;font:normal clamp(16px,2.6vw,26px) "Brush Script MT","Segoe Script",cursive;border-bottom:1px solid #333;margin-bottom:3px}
+.seal{width:clamp(60px,12vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#d9b24c 0 50%,#b8902e 51% 56%,#d9b24c 57%);display:flex;align-items:center;justify-content:center;font:bold clamp(9px,1.3vw,12px) Georgia;color:#6b4f12;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,.3);transform:rotate(-12deg)}
+p{text-align:center;color:#bcc;font-size:12px}a{color:#bcc}
+@media print{body{background:#fff;padding:0}.ctl,p{display:none}#cert{box-shadow:none;max-width:none}@page{size:landscape;margin:.3in}}
+</style></head><body>
+<div class="ctl"><input id="n" placeholder="your name" maxlength="30"><input id="a" placeholder="achievement (or leave blank)" maxlength="60"><button id="go">make it official</button><button onclick="print()">print</button></div>
+<div id="cert"><div class="b1"><div class="b2">
+<div class="t1">certificate of achievement</div><div class="t2">this certifies that</div><div class="nm" id="nm">somebody</div>
+<div class="for" id="for"></div>
+<div class="foot"><div class="sig"><b>landon</b>president of nothing</div><div class="seal">official<br>moo<br>seal</div><div class="sig"><b id="dt"></b>date of the achievement</div></div>
+</div></div></div>
+<p><a href="/">landon.cool</a></p>
+<script>
+const A=['outstanding achievement in sitting','excellence in being slightly late','most improved at breathing','a lifetime of mostly okay decisions','successfully opening a jar on the first try','surviving a group project','world class napping (amateur division)','finishing a whole glass of water','not crying at the dmv (this time)','being in the top 100% of people','placing a torch exactly where it was needed','most consistent at forgetting their password'];
+function go(){const n=document.getElementById('n').value.trim()||'somebody',a=document.getElementById('a').value.trim()||A[Math.floor(Math.random()*A.length)];
+  document.getElementById('nm').textContent=n;document.getElementById('for').textContent='in recognition of '+a.replace(/^in recognition of /i,'')+'. this achievement will not be recognized by any official body.';
+  document.getElementById('dt').textContent=new Date().toLocaleDateString()}
+document.getElementById('go').onclick=go;go();
+</script>
+<script src="/konami.js"></script>
+</body></html>

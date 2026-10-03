@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>connecting...</title>
+<style>
+body{margin:0;min-height:100vh;background:#008080;font:12px Tahoma,"MS Sans Serif",Arial,sans-serif;display:flex;align-items:center;justify-content:center}
+.win{background:#c0c0c0;border:2px solid;border-color:#fff #000 #000 #fff;width:360px}
+.tb{background:#000080;color:#fff;font-weight:bold;padding:3px 5px}
+.bd{padding:16px}
+.bd .row{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.pc{width:40px;height:34px;background:#bbb;border:2px solid #555;position:relative}.pc:after{content:"";position:absolute;inset:4px;background:#004}
+#st{min-height:3em}
+button{font:12px Tahoma,sans-serif;background:#c0c0c0;border:2px solid;border-color:#fff #000 #000 #fff;padding:4px 14px;cursor:pointer}
+button:active{border-color:#000 #fff #fff #000}
+.leds{display:flex;gap:6px;margin-top:6px}.led{width:10px;height:10px;border:1px solid #333;background:#030}.led.on{background:#3f3}
+#site{display:none;position:fixed;inset:0;background:#000 repeat;overflow:auto;color:#fff;font-family:"Times New Roman",serif}
+#site .in{max-width:640px;margin:0 auto;padding:20px;text-align:center}
+#site h1{color:#ff0;font-size:36px;font-family:"Comic Sans MS","Comic Neue",cursive}
+#site a{color:#0ff}
+.ring{border:2px outset #888;padding:8px;margin:20px auto;width:80%;background:#222}
+.cnt span{display:inline-block;background:#000;border:1px solid #444;color:#f00;font:bold 18px "Courier New";padding:0 3px}
+.blink{animation:b 1s steps(1) infinite}@keyframes b{50%{visibility:hidden}}
+</style></head><body>
+<div class="win" id="win"><div class="tb">connect to the internet</div><div class="bd">
+<div class="row"><div class="pc"></div><div>user name: landon<br>password: ********<br>phone: 555-0198</div></div>
+<div id="st">ready to connect. turn your sound on.</div>
+<div class="leds"><div class="led" id="l1"></div><div class="led" id="l2"></div><div class="led" id="l3"></div><span style="margin-left:6px">hs  rd  sd</span></div>
+<div style="text-align:right;margin-top:12px"><button id="go">connect</button> <button onclick="location.href='/'">cancel</button></div></div></div>
+<div id="site"><div class="in"><h1>welcome 2 landons homepage</h1><marquee>you are surfing the information superhighway!!!</marquee>
+<p>this site is best viewed with a 56k modem. you did it. you are online. this cost your parents 4 dollars an hour.</p>
+<p class="cnt">visitors: <span>0</span><span>0</span><span>1</span><span>3</span><span>3</span><span>7</span></p>
+<p class="blink" style="color:#f0f">!!! new !!! my cow page</p>
+<div class="ring">this site is part of the <b>cow webring</b><br><a href="#">&lt;&lt; prev</a> | <a href="/">random</a> | <a href="#">next &gt;&gt;</a></div>
+<p>someone needs to use the phone. <a href="/">disconnect</a></p></div></div>
+<script>
+let ac;const st=document.getElementById('st');
+function led(i,on){document.getElementById('l'+i).classList.toggle('on',on)}
+function osc(f,t0,d,v,type){const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime+t0);g.gain.setValueAtTime(0,ac.currentTime+t0+d);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t0);o.stop(ac.currentTime+t0+d+.01);return o}
+function noise(t0,d,v,f){const b=ac.createBuffer(1,ac.sampleRate*d,ac.sampleRate),c=b.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1;const s=ac.createBufferSource(),bp=ac.createBiquadFilter(),g=ac.createGain();bp.type='bandpass';bp.frequency.value=f||1800;bp.Q.value=.7;s.buffer=b;g.gain.value=v;s.connect(bp);bp.connect(g);g.connect(ac.destination);s.start(ac.currentTime+t0)}
+document.getElementById('go').onclick=()=>{
+  ac=ac||new (window.AudioContext||window.webkitAudioContext)();document.getElementById('go').disabled=true;
+  const dt={0:[941,1336],1:[697,1209],5:[770,1336],8:[852,1336],9:[852,1477]};
+  osc(350,0,1.2,.08);osc(440,0,1.2,.08);st.textContent='dialing...';led(1,true);
+  '5550198'.split('').forEach((n,i)=>{const [a,b]=dt[n];osc(a,1.4+i*.18,.1,.12);osc(b,1.4+i*.18,.1,.12)});
+  setTimeout(()=>st.textContent='ringing...',2700);
+  [2.8,4.8].forEach(t=>{osc(440,t,1,.07);osc(480,t,1,.07)});
+  setTimeout(()=>{st.textContent='connected. verifying user name and password...';led(2,true)},6200);
+  osc(2100,6.2,1.1,.09);
+  for(let i=0;i<14;i++){osc(i%2?980:1180,7.4+i*.07,.06,.08,'square')}
+  osc(1650,8.4,.5,.08);osc(1850,8.4,.5,.06);
+  for(let i=0;i<20;i++){const t=9+i*.09;osc(600+Math.random()*2400,t,.08,.06,i%3?'sine':'square')}
+  noise(9,2.4,.25,2000);noise(11.4,2,.35,1200);osc(1200,11.4,2,.03,'sawtooth');
+  let l=0;const blink=setInterval(()=>{led(3,l=!l)},120);
+  setTimeout(()=>st.textContent='logging on to network...',9500);
+  setTimeout(()=>{clearInterval(blink);document.getElementById('win').style.display='none';document.getElementById('site').style.display='block'},13800)};
+</script>
+<script src="/konami.js"></script>
+</body></html>

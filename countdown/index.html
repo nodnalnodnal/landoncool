@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>countdown</title>
+<style>
+body{margin:0;min-height:100vh;background:#0f0f0f;color:#f4f4f4;font-family:Helvetica,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;box-sizing:border-box}
+.lbl{font-size:16px;color:#888;margin-bottom:10px}
+#big{font:bold clamp(52px,15vw,150px)/1 "Helvetica Neue",Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+#big.now{color:#ff3b30;animation:p .4s infinite alternate}@keyframes p{to{transform:scale(1.06)}}
+#sub{margin-top:14px;font-size:15px;color:#aaa;min-height:1.2em}
+.others{margin-top:60px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;width:min(700px,100%)}
+.o{border:1px solid #2a2a2a;padding:12px}.o div:first-child{font-size:12px;color:#777;margin-bottom:6px}.o div:last-child{font:bold 22px Helvetica,Arial;font-variant-numeric:tabular-nums}
+a{color:#666;font-size:12px;margin-top:40px}
+</style></head><body>
+<div class="lbl">time until the clock says 4:04</div><div id="big"></div><div id="sub">this is not important</div>
+<div class="others"><div class="o"><div>until the next 11:11</div><div id="o1"></div></div><div class="o"><div>until the next palindrome time</div><div id="o2"></div></div><div class="o"><div>until the minute changes</div><div id="o3"></div></div></div>
+<a href="/">landon.cool</a>
+<script>
+function nextAt(h,m){const n=new Date(),c=[];for(const hh of h){const d=new Date(n);d.setHours(hh,m,0,0);if(d<=n)d.setDate(d.getDate()+1);c.push(d)}return new Date(Math.min(...c))}
+function nextPal(){const n=new Date();for(let i=1;i<=1440;i++){const d=new Date(n.getTime()+i*60000);d.setSeconds(0,0);const h=d.getHours()%12||12,s=String(h)+String(d.getMinutes()).padStart(2,'0');if(s===[...s].reverse().join(''))return d}}
+function fmt(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(x).padStart(2,'0')}
+const big=document.getElementById('big'),sub=document.getElementById('sub');
+const subs=['this is not important','nothing will happen','you could be doing anything else','we are almost there. probably','stay with me'];
+let pal=nextPal();
+setInterval(()=>{const n=new Date();
+  const is404=(n.getHours()===4||n.getHours()===16)&&n.getMinutes()===4;
+  if(is404){big.textContent='4:04';big.className='now';sub.textContent='it is 4:04. nothing happened. good job everyone'}
+  else{big.className='';const t=nextAt([4,16],4)-n;big.textContent=fmt(t);if(n.getSeconds()===0)sub.textContent=subs[Math.floor(Math.random()*subs.length)]}
+  document.getElementById('o1').textContent=fmt(nextAt([11,23],11)-n);
+  if(pal<=n)pal=nextPal();document.getElementById('o2').textContent=fmt(pal-n);
+  document.getElementById('o3').textContent=(60-n.getSeconds())+'s'},250);
+</script>
+<script src="/konami.js"></script>
+</body></html>

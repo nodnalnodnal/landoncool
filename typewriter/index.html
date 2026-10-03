@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>typewriter</title>
+<style>
+body{margin:0;min-height:100vh;background:#5a3b22;background-image:repeating-linear-gradient(92deg,rgba(0,0,0,.08) 0 3px,transparent 3px 11px),repeating-linear-gradient(88deg,rgba(255,255,255,.04) 0 2px,transparent 2px 17px);font-family:"Courier New",Courier,monospace;display:flex;flex-direction:column;align-items:center;padding:30px 10px;box-sizing:border-box}
+#paper{width:min(640px,94vw);min-height:70vh;background:#fbfaf4;box-shadow:0 6px 18px rgba(0,0,0,.45);padding:50px 44px;box-sizing:border-box;font:17px/1.55 "Courier New",Courier,monospace;color:#222;white-space:pre-wrap;word-break:break-all;position:relative;cursor:text}
+#paper .ch{display:inline;opacity:var(--o,1);position:relative;top:var(--y,0)}
+#caret{display:inline-block;width:.6em;height:2px;background:#b22;vertical-align:baseline;animation:b 1s steps(1) infinite}@keyframes b{50%{opacity:0}}
+.bar{margin-top:18px;display:flex;gap:10px}
+button{font:bold 14px "Courier New",monospace;background:#222;color:#eee;border:2px solid #000;padding:6px 14px;cursor:pointer}
+#hidden{position:fixed;opacity:0;left:-100px;top:0;width:10px}
+.tip{color:#e3cfb1;font-size:13px;margin-top:10px}
+a{color:#e3cfb1}
+</style></head><body>
+<div id="paper"><span id="txt"></span><span id="caret"></span></div>
+<div class="bar"><button id="save">save as image</button><button id="clear">new sheet</button></div>
+<div class="tip">just start typing. no backspace. that is how typewriters work. <a href="/">landon.cool</a></div>
+<textarea id="hidden" autocapitalize="off" autocomplete="off"></textarea>
+<script>
+const T=document.getElementById('txt'),H=document.getElementById('hidden'),P=document.getElementById('paper');
+let text='',col=0,ac;const W=60;
+function A(){return ac=ac||new (window.AudioContext||window.webkitAudioContext)()}
+function noise(d,f,v){const a=A(),n=a.createBuffer(1,a.sampleRate*d,a.sampleRate),c=n.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=(Math.random()*2-1)*Math.pow(1-i/c.length,4);
+  const s=a.createBufferSource(),b=a.createBiquadFilter(),g=a.createGain();s.buffer=n;b.type='bandpass';b.frequency.value=f;b.Q.value=1.5;g.gain.value=v;s.connect(b);b.connect(g);g.connect(a.destination);s.start()}
+function key(){noise(.06,1800+Math.random()*900,1.4);setTimeout(()=>noise(.03,600,.6),18)}
+function bell(){const a=A(),t=a.currentTime;[2093,2637].forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.setValueAtTime(.2/(i+1),t);g.gain.exponentialRampToValueAtTime(.001,t+1.4);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+1.5)})}
+function ret(){const a=A(),t=a.currentTime;for(let i=0;i<9;i++)setTimeout(()=>noise(.03,900+i*80,.5),i*28);setTimeout(()=>noise(.12,300,1.6),280)}
+function type(ch){
+  if(ch==='\n'){ret();text+='\n';col=0;render();return}
+  if(col>=W){ret();text+='\n';col=0}
+  key();text+=ch;col++;if(col===W-6)bell();render()}
+function render(){
+  const parts=text.split('');
+  // ink varies a little per letter, like a real ribbon
+  let html='';let seed=0;for(const c of parts){seed=(seed*31+c.charCodeAt(0))%997;const o=(.72+(seed%28)/100).toFixed(2),y=((seed%5)-2)*.3;html+=c==='\n'?'\n':`<span class="ch" style="--o:${o};--y:${y}px">${c.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}</span>`}
+  T.innerHTML=html}
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(e.key==='Enter'){e.preventDefault();type('\n')}else if(e.key.length===1){e.preventDefault();type(e.key)}else if(e.key==='Backspace'){e.preventDefault();noise(.04,200,.8)}});
+H.addEventListener('input',()=>{for(const c of H.value)type(c==='\r'?'\n':c);H.value=''});
+P.addEventListener('click',()=>{if(matchMedia('(pointer:coarse)').matches)H.focus()});
+document.getElementById('clear').onclick=e=>{e.target.blur();text='';col=0;render();noise(.3,500,1)};
+document.getElementById('save').onclick=e=>{e.target.blur();
+  const lines=text.split('\n'),lh=26,c=document.createElement('canvas');c.width=760;c.height=Math.max(980,lines.length*lh+120);
+  const x=c.getContext('2d');x.fillStyle='#fbfaf4';x.fillRect(0,0,c.width,c.height);x.font='17px "Courier New",monospace';
+  let seed=0;lines.forEach((l,i)=>{[...l].forEach((ch,j)=>{seed=(seed*31+ch.charCodeAt(0))%997;x.fillStyle=`rgba(34,34,34,${.72+(seed%28)/100})`;x.fillText(ch,50+j*10.2,70+i*lh+((seed%5)-2)*.3)})});
+  const a=document.createElement('a');a.download='typewriter.png';a.href=c.toDataURL();a.click()};
+</script>
+<script src="/konami.js"></script>
+</body></html>

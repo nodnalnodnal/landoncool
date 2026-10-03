@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>doors</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:#2d2620;font-family:Georgia,serif;color:#e9dcc4}
+.hall{position:fixed;inset:0;perspective:600px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#6d5a46 0,#4a3c2e 45%,#3a2f24 55%,#5b4936 100%)}
+.hall:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.55),transparent 30%,transparent 70%,rgba(0,0,0,.55)),repeating-linear-gradient(90deg,transparent 0 80px,rgba(0,0,0,.08) 80px 82px)}
+.frame{position:relative;width:min(260px,52vw);aspect-ratio:1/2.1;background:#1c1510;border:14px solid #8b6a44;border-bottom:0;box-shadow:0 0 40px rgba(0,0,0,.6)}
+.room{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;font-size:clamp(14px,2.2vw,18px);line-height:1.4;background:#f2e6c8;color:#2a2018}
+.door{position:absolute;inset:0;background:linear-gradient(90deg,#7a4e2a,#8d5c33 40%,#7a4e2a);transform-origin:left center;transition:transform .9s cubic-bezier(.4,.1,.3,1);cursor:pointer;box-shadow:inset 0 0 0 2px #5c3a1e}
+.door.open{transform:rotateY(-105deg)}
+.door .pan{position:absolute;left:14%;right:14%;border:3px solid #5c3a1e;box-shadow:inset 0 0 0 3px #9a6a3e}
+.door .p1{top:8%;height:36%}.door .p2{top:52%;height:40%}
+.door .knob{position:absolute;right:9%;top:50%;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe9a0,#b8892a);box-shadow:1px 2px 2px rgba(0,0,0,.5)}
+.door .num{position:absolute;left:50%;top:3%;transform:translateX(-50%);font:bold 13px Georgia;color:#e9cf8a}
+.floor{position:fixed;left:0;right:0;bottom:0;height:22%;background:repeating-linear-gradient(90deg,#4a3324 0 60px,#3d2a1d 60px 120px);transform:perspective(300px) rotateX(40deg);transform-origin:bottom}
+#ui{position:fixed;left:0;right:0;bottom:18px;text-align:center;z-index:5;font-size:14px}
+#next{font:15px Georgia;padding:6px 16px;background:#e9dcc4;border:0;cursor:pointer;margin-top:8px;display:none}
+a{color:#bfae8e}
+</style></head><body>
+<div class="hall"><div class="floor"></div><div class="frame"><div class="room" id="room"></div><div class="door" id="door"><div class="num" id="num"></div><div class="pan p1"></div><div class="pan p2"></div><div class="knob"></div></div></div></div>
+<div id="ui"><div id="cnt"></div><button id="next">next door</button><div style="margin-top:6px"><a href="/">leave the hallway</a></div></div>
+<script>
+const R=['a cow. it stares at you. you close the door politely.','another door. you open it. another door. you go back.','a room full of people yelling "surprise". it is not your birthday. they are very confused.','a closet with exactly one sock. it is not yours.','your old minecraft world from 2015. your dirt house is still there.','a man eating cereal. he waves. you wave.','the void. it says hi. it remembers you.','a ball pit. it is filled with smaller ball pits.','a room that smells like a cvs. no explanation.','a fridge. you open it. there is a smaller hallway inside.','a cat sitting on a keyboard typing "kjjjjjjjjjjjjj"','an elevator. it only goes sideways.','a room where it is always 4:04','a lamp. you turn it on. it turns you off. you are fine.','a goose. you shut the door immediately. good call.','a waiting room. your number is 9,412. they are on 3.','a perfectly normal room. that is the scary part.','grandmas kitchen. she says you look thin. she is right.','a trampoline. you are not allowed on the trampoline.','a sign that says "go back". you respect the sign.','an empty room, except for a single creeper. it has not noticed you.','a tiny desk with a tiny landon on it. he is coding something tiny.','a room full of every pen you have ever lost.','a dial-up modem screaming. it has been screaming since 1998.','a very long hallway. you are in it. you were always in it.'];
+let n=0,last=-1;try{n=+localStorage.getItem('doors')||0}catch(e){}
+const door=document.getElementById('door'),room=document.getElementById('room'),next=document.getElementById('next'),cnt=document.getElementById('cnt');
+function setup(){let i;do{i=Math.floor(Math.random()*R.length)}while(i===last);last=i;room.textContent=R[i];document.getElementById('num').textContent=String(n+1).padStart(3,'0');cnt.textContent='doors opened: '+n;next.style.display='none'}
+let ac;function creak(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(90,t);for(let i=0;i<12;i++)o.frequency.setValueAtTime(70+Math.random()*80,t+i*.06);f.type='bandpass';f.frequency.value=900;f.Q.value=8;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.25,t+.05);g.gain.linearRampToValueAtTime(0,t+.8);o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.85)}catch(e){}}
+door.onclick=()=>{if(door.classList.contains('open'))return;creak();door.classList.add('open');n++;try{localStorage.setItem('doors',n)}catch(e){}cnt.textContent='doors opened: '+n;setTimeout(()=>next.style.display='inline-block',700)};
+next.onclick=()=>{door.style.transition='none';door.classList.remove('open');room.textContent='';void door.offsetWidth;door.style.transition='';setup()};
+setup();
+</script>
+<script src="/konami.js"></script>
+</body></html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>free online text cowifier</title>
+<style>
+body{margin:0;background:#dfe6ee;font:13px Arial,Helvetica,sans-serif;color:#222}
+.top{background:#2b4d7e;color:#fff;padding:10px 16px;font:bold 20px Arial}
+.top small{font:12px Arial;color:#bcd;margin-left:8px}
+.w{max-width:820px;margin:16px auto;display:flex;gap:14px;padding:0 10px;flex-wrap:wrap}
+.main{flex:1 1 480px;background:#fff;border:1px solid #9ab;padding:14px}
+.ad{flex:0 0 160px;background:#ffffe6;border:1px dashed #cc9;padding:10px;text-align:center;font-size:12px;color:#665;height:fit-content}
+.ad b{display:block;font-size:15px;color:#a40;margin:6px 0}
+textarea{width:100%;height:120px;box-sizing:border-box;font:14px Arial;border:1px solid #9ab;padding:6px}
+.opts{margin:10px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+button{background:linear-gradient(#5f9ee8,#2d6bc4);color:#fff;border:1px solid #1d4f99;font:bold 14px Arial;padding:7px 18px;border-radius:3px;cursor:pointer}
+#out{min-height:80px;border:1px solid #9ab;background:#f6f9fc;padding:8px;font-size:14px;white-space:pre-wrap;line-height:1.5}
+#out mark{background:#fde58a;padding:0 2px}
+.small{font-size:11px;color:#777;margin-top:14px}
+a{color:#2b4d7e}
+</style></head><body>
+<div class="top">text cowifier 2.0 <small>100% free. no download. no virus</small></div>
+<div class="w"><div class="main">
+<b>step 1:</b> paste your text<br><textarea id="in">I can't make it to the meeting tomorrow because my car is in the shop and my dog ate my phone charger.</textarea>
+<div class="opts"><label><b>step 2:</b> how many cows <select id="n"><option value="1">just one</option><option value="3">a few</option><option value="p25">25%</option><option value="all">all of them (danger)</option></select></label>
+<button id="go">cowify!!</button> <button id="copy" style="background:#777;border-color:#555">copy</button></div>
+<b>result:</b><div id="out"></div>
+<div class="small">by using this tool you agree that your text now belongs to the cows. <a href="/">landon.cool</a></div></div>
+<div class="ad">advertisement<b>local cows in your area</b>want to meet you<br><br>click here*<br><br><span style="font-size:10px">*nothing happens</span></div></div>
+<script>
+function cowify(){const t=document.getElementById('in').value,v=document.getElementById('n').value;
+  const parts=t.split(/(\b[\w']+\b)/);const idx=parts.map((p,i)=>/^[\w']+$/.test(p)&&p.length>2?i:-1).filter(i=>i>=0);
+  const count=v==='all'?idx.length:v==='p25'?Math.ceil(idx.length*.25):+v;
+  const pick=new Set();while(pick.size<Math.min(count,idx.length))pick.add(idx[Math.floor(Math.random()*idx.length)]);
+  const out=document.getElementById('out');out.innerHTML='';
+  parts.forEach((p,i)=>{if(pick.has(i)){const m=document.createElement('mark');m.textContent=p[0]===p[0].toUpperCase()&&p[0]!==p[0].toLowerCase()?(p===p.toUpperCase()&&p.length>1?'COW':'Cow'):'cow';if(/s$/.test(p)&&p.length>3)m.textContent+='s';out.appendChild(m)}else out.appendChild(document.createTextNode(p))})}
+document.getElementById('go').onclick=cowify;
+document.getElementById('copy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('out').textContent);document.getElementById('copy').textContent='copied'};
+cowify();
+</script>
+<script src="/konami.js"></script>
+</body></html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>lag</title>
+<style>
+body{margin:0;min-height:100vh;background:#f4f4f4;font:15px Verdana,sans-serif;color:#222;cursor:none}
+.w{max-width:520px;margin:0 auto;padding:40px 20px}
+h1{font-size:22px;margin:0 0 6px}
+.ping{font:12px "Courier New",monospace;color:#c00}
+.box{background:#fff;border:1px solid #ccc;padding:18px;margin:20px 0}
+button{font:14px Verdana;padding:8px 14px;margin:4px;cursor:none;background:#e7e7e7;border:1px solid #999}
+button.hit{background:#7d7}
+input{font:15px Verdana;padding:6px;width:100%;box-sizing:border-box;cursor:none}
+#ghost{position:fixed;z-index:99;pointer-events:none;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:18px solid #000;transform:rotate(-25deg);transform-origin:50% 0;filter:drop-shadow(1px 1px 0 #fff)}
+#real{position:fixed;z-index:98;pointer-events:none;width:8px;height:8px;border-radius:50%;border:1px solid #bbb;margin:-4px 0 0 -4px}
+#clicks{font-size:13px;color:#666}
+a{cursor:none}
+</style></head><body>
+<div class="w"><h1>lag</h1><div class="ping">ping: 3000ms. everything you do happens 3 seconds later</div>
+<div class="box"><button>press me</button><button>no press me</button><button>dont press me</button><div id="clicks">buttons pressed: 0</div></div>
+<div class="box">type something:<br><br><input id="in" placeholder="good luck"></div>
+<div class="box"><a href="/">escape to landon.cool</a> (if you can)</div></div>
+<div id="ghost"></div><div id="real"></div>
+<script>
+const D=3000,q=[],ghost=document.getElementById('ghost'),real=document.getElementById('real'),inp=document.getElementById('in');let pressed=0;
+addEventListener('pointermove',e=>{real.style.left=e.clientX+'px';real.style.top=e.clientY+'px';q.push({t:performance.now(),k:'m',x:e.clientX,y:e.clientY})});
+addEventListener('click',e=>{if(e.isTrusted){e.preventDefault();e.stopPropagation();q.push({t:performance.now(),k:'c',x:e.clientX,y:e.clientY})}},true);
+addEventListener('keydown',e=>{if(!e.isTrusted||e.ctrlKey||e.metaKey)return;if(e.key.length===1||e.key==='Backspace'){e.preventDefault();q.push({t:performance.now(),k:'k',key:e.key})}},true);
+addEventListener('mousedown',e=>{if(e.target.tagName==='INPUT')e.preventDefault()},true);
+addEventListener('pointerdown',e=>{if(e.target.tagName!=='INPUT')return;e.preventDefault();q.push({t:performance.now(),k:'f'})},true);
+document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{pressed++;document.getElementById('clicks').textContent='buttons pressed: '+pressed;b.classList.add('hit');setTimeout(()=>b.classList.remove('hit'),300)}));
+(function loop(){const now=performance.now();
+  while(q.length&&now-q[0].t>=D){const ev=q.shift();
+    if(ev.k==='m'){ghost.style.left=(ev.x-7)+'px';ghost.style.top=ev.y+'px'}
+    else if(ev.k==='c'){const el=document.elementFromPoint(ev.x,ev.y);if(el){if(el.tagName==='A'){location.href=el.href}else if(el.tagName==='INPUT'){inp.focus()}else el.click()}}
+    else if(ev.k==='f'){inp.focus()}
+    else if(ev.k==='k'&&document.activeElement===inp){inp.value=ev.key==='Backspace'?inp.value.slice(0,-1):inp.value+ev.key}}
+  requestAnimationFrame(loop)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>receipt</title>
+<style>
+body{margin:0;min-height:100vh;background:#7a7f86;font-family:"Courier New",monospace;display:flex;flex-wrap:wrap;gap:30px;justify-content:center;align-items:flex-start;padding:30px 12px;box-sizing:border-box}
+.ctl{background:#e9e9e9;border:1px solid #444;padding:14px;width:260px;font:13px Arial,sans-serif}
+.ctl textarea{width:100%;height:160px;box-sizing:border-box;font:14px "Courier New",monospace}
+.ctl button{margin-top:8px;font:bold 13px Arial;padding:6px 12px;cursor:pointer}
+#r{width:300px;background:#fdfdfb;padding:20px 18px 30px;font:13px/1.45 "Courier New",monospace;color:#222;box-shadow:0 4px 10px rgba(0,0,0,.4);position:relative;-webkit-mask:linear-gradient(#000,#000) top/100% calc(100% - 10px) no-repeat,radial-gradient(circle at 6px 0,transparent 5px,#000 5.5px) bottom/12px 10px repeat-x;mask:linear-gradient(#000,#000) top/100% calc(100% - 10px) no-repeat,radial-gradient(circle at 6px 0,transparent 5px,#000 5.5px) bottom/12px 10px repeat-x}
+.c{text-align:center}.row{display:flex;justify-content:space-between;gap:8px}.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr{border-top:1px dashed #555;margin:8px 0}
+.big{font-weight:bold;font-size:16px}
+.bar{height:44px;margin:14px auto 4px;width:220px;background:repeating-linear-gradient(90deg,#222 0 2px,transparent 2px 3px,#222 3px 4px,transparent 4px 7px,#222 7px 10px,transparent 10px 11px)}
+@media print{body{background:#fff}.ctl,p{display:none}#r{box-shadow:none}}
+p{width:100%;text-align:center;color:#ddd;font:12px Arial}a{color:#ddd}
+</style></head><body>
+<div class="ctl">one item per line<textarea id="items">a single grape
+emotional support cow
+wifi password
+the concept of tuesday</textarea><button id="go">ring it up</button> <button onclick="print()">print</button></div>
+<div id="r"></div>
+<p><a href="/">landon.cool</a></p>
+<script>
+const R=document.getElementById('r');
+function money(n){return '$'+n.toFixed(2)}
+function ring(){
+  const items=document.getElementById('items').value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,30);
+  let real=0,rows='';
+  items.forEach(it=>{let h=0;for(const c of it)h=(h*31+c.charCodeAt(0))>>>0;const p=(h%9000)/100+(h%7===0?400:0);real+=p;
+    rows+=`<div class="row"><span>${esc(it)}</span><span>${money(p)}</span></div>`});
+  const tax=real*0.0875,wrong=(real+tax)*(0.5+Math.random()*3)+Math.random()*50;
+  const d=new Date();
+  R.innerHTML=`<div class="c big">cow mart</div><div class="c">store #404<br>1 moo lane<br>est. never</div><div class="hr"></div>
+  <div class="row"><span>${d.toLocaleDateString()}</span><span>${d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).toLowerCase()}</span></div><div class="row"><span>cashier: greg</span><span>lane 0</span></div><div class="hr"></div>
+  ${rows}<div class="hr"></div><div class="row"><span>subtotal</span><span>${money(real)}</span></div><div class="row"><span>tax (vibes)</span><span>${money(tax)}</span></div>
+  <div class="row big"><span>total</span><span>${money(wrong)}</span></div><div class="row"><span>you saved</span><span>your dignity</span></div><div class="row"><span>paid with</span><span>exact change</span></div><div class="row"><span>change due</span><span>${money(Math.random()*3)}</span></div>
+  <div class="hr"></div><div class="c">the total is wrong<br>this is not our problem<br>no returns. no refunds. no.<br>thank u come again</div><div class="bar"></div><div class="c" style="font-size:11px">${String(Math.floor(Math.random()*1e12)).padStart(12,'0')}</div>`}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+document.getElementById('go').onclick=ring;ring();
+</script>
+<script src="/konami.js"></script>
+</body></html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>landonpedia</title>
+<style>
+body{margin:0;background:#f6f6f6;font-family:sans-serif;color:#202122}
+.top{background:#fff;border-bottom:1px solid #a7d7f9;padding:8px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.logo{font:22px "Linux Libertine","Georgia","Times",serif;color:#000}.logo small{display:block;font-size:11px;color:#54595d;font-family:sans-serif}
+.top form{margin-left:auto;display:flex}.top input{border:1px solid #a2a9b1;padding:5px 8px;font-size:14px;width:200px}.top button{border:1px solid #a2a9b1;background:#f8f9fa;padding:5px 10px;cursor:pointer}
+.page{max-width:960px;margin:0 auto;background:#fff;border:1px solid #a7d7f9;border-top:0;padding:16px 24px 40px}
+h1{font:normal 28px "Linux Libertine",Georgia,Times,serif;border-bottom:1px solid #a2a9b1;margin:0 0 4px;padding-bottom:2px}
+.from{font-size:13px;color:#54595d;margin-bottom:14px}
+h2{font:normal 22px "Linux Libertine",Georgia,Times,serif;border-bottom:1px solid #a2a9b1;margin:22px 0 8px}
+p{font-size:14px;line-height:1.6;margin:6px 0}
+.info{float:right;width:250px;margin:0 0 14px 18px;border:1px solid #a2a9b1;background:#f8f9fa;font-size:12px;padding:4px}
+.info .tt{text-align:center;font-weight:bold;font-size:15px;padding:4px}
+.info .img{height:150px;background:#ddd;display:flex;align-items:center;justify-content:center;color:#888;font-size:11px;margin:4px}
+.info table{width:100%;border-collapse:collapse}.info th{text-align:left;vertical-align:top;padding:3px;width:40%}.info td{padding:3px}
+sup{font-size:10px;color:#36c}sup.cn{color:#36c;font-style:italic}
+a{color:#36c;text-decoration:none}a:hover{text-decoration:underline}
+.refs{font-size:12px;color:#333}.refs li{margin:3px 0}
+.notice{border:1px solid #a2a9b1;border-left:8px solid #f28500;background:#fbfbfb;padding:6px 10px;font-size:13px;margin-bottom:12px}
+@media(max-width:600px){.info{float:none;width:auto;margin:0 0 12px}}
+</style></head><body>
+<div class="top"><div class="logo">landonpedia<small>the free encyclopedia that lies</small></div><form id="f"><input id="q" placeholder="search a person"><button>go</button></form></div>
+<div class="page" id="pg"></div>
+<script>
+let s=Date.now()%2147483647||1;const r=()=>(s=(s*16807)%2147483647)/2147483647,pick=a=>a[Math.floor(r()*a.length)],yr=(a,b)=>a+Math.floor(r()*(b-a));
+const places=['a walmart parking lot','ohio (allegedly)','a minecraft server','the back of a school bus','a costco, aisle 9','yonkers, in a sense','a small farm with too many cows','the year 2007'];
+const known=['inventing the left sock','losing to a chicken in chess','being a 2014 minecraft youtuber for three days','the great sandwich incident','naming every pigeon in a park','winning a staring contest against the sun (lost)','a viral video of falling off a trampoline','starting 41 side projects and finishing 2'];
+const occ=['professional napper','vibe coder','amateur goose wrangler','freelance gamer','unlicensed cow consultant','part-time philosopher','retired yo-yo champion'];
+const contro=['was briefly banned from a dennys for "asking too many questions"','claimed to have seen a herobrine, which was later confirmed to be a guy named doug','got into a public feud with a vending machine','was accused of stealing the moon, a claim they have never denied','once mass-placed TNT on a friends server "as a joke"','sent a reply-all email to 3,000 people that just said "k"'];
+const life=['currently lives with a cat who does not like them','owns 14 hoodies and wears 1','is afraid of geese, for good reason','has never finished a bag of chips without help','believes they could beat a cow in a race. sources disagree','is learning guitar, according to them, since 2019'];
+function cn(){return r()<.5?'<sup class="cn">[citation needed]</sup>':'<sup>['+yr(1,30)+']</sup>'}
+function esc(t){return t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function build(name){const n=esc(name),b=yr(1890,2015),d=r()<.25?'still alive, probably':'n/a';
+  document.title=name+' - landonpedia';
+  document.getElementById('pg').innerHTML=`<h1>${n}</h1><div class="from">from landonpedia, the free encyclopedia that lies</div>
+  ${r()<.5?'<div class="notice">this article may contain lies. it definitely does. you can help by not fixing it.</div>':''}
+  <div class="info"><div class="tt">${n}</div><div class="img">no photo. they asked us not to</div><table>
+  <tr><th>born</th><td>${pick(['january','march','june','october','smarch'])} ${yr(1,32)}, ${b}<br>${pick(places)}</td></tr>
+  <tr><th>occupation</th><td>${pick(occ)}</td></tr><tr><th>known for</th><td>${pick(known)}</td></tr><tr><th>height</th><td>${yr(3,9)} ft ${yr(0,12)} in${cn()}</td></tr><tr><th>status</th><td>${d}</td></tr></table></div>
+  <p><b>${n}</b> (born ${b}) is a ${pick(occ)} best known for ${pick(known)}.${cn()} historians agree they are "${pick(['fine','a lot','sort of there','unforgettable, unfortunately'])}".${cn()}</p>
+  <h2>early life</h2><p>${n} was born in ${pick(places)} to two parents, which experts called "a normal amount".${cn()} as a child they ${pick(['ate a crayon on purpose','won a spelling bee by accident','refused to wear shoes for most of 2003','built a fort that the city later declared a landmark'])}.${cn()}</p>
+  <h2>career</h2><p>in ${b+yr(15,30)}, ${n} began working as a ${pick(occ)}, a job they described as "${pick(['fine','a job','not my first choice','the dream, kind of'])}".${cn()} this period is best remembered for ${pick(known)}.${cn()}</p>
+  <h2>controversy</h2><p>${n} ${pick(contro)}.${cn()} a spokesperson responded with "${pick(['no comment','lol','we are looking into it','who told you that'])}".${cn()}</p>
+  <h2>personal life</h2><p>${n} ${pick(life)}.${cn()} they ${pick(life)}.${cn()}</p>
+  <h2>references</h2><ol class="refs"><li>${pick(['some guy','a reddit comment','my uncle','a dream i had'])}. retrieved never.</li><li>"${n}: the truth". <i>the cow times</i>. ${b+yr(20,40)}.</li><li>trust me bro. ${new Date().getFullYear()}.</li></ol>
+  <p style="font-size:11px;color:#54595d;margin-top:20px">this page was last edited just now, by you. refresh for different lies. <a href="/">landon.cool</a></p>`}
+const q=new URLSearchParams(location.search).get('name');
+build(q||'landon');document.getElementById('q').value=q||'';
+document.getElementById('f').onsubmit=e=>{e.preventDefault();const v=document.getElementById('q').value.trim();if(v){history.replaceState(null,'','?name='+encodeURIComponent(v));build(v)}};
+</script>
+<script src="/konami.js"></script>
+</body></html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cowgotchi</title>
+<style>
+body{margin:0;min-height:100vh;background:#ffd6e8;background-image:radial-gradient(#ffc0dc 2px,transparent 2px);background-size:22px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Courier New",monospace}
+.egg{width:300px;height:360px;background:radial-gradient(circle at 35% 25%,#b8f0ff,#3aa3d8 60%,#1f6f9e);border-radius:50% 50% 46% 46%/58% 58% 42% 42%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(0,0,0,.25),inset -10px -14px 20px rgba(0,0,0,.2)}
+.brand{font:bold 14px Arial;color:#fff;margin-bottom:8px;letter-spacing:1px}
+.lcd{width:180px;height:150px;background:#9aab84;border:6px solid #2d4b5e;border-radius:10px;box-shadow:inset 2px 2px 6px rgba(0,0,0,.4);position:relative;overflow:hidden}
+.lcd canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.btns{display:flex;gap:16px;margin-top:16px}
+.btns button{width:44px;height:44px;border-radius:50%;border:0;background:radial-gradient(circle at 40% 35%,#ffe066,#e0a400);box-shadow:0 4px 0 #9a7000;cursor:pointer;font:bold 10px Arial;color:#5a3f00}
+.btns button:active{transform:translateY(3px);box-shadow:0 1px 0 #9a7000}
+.stats{margin-top:20px;font-size:14px;color:#6a2a48;width:300px}
+.bar{height:10px;background:#fff;border:2px solid #6a2a48;margin:2px 0 8px}.bar div{height:100%;background:#6a2a48}
+#msg{margin-top:6px;font-size:13px;color:#6a2a48;min-height:1.2em;text-align:center}
+a{color:#6a2a48;font-size:12px}
+</style></head><body>
+<div class="egg"><div class="brand">cowgotchi</div><div class="lcd"><canvas id="c" width="36" height="30"></canvas></div>
+<div class="btns"><button id="feed">feed</button><button id="play">play</button><button id="clean">clean</button></div></div>
+<div class="stats"><div id="age"></div>food<div class="bar"><div id="b1"></div></div>fun<div class="bar"><div id="b2"></div></div>clean<div class="bar"><div id="b3"></div></div></div>
+<div id="msg"></div>
+<p><a href="#" id="new">new cow</a> &nbsp; <a href="/">landon.cool</a></p>
+<script>
+// food empties in 12h. if food sits at 0 for another 12h, the cow dies. it keeps going while the tab is closed
+const H=3600000,K='cowgotchi';
+let s;try{s=JSON.parse(localStorage.getItem(K))}catch(e){}
+function fresh(){return{born:Date.now(),food:100,fun:100,clean:100,t:Date.now(),zeroAt:null,dead:null,poops:0}}
+if(!s)s=fresh();
+function tick(){const now=Date.now(),dt=(now-s.t)/H;s.t=now;if(s.dead)return;
+  s.food=Math.max(0,s.food-dt*100/12);s.fun=Math.max(0,s.fun-dt*100/8);s.clean=Math.max(0,s.clean-dt*100/16);
+  if(Math.random()<dt*.6&&s.poops<3)s.poops++;
+  if(s.food<=0){if(!s.zeroAt)s.zeroAt=now;if(now-s.zeroAt>12*H)s.dead=s.zeroAt+12*H}else s.zeroAt=null;
+  save()}
+function save(){try{localStorage.setItem(K,JSON.stringify(s))}catch(e){}}
+const c=document.getElementById('c'),x=c.getContext('2d'),msg=document.getElementById('msg');
+const cow=["..........k..k","....kwwwwwwwwk","kwwkkwwwwwwewe","kwwkkwwwwkwwww","wwwwwwkkwwwppp","wwkkwwkkwwwpkp","wwkkwwwwwwwppp","wwwwwppwww....","w.w.......w.w.","w.w.......w.w."];
+let f=0,anim=null,animT=0;
+function px(X,Y,w,h){x.fillRect(X,Y,w||1,h||1)}
+function draw(){f++;x.fillStyle='#9aab84';x.fillRect(0,0,36,30);x.fillStyle='#1e2a14';
+  if(s.dead){x.fillRect(14,8,8,14);x.fillRect(12,10,12,2);x.fillStyle='#9aab84';x.fillRect(15,13,6,1);x.fillRect(15,15,6,1);x.fillStyle='#1e2a14';x.fillRect(8,22,20,2);return}
+  const bob=Math.floor(f/20)%2,ox=10+(Math.floor(f/40)%2?2:0),oy=10+bob;
+  cow.forEach((r,y)=>[...r].forEach((ch,X)=>{if(ch==='k'||ch==='e'||ch==='p')px(ox+X,oy+y);else if(ch==='w'&&(X===0||y===9||r[X-1]==='.'||r[X+1]==='.'||r[X+1]===undefined||y===0||cow[y-1][X]==='.'||cow[y+1]&&cow[y+1][X]==='.'))px(ox+X,oy+y)}));
+  for(let i=0;i<s.poops;i++){px(2+i*4,25,3,2);px(3+i*4,24)}
+  if(s.food<25&&f%60<30){px(30,3,2,5);px(30,9,2,2)}
+  if(anim&&animT-->0){if(anim==='feed'){px(28,14-(animT%10<5?1:0),4,3)}if(anim==='play'){px(4+Math.floor(animT/3)%28,4,2,2)}if(anim==='clean'){for(let i=0;i<5;i++)px((animT*2+i*7)%36,2+i*5,2,1)}}else anim=null;
+  if(s.fun<25){px(ox+5,oy-4);px(ox+7,oy-5);px(ox+9,oy-4)}}
+function ui(){tick();const d=s.dead?(s.dead-s.born):(Date.now()-s.born);
+  document.getElementById('age').textContent=s.dead?'rip. lived '+(d/H/24).toFixed(1)+' days':'age: '+(d/H/24).toFixed(2)+' days';
+  ['food','fun','clean'].forEach((k,i)=>document.getElementById('b'+(i+1)).style.width=s[k]+'%');
+  if(!anim)msg.textContent=s.dead?'you forgot about her. press new cow':s.food<25?'she is hungry':s.fun<25?'she is bored':s.poops?'it smells in here':s.clean<30?'she is dirty':'she is fine. for now'}
+function act(k){if(s.dead)return;tick();if(k==='feed'){if(s.food>95){msg.textContent='she is full. stop';return}s.food=Math.min(100,s.food+35)}
+  if(k==='play')s.fun=Math.min(100,s.fun+30),s.food=Math.max(0,s.food-3);
+  if(k==='clean'){s.clean=100;s.poops=0}
+  anim=k;animT=40;msg.textContent={feed:'nom',play:'wheee',clean:'squeaky'}[k];save();ui()}
+['feed','play','clean'].forEach(k=>document.getElementById(k).onclick=()=>act(k));
+document.getElementById('new').onclick=e=>{e.preventDefault();if(s.dead||confirm('abandon this cow?')){s=fresh();save();ui()}};
+ui();setInterval(ui,5000);(function L(){draw();requestAnimationFrame(L)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

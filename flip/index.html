@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>flip a coin</title>
+<style>
+body{margin:0;min-height:100vh;background:#1f5130;background-image:radial-gradient(ellipse at center,#2c6b40,#163a22);font-family:Georgia,serif;color:#f1e9c9;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .2s}
+body.edge{background:#900;animation:sh .12s infinite}@keyframes sh{25%{transform:translate(6px,-4px)}50%{transform:translate(-5px,3px)}75%{transform:translate(4px,5px)}}
+.stage{perspective:800px;height:220px;display:flex;align-items:flex-end}
+#coin{width:150px;height:150px;position:relative;transform-style:preserve-3d;cursor:pointer}
+.face{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font:bold 22px Georgia;color:#6b5210;background:radial-gradient(circle at 35% 30%,#fff3b0,#d8b13a 55%,#a07c15);box-shadow:inset 0 0 0 8px #c19a2b,inset 0 0 0 10px #8a6a12}
+.tails{transform:rotateY(180deg)}
+#res{font-size:30px;margin-top:30px;min-height:1.3em}
+#stats{font-size:14px;color:#c9d8b8;margin-top:10px}
+button{margin-top:20px;font:18px Georgia;padding:8px 22px;background:#f1e9c9;border:0;cursor:pointer;color:#1f5130}
+a{color:#c9d8b8;font-size:12px;margin-top:30px}
+</style></head><body>
+<div class="stage"><div id="coin"><div class="face">heads</div><div class="face tails">tails</div></div></div>
+<div id="res"></div><button id="go">flip</button><div id="stats"></div><a href="/">landon.cool</a>
+<script>
+const coin=document.getElementById('coin'),res=document.getElementById('res'),st=document.getElementById('stats');
+let s={h:0,t:0,e:0},rot=0,busy=false;try{s=JSON.parse(localStorage.getItem('coin'))||s}catch(e){}
+function show(){st.textContent=`heads ${s.h} . tails ${s.t} . edge ${s.e}`}show();
+let ac;function clink(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const t=ac.currentTime;[3200,4100,5300].forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.5)})}catch(e){}}
+function flip(){if(busy)return;busy=true;document.body.classList.remove('edge');res.textContent='';clink();
+  const r=Math.random(),edge=r<.01,heads=r>=.505;
+  rot+=1800+(edge?90:0)+((heads?0:180)-(rot%360+360)%360);
+  coin.style.transition='transform 1.6s cubic-bezier(.2,.6,.3,1)';coin.style.transform=`translateY(-160px) rotateY(${rot/2}deg)`;
+  setTimeout(()=>{coin.style.transform=`translateY(0) rotateY(${rot}deg)`},700);
+  setTimeout(()=>{busy=false;if(edge){s.e++;document.body.classList.add('edge');res.textContent='it landed on its edge. what did you do';setTimeout(()=>document.body.classList.remove('edge'),3000)}else{heads?s.h++:s.t++;res.textContent=heads?'heads':'tails'}
+    try{localStorage.setItem('coin',JSON.stringify(s))}catch(e){}show()},1700)}
+document.getElementById('go').onclick=flip;coin.onclick=flip;addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();flip()}});
+</script>
+<script src="/konami.js"></script>
+</body></html>
