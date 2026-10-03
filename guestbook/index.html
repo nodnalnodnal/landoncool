@@ -57,12 +57,12 @@ function show(j,hit){
   if(!j.entries.length){L.appendChild(el('p',null,'nobody has signed yet. be the first!!!'));return}
   j.entries.forEach(x=>{const d=el('div','e');d.appendChild(el('span','dt',new Date(x.t).toLocaleDateString()));d.appendChild(el('span','nm',x.name));if(x.from)d.appendChild(el('span','fr',' from '+x.from));d.appendChild(el('div','ms',x.msg));L.appendChild(d)});
 }
-async function load(hit){try{const r=await fetch('/api/guestbook'+(hit?'?hit=1':''));show(await r.json(),hit)}catch(e){L.innerHTML='';L.appendChild(el('p',null,'the guestbook server is down. try again later'))}}
+async function load(hit){try{const r=await fetch('https://api.landon.cool/api/guestbook'+(hit?'?hit=1':''));show(await r.json(),hit)}catch(e){L.innerHTML='';L.appendChild(el('p',null,'the guestbook server is down. try again later'))}}
 document.getElementById('sign').onclick=async()=>{
   E.textContent='';
   const b={name:document.getElementById('name').value,from:document.getElementById('from').value,msg:document.getElementById('msg').value};
   if(!b.name.trim()||!b.msg.trim()){E.textContent='you need a name and a message';return}
-  try{const r=await fetch('/api/guestbook',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await r.json();
+  try{const r=await fetch('https://api.landon.cool/api/guestbook',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await r.json();
     if(!r.ok){E.textContent=j.error||'that didnt work';return}
     document.getElementById('msg').value='';E.textContent='thx!!!';load(false);
   }catch(e){E.textContent='cant reach the server, try again later'}

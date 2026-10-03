@@ -37,7 +37,7 @@ addEventListener('keyup',()=>b.classList.remove('down'));
 async function sync(){
   const n=pending;pending=0;
   try{
-    const r=await fetch('/api/button',n?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({n})}:{});
+    const r=await fetch('https://api.landon.cool/api/button',n?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({n})}:{});
     const j=await r.json();total=j.count;S.textContent='';
   }catch(e){pending+=n;S.textContent='cant reach the server right now, your presses will send when it comes back'}
   render();
