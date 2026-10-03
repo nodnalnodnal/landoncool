@@ -1,4 +1,4 @@
-// tiny api for /button and /guestbook. no dependencies.
+// api
 const http=require('http'),fs=require('fs'),path=require('path');
 const PORT=process.env.PORT||3069;
 const FILE=path.join(__dirname,'data.json');
