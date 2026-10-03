@@ -8,17 +8,44 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="style.css">
         <link rel="icon" type="image/x-icon" href="favicon.ico">
+        <style>
+            .topnav {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 14px 24px;
+                font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+                font-size: 14px;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            .topnav a {
+                color: #8a8a8a;
+                text-decoration: none;
+                transition: color .15s;
+            }
+            .topnav a:hover { color: #fff; }
+            .topnav .brand { color: #fff; font-weight: 600; }
+            .topnav .links { display: flex; gap: 20px; }
+            .topnav .links a.active { color: #00ff7f; }
+            @media (max-width: 500px) {
+                .topnav { padding: 12px 16px; }
+                .topnav .links { gap: 14px; }
+            }
+        </style>
     </head>
     <body>
-        <nav style="text-align:center;padding:0.6rem;background:rgba(0,0,0,0.3);border-bottom:1px solid #2a3a2a;font-family:'Times New Roman',serif;font-size:1rem;">
-            <a href="/" style="color:#00ff7f;text-decoration:none;margin:0 1rem;">Home</a>
-            <a href="/commandforge/" style="color:#00ff7f;text-decoration:none;margin:0 1rem;">CommandForge</a>
-            <a href="/pacman/" style="color:#00ff7f;text-decoration:none;margin:0 1rem;">Pacman</a>
+        <nav class="topnav">
+            <a href="/" class="brand">landon.cool</a>
+            <div class="links">
+                <a href="/commandforge/">commandforge</a>
+                <a href="/pacman/">pacman</a>
+            </div>
         </nav>
-        <h1 class="joe">update soon!</h1>
+
+        <h1 class="joe">i did some updates :D</h1>
         <p class="jim">this website will have some game stuff and yeah</p>
         <p class="jim">i hope you will enjoy it make sure to come back to the site so i get money</p>
-        <p class="jim">im going to update the website soon STAY TUNED FOR UPDATES</p>
+        <p class="jim">the jolly christmas backround will comeback when its november</p>
 
         <a href="https://google.com">click me for google</a>
 
@@ -37,9 +64,11 @@
             <img src="hmmmsus.png">
         </div>
 
-
         <script src="https://cdn.logwork.com/widget/countdown.js"></script>
+        <script>
+            document.querySelectorAll('.topnav .links a').forEach(a => {
+                if (location.pathname.startsWith(a.getAttribute('href'))) a.classList.add('active');
+            });
+        </script>
     </body>
 </html>
-
-
