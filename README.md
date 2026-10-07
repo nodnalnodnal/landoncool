@@ -1,7 +1,1 @@
-Official source code for landon.cool! If you found this, even though somehow it is private, feel free to get some of the source code!
-
-Thanks
-
--- Landon
-
-:)
+my source code for landoncool. feel free to copy design or smth. also i would be very happy if you made a github pages site after MY page !
