@@ -48,37 +48,49 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 <hr>
 
 <div class="dl">
-  <b>plain v1.0</b> <span class="new blink">new!</span><br>
+  <b>plain v2.0</b> <span class="new blink">now written in plain!</span><br>
   <a class="big" href="plain/plain.zip" download>download plain</a><br>
   <div class="small">
-    zip includes plain.py + hello.plain example &nbsp;|&nbsp;
-    or grab them one at a time: <a href="plain/plain.py" download>plain.py</a> &middot; <a href="plain/hello.plain" download>hello.plain</a><br>
-    needs python 3. works on windows, mac, linux, probably your toaster
+    zip has plain.plain, boot.py, hello.plain and examples.plain &nbsp;|&nbsp;
+    one at a time: <a href="plain/plain.plain" download>plain.plain</a> &middot; <a href="plain/boot.py" download>boot.py</a> &middot; <a href="plain/hello.plain" download>hello.plain</a> &middot; <a href="plain/examples.plain" download>examples.plain</a><br>
+    works on windows, mac, linux, probably your toaster
   </div>
 </div>
 
+<h2>plain is written in plain</h2>
+<p><code>plain.plain</code> is the whole language, written in plain itself. it reads your file, sorts it into blocks, and runs it. something has to start the very first plain program though, so <code>boot.py</code> is the starter. once plain.plain is going, its plain running plain.</p>
+<p>it can even run itself running your program:</p>
+<pre>python3 boot.py plain.plain plain.plain hello.plain</pre>
+
 <h2>how to run it</h2>
-<pre>python3 plain.py hello.plain</pre>
-<p>make any text file ending in <code>.plain</code>, write some words in it, and run it like that.</p>
+<pre>python3 boot.py plain.plain hello.plain</pre>
+<p>make any text file ending in <code>.plain</code>, write some words in it, and run it like that. anything after the file name shows up in <code>the arguments</code>.</p>
 
 <h2>what it looks like</h2>
 <pre><span class="c"># lines starting with # are comments</span>
-set name to "landon"
-say hey name
-
-set item_model to "diamond_sword"
-if item_model says diamond_sword then say nice sword
-
-set x to 3
-repeat 3 times
-  add 1 to x
-  say "x is now" x
+to fib with n
+  if n is less than 2 then give back n
+  set a to result of fib with n minus 1
+  set b to result of fib with n minus 2
+  give back a plus b
 end
 
-if x is more than 5 and name is landon then
-  say big
+say "fib 10 is" result of fib with 10
+
+set mobs to a new list
+add "creeper" to the end of mobs
+add "zombie" to the end of mobs
+for each mob in mobs
+  say "watch out for the" mob
+end
+
+set score to 85
+if score is at least 90 then
+  say "S rank"
+otherwise if score is at least 80 then
+  say "A rank"
 otherwise
-  say small
+  say "keep grinding"
 end</pre>
 
 <h2>words it knows</h2>
@@ -86,12 +98,18 @@ end</pre>
 <tr><td>set x to 5</td><td>make a variable</td></tr>
 <tr><td>say hello name</td><td>print stuff. variable names get swapped for their value</td></tr>
 <tr><td>add 1 to x<br>subtract 2 from x</td><td>change a number</td></tr>
-<tr><td>ask "name?" into name</td><td>ask the user something</td></tr>
-<tr><td>plus, minus, times, divided by</td><td>math. <code>set total to x times 2 plus 1</code></td></tr>
-<tr><td>if ... then ... otherwise ... end</td><td>do stuff only sometimes. one-liners work too</td></tr>
-<tr><td>repeat 3 times ... end</td><td>do stuff over and over</td></tr>
-<tr><td>while x is less than 10 ... end</td><td>keep going until its not true anymore</td></tr>
-<tr><td>is, says, equals, is not, contains,<br>is more than, is less than</td><td>ways to compare things. mix them with <code>and</code> / <code>or</code></td></tr>
+<tr><td>plus, minus, times,<br>divided by, modulo</td><td>math, worked out left to right. plus on text sticks it together</td></tr>
+<tr><td>if ... then ... otherwise if ... otherwise ... end</td><td>do stuff only sometimes. one-liners work too</td></tr>
+<tr><td>repeat 3 times ... end<br>while ... end<br>for each x in stuff ... end</td><td>do stuff over and over. <code>stop repeating</code> breaks out</td></tr>
+<tr><td>is, says, is not, contains, has,<br>starts with, ends with,<br>is more than, is less than,<br>is at least, is at most,<br>is a number, is empty, is a file</td><td>ways to compare things. mix them with <code>and</code> / <code>or</code></td></tr>
+<tr><td>to greet with who and how ... end</td><td>make your own command. <code>give back x</code> returns something</td></tr>
+<tr><td>greet with "bob" and "yo"<br>result of greet with ...</td><td>use it. careful: <code>with</code> grabs everything after it, so use a variable if you need to do math on the result</td></tr>
+<tr><td>a new list<br>add x to the end of stuff<br>item 2 of stuff<br>remove item 2 of stuff</td><td>lists. counting starts at 1</td></tr>
+<tr><td>a new table<br>set entry "name" of t to "bob"<br>entry "name" of t<br>the keys of t</td><td>tables, for looking things up by name</td></tr>
+<tr><td>the length of x<br>letter 1 of x<br>letters 2 to 4 of x<br>lowercase x / uppercase x</td><td>text stuff</td></tr>
+<tr><td>x as a number<br>x as text<br>x rounded down<br>the kind of x</td><td>switching things around</td></tr>
+<tr><td>ask "name?" into name<br>read the lines of "f.txt" into l<br>read the file "f.txt" into t</td><td>getting stuff in</td></tr>
+<tr><td>newline, quote, space, tab, nothing</td><td>handy words</td></tr>
 </table>
 <p>words plain doesnt recognize just get treated as text, so you barely ever need quotes. if something breaks it tells you the line number in normal english.</p>
 
@@ -102,7 +120,7 @@ end</pre>
 
 <div class="badges">
   <span class="badge" style="background:#000;color:#33ff33">MADE IN<br>PLAIN</span>
-  <span class="badge" style="background:#306998;color:#ffd43b">POWERED BY<br>PYTHON</span>
+  <span class="badge" style="background:#306998;color:#ffd43b">WRITTEN IN<br>ITSELF</span>
   <span class="badge" style="background:#fff;color:#000">BEST VIEWED<br>800x600</span>
   <span class="badge" style="background:#c00;color:#fff">NO SEMI<br>COLONS</span>
 </div>

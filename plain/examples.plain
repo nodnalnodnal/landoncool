@@ -1,0 +1,37 @@
+# a few things plain can do
+
+to fib with n
+  if n is less than 2 then give back n
+  set a to result of fib with n minus 1
+  set b to result of fib with n minus 2
+  give back a plus b
+end
+
+to shout with words
+  give back uppercase words plus "!!!"
+end
+
+say "fib 10 is" result of fib with 10
+say result of shout with "moo"
+
+set mobs to a new list
+add "creeper" to the end of mobs
+add "zombie" to the end of mobs
+add "enderman" to the end of mobs
+for each mob in mobs
+  say "watch out for the" mob
+end
+
+set player to a new table
+set entry "name" of player to "mrcowlord"
+set entry "kills" of player to 12
+say entry "name" of player "has" entry "kills" of player "kills"
+
+set score to 85
+if score is at least 90 then
+  say "S rank"
+otherwise if score is at least 80 then
+  say "A rank"
+otherwise
+  say "keep grinding"
+end

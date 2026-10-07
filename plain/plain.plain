@@ -1,0 +1,947 @@
+# plain.plain
+# the plain programming language, written in plain.
+#
+# run a program with it:
+#   python3 boot.py plain.plain yourfile.plain
+#
+# boot.py is just the starter that gets the first plain running.
+# everything in here is plain running plain.
+
+# ---------- little helpers ----------
+
+to fail with msg
+  say "error: line " plus entry "line" of state plus ": " plus msg
+  quit
+end
+
+to newtoken with k and v
+  set tk to a new table
+  set entry "kind" of tk to k
+  set entry "value" of tk to v
+  give back tk
+end
+
+to newnode with ty and num
+  set node to a new table
+  set entry "type" of node to ty
+  set entry "num" of node to num
+  give back node
+end
+
+to cursor with toks and start
+  set c to a new table
+  set entry "toks" of c to toks
+  set entry "i" of c to start
+  give back c
+end
+
+to slice with toks and start and upto
+  set out to a new list
+  set k to start
+  while k is at most upto
+    add item k of toks to the end of out
+    add 1 to k
+  end
+  give back out
+end
+
+to wordin with toks and k
+  set tk to item k of toks
+  if tk is nothing then give back nothing
+  if entry "kind" of tk is "word" then give back entry "value" of tk
+  give back nothing
+end
+
+to linetext with toks
+  set out to ""
+  set fresh to 1
+  for each tk in toks
+    if fresh is 0 then set out to out plus space
+    set fresh to 0
+    if entry "kind" of tk is "word" then
+      set out to out plus entry "value" of tk
+    otherwise
+      set out to out plus quote plus entry "value" of tk plus quote
+    end
+  end
+  give back out
+end
+
+to neednum with v
+  if v is not a number then do fail with "'" plus v plus "' isnt a number"
+  give back v as a number
+end
+
+to needlist with v
+  if the kind of v is not "list" then do fail with "'" plus v plus "' isnt a list"
+end
+
+to needtable with v
+  if the kind of v is not "table" then do fail with "'" plus v plus "' isnt a table"
+end
+
+to needtext with v
+  if the kind of v is "list" or the kind of v is "table" then do fail with "'" plus v plus "' isnt text"
+end
+
+# ---------- turning a line into words ----------
+
+to tokenize with raw
+  set toks to a new list
+  set i to 1
+  set n to the length of raw
+  while i is at most n
+    set ch to letter i of raw
+    if ch is space or ch is tab then
+      add 1 to i
+    otherwise if ch is quote then
+      set j to i plus 1
+      while j is at most n and letter j of raw is not quote
+        add 1 to j
+      end
+      if j is more than n then do fail with "a quote never closes"
+      add result of newtoken with "text" and letters i plus 1 to j minus 1 of raw to the end of toks
+      set i to j plus 1
+    otherwise
+      set j to i
+      set going to 1
+      while going is 1
+        set ch to letter j of raw
+        if j is more than n or ch is space or ch is tab or ch is quote then
+          set going to 0
+        otherwise
+          add 1 to j
+        end
+      end
+      add result of newtoken with "word" and letters i to j minus 1 of raw to the end of toks
+      set i to j
+    end
+  end
+  give back toks
+end
+
+# ---------- reading words off a line ----------
+
+to peek with c and k
+  set at to entry "i" of c
+  give back result of wordin with entry "toks" of c and at plus k
+end
+
+to eat1 with c and w1
+  if result of peek with c and 0 is w1 then
+    set entry "i" of c to entry "i" of c plus 1
+    give back 1
+  end
+  give back 0
+end
+
+to eat2 with c and w1 and w2
+  if result of peek with c and 0 is w1 and result of peek with c and 1 is w2 then
+    set entry "i" of c to entry "i" of c plus 2
+    give back 1
+  end
+  give back 0
+end
+
+to eat3 with c and w1 and w2 and w3
+  set ok to 0
+  if result of peek with c and 0 is w1 and result of peek with c and 1 is w2 then
+    if result of peek with c and 2 is w3 then set ok to 1
+  end
+  if ok is 1 then set entry "i" of c to entry "i" of c plus 3
+  give back ok
+end
+
+to isdone with c
+  if entry "i" of c is more than the length of entry "toks" of c then give back 1
+  give back 0
+end
+
+to where with c
+  set toks to entry "toks" of c
+  set tk to item entry "i" of c of toks
+  if tk is nothing then give back "at the end of the line"
+  give back "near '" plus entry "value" of tk plus "'"
+end
+
+to need1 with c and w1
+  if result of eat1 with c and w1 is 0 then do fail with "expected '" plus w1 plus "' " plus result of where with c
+end
+
+to takename with c
+  set w to result of peek with c and 0
+  if w is nothing then do fail with "expected a name " plus result of where with c
+  set entry "i" of c to entry "i" of c plus 1
+  give back w
+end
+
+to finish with c
+  if result of isdone with c is 0 then do fail with "didnt understand " plus result of where with c
+end
+
+# ---------- working out values ----------
+
+to lookup with env and w
+  if w is a number then give back w as a number
+  set vars to entry "vars" of env
+  if vars has w then give back entry w of vars
+  set g to entry "globals" of env
+  if g has w then give back entry w of g
+  give back w
+end
+
+to evalexpr with c and env
+  set v to result of evalatom with c and env
+  set going to 1
+  while going is 1
+    set op to nothing
+    if result of eat1 with c and "plus" is 1 then
+      set op to "plus"
+    otherwise if result of eat1 with c and "minus" is 1 then
+      set op to "minus"
+    otherwise if result of eat1 with c and "times" is 1 then
+      set op to "times"
+    otherwise if result of eat2 with c and "divided" and "by" is 1 then
+      set op to "divided"
+    otherwise if result of eat1 with c and "modulo" is 1 then
+      set op to "modulo"
+    end
+    if op is nothing then
+      set going to 0
+    otherwise
+      set b to result of evalatom with c and env
+      if op is "plus" then
+        set v to v plus b
+      otherwise
+        set x to result of neednum with v
+        set y to result of neednum with b
+        if op is "minus" then set v to x minus y
+        if op is "times" then set v to x times y
+        if op is "divided" or op is "modulo" then
+          if y is 0 then do fail with "cant divide by zero"
+        end
+        if op is "divided" then set v to x divided by y
+        if op is "modulo" then set v to x modulo y
+      end
+    end
+  end
+  give back v
+end
+
+to evalatom with c and env
+  set v to result of evalatom0 with c and env
+  set going to 1
+  while going is 1
+    if result of eat3 with c and "as" and "a" and "number" is 1 then
+      set v to result of neednum with v
+    otherwise if result of eat2 with c and "as" and "text" is 1 then
+      set v to v as text
+    otherwise if result of eat2 with c and "rounded" and "down" is 1 then
+      set v to result of neednum with v
+      set v to v rounded down
+    otherwise
+      set going to 0
+    end
+  end
+  give back v
+end
+
+to evalatom0 with c and env
+  set toks to entry "toks" of c
+  set i to entry "i" of c
+  if i is more than the length of toks then do fail with "something is missing at the end of the line"
+  set tk to item i of toks
+  if entry "kind" of tk is "text" then
+    set entry "i" of c to i plus 1
+    give back entry "value" of tk
+  end
+  if result of peek with c and 0 is "the" then
+    if thewords contains result of peek with c and 1 then set entry "i" of c to i plus 1
+  end
+  if result of eat2 with c and "length" and "of" is 1 then
+    set v to result of evalatom0 with c and env
+    give back the length of v
+  end
+  if result of eat2 with c and "kind" and "of" is 1 then
+    set v to result of evalatom0 with c and env
+    give back the kind of v
+  end
+  if result of eat2 with c and "keys" and "of" is 1 then
+    set v to result of evalatom0 with c and env
+    do needtable with v
+    give back the keys of v
+  end
+  if result of eat1 with c and "item" is 1 then
+    set n to result of evalexpr with c and env
+    do need1 with c and "of"
+    set l to result of evalatom0 with c and env
+    do needlist with l
+    set n to result of neednum with n
+    give back item n of l
+  end
+  if result of eat1 with c and "letters" is 1 then
+    set a1 to result of evalexpr with c and env
+    do need1 with c and "to"
+    set b1 to result of evalexpr with c and env
+    do need1 with c and "of"
+    set s to result of evalatom0 with c and env
+    do needtext with s
+    set a1 to result of neednum with a1
+    set b1 to result of neednum with b1
+    give back letters a1 to b1 of s
+  end
+  if result of eat1 with c and "letter" is 1 then
+    set n to result of evalexpr with c and env
+    do need1 with c and "of"
+    set s to result of evalatom0 with c and env
+    do needtext with s
+    set n to result of neednum with n
+    give back letter n of s
+  end
+  if result of eat1 with c and "entry" is 1 then
+    set k to result of evalexpr with c and env
+    do need1 with c and "of"
+    set t to result of evalatom0 with c and env
+    do needtable with t
+    give back entry k of t
+  end
+  if result of eat3 with c and "a" and "new" and "list" is 1 then give back a new list
+  if result of eat3 with c and "a" and "new" and "table" is 1 then give back a new table
+  if result of eat1 with c and "lowercase" is 1 then
+    set v to result of evalatom0 with c and env
+    give back lowercase v
+  end
+  if result of eat1 with c and "uppercase" is 1 then
+    set v to result of evalatom0 with c and env
+    give back uppercase v
+  end
+  if result of eat1 with c and "arguments" is 1 then give back entry "args" of env
+  if result of eat2 with c and "result" and "of" is 1 then give back result of evalcall with c and env
+  set w to result of takename with c
+  if w is "newline" then give back newline
+  if w is "quote" then give back quote
+  if w is "space" then give back space
+  if w is "tab" then give back tab
+  if w is "nothing" then give back nothing
+  give back result of lookup with env and w
+end
+
+# ---------- calling things made with "to" ----------
+
+to evalcall with c and env
+  set nm to result of takename with c
+  set args to a new list
+  if result of eat1 with c and "with" is 1 then
+    add result of evalexpr with c and env to the end of args
+    while result of eat1 with c and "and" is 1
+      add result of evalexpr with c and env to the end of args
+    end
+  end
+  give back result of callfn with nm and args and env
+end
+
+to callfn with nm and args and env
+  if funcs does not contain nm then do fail with "there is no '" plus nm plus "'"
+  set f to entry nm of funcs
+  set params to entry "params" of f
+  if the length of params is not the length of args then do fail with "'" plus nm plus "' needs " plus the length of params plus " things but got " plus the length of args
+  if entry "depth" of state is more than 2000 then do fail with "'" plus nm plus "' keeps calling itself forever"
+  set vars to a new table
+  set k to 1
+  while k is at most the length of params
+    set entry item k of params of vars to item k of args
+    add 1 to k
+  end
+  set frame to a new table
+  set entry "vars" of frame to vars
+  set entry "globals" of frame to entry "globals" of env
+  set entry "args" of frame to entry "args" of env
+  set saved to entry "line" of state
+  set entry "depth" of state to entry "depth" of state plus 1
+  set sig to result of runblock with entry "body" of f and frame
+  set entry "depth" of state to entry "depth" of state minus 1
+  set entry "line" of state to saved
+  if sig is "back" then give back entry "back" of frame
+  give back nothing
+end
+
+# ---------- yes or no ----------
+
+to evalcond with c and env
+  set v to result of evaland with c and env
+  while result of eat1 with c and "or" is 1
+    set b to result of evaland with c and env
+    if b is 1 then set v to 1
+  end
+  give back v
+end
+
+to evaland with c and env
+  set v to result of evalcomp with c and env
+  while result of eat1 with c and "and" is 1
+    set b to result of evalcomp with c and env
+    if b is 0 then set v to 0
+  end
+  give back v
+end
+
+to evalcomp with c and env
+  set x to result of evalexpr with c and env
+  set neg to 0
+  set ok to 0
+  set how to nothing
+  if result of eat2 with c and "is" and "not" is 1 then
+    set neg to 1
+    set ok to result of evalis with c and env and x
+  otherwise if result of eat1 with c and "is" is 1 then
+    set ok to result of evalis with c and env and x
+  otherwise if result of eat1 with c and "says" is 1 then
+    set how to "same"
+  otherwise if result of eat1 with c and "equals" is 1 then
+    set how to "same"
+  otherwise if result of eat1 with c and "contains" is 1 then
+    set how to "contains"
+  otherwise if result of eat3 with c and "does" and "not" and "contain" is 1 then
+    set neg to 1
+    set how to "contains"
+  otherwise if result of eat2 with c and "starts" and "with" is 1 then
+    set how to "starts"
+  otherwise if result of eat2 with c and "ends" and "with" is 1 then
+    set how to "ends"
+  otherwise if result of eat1 with c and "has" is 1 then
+    set how to "contains"
+  otherwise
+    do fail with "expected a comparison like 'is' " plus result of where with c
+  end
+  if how is not nothing then
+    set y to result of evalexpr with c and env
+    if how is "same" and x is y then set ok to 1
+    if how is "contains" and x contains y then set ok to 1
+    if how is "starts" and x starts with y then set ok to 1
+    if how is "ends" and x ends with y then set ok to 1
+  end
+  if neg is 1 then give back 1 minus ok
+  give back ok
+end
+
+to evalis with c and env and x
+  if result of eat2 with c and "a" and "number" is 1 then
+    if x is a number then give back 1
+    give back 0
+  end
+  if result of eat2 with c and "a" and "file" is 1 then
+    if x is a file then give back 1
+    give back 0
+  end
+  if result of eat1 with c and "empty" is 1 then
+    if x is empty then give back 1
+    give back 0
+  end
+  set op to nothing
+  if result of eat2 with c and "more" and "than" is 1 then
+    set op to "more"
+  otherwise if result of eat2 with c and "bigger" and "than" is 1 then
+    set op to "more"
+  otherwise if result of eat2 with c and "greater" and "than" is 1 then
+    set op to "more"
+  otherwise if result of eat2 with c and "less" and "than" is 1 then
+    set op to "less"
+  otherwise if result of eat2 with c and "smaller" and "than" is 1 then
+    set op to "less"
+  otherwise if result of eat2 with c and "at" and "least" is 1 then
+    set op to "least"
+  otherwise if result of eat2 with c and "at" and "most" is 1 then
+    set op to "most"
+  end
+  set y to result of evalexpr with c and env
+  if op is nothing then
+    if x is y then give back 1
+    give back 0
+  end
+  set x to result of neednum with x
+  set y to result of neednum with y
+  if op is "more" and x is more than y then give back 1
+  if op is "less" and x is less than y then give back 1
+  if op is "least" and x is at least y then give back 1
+  if op is "most" and x is at most y then give back 1
+  give back 0
+end
+
+to evaltoks with toks and env
+  set c to result of cursor with toks and 1
+  set v to result of evalexpr with c and env
+  do finish with c
+  give back v
+end
+
+to condtoks with toks and env
+  set c to result of cursor with toks and 1
+  set v to result of evalcond with c and env
+  do finish with c
+  give back v
+end
+
+# ---------- doing one line ----------
+
+to runline with toks and env
+  set c to result of cursor with toks and 1
+  set vars to entry "vars" of env
+  if result of eat1 with c and "set" is 1 then
+    if result of eat1 with c and "item" is 1 then
+      set n to result of evalexpr with c and env
+      do need1 with c and "of"
+      set nm to result of takename with c
+      do need1 with c and "to"
+      set v to result of evalexpr with c and env
+      do finish with c
+      set l to result of lookup with env and nm
+      do needlist with l
+      set n to result of neednum with n
+      set n to n rounded down
+      if n is less than 1 or n is more than the length of l then do fail with "item " plus n plus " doesnt exist"
+      set item n of l to v
+      give back "ok"
+    end
+    if result of eat1 with c and "entry" is 1 then
+      set k to result of evalexpr with c and env
+      do need1 with c and "of"
+      set nm to result of takename with c
+      do need1 with c and "to"
+      set v to result of evalexpr with c and env
+      do finish with c
+      set t to result of lookup with env and nm
+      do needtable with t
+      set entry k of t to v
+      give back "ok"
+    end
+    set nm to result of takename with c
+    do need1 with c and "to"
+    set v to result of evalexpr with c and env
+    do finish with c
+    set entry nm of vars to v
+    give back "ok"
+  end
+  if result of eat1 with c and "add" is 1 then
+    set v to result of evalexpr with c and env
+    do need1 with c and "to"
+    if result of eat3 with c and "the" and "end" and "of" is 1 then
+      set nm to result of takename with c
+      do finish with c
+      set l to result of lookup with env and nm
+      do needlist with l
+      add v to the end of l
+      give back "ok"
+    end
+    set nm to result of takename with c
+    do finish with c
+    set x to result of neednum with result of lookup with env and nm
+    set y to result of neednum with v
+    set entry nm of vars to x plus y
+    give back "ok"
+  end
+  if result of eat1 with c and "subtract" is 1 then
+    set v to result of evalexpr with c and env
+    do need1 with c and "from"
+    set nm to result of takename with c
+    do finish with c
+    set x to result of neednum with result of lookup with env and nm
+    set y to result of neednum with v
+    set entry nm of vars to x minus y
+    give back "ok"
+  end
+  if result of eat1 with c and "remove" is 1 then
+    if result of eat1 with c and "item" is 1 then
+      set n to result of evalexpr with c and env
+      do need1 with c and "of"
+      set nm to result of takename with c
+      do finish with c
+      set l to result of lookup with env and nm
+      do needlist with l
+      set n to result of neednum with n
+      set n to n rounded down
+      if n is less than 1 or n is more than the length of l then do fail with "item " plus n plus " doesnt exist"
+      remove item n of l
+      give back "ok"
+    end
+    do need1 with c and "entry"
+    set k to result of evalexpr with c and env
+    do need1 with c and "of"
+    set nm to result of takename with c
+    do finish with c
+    set t to result of lookup with env and nm
+    do needtable with t
+    remove entry k of t
+    give back "ok"
+  end
+  if result of eat1 with c and "say" is 1 then
+    set out to ""
+    set fresh to 1
+    while result of isdone with c is 0
+      set v to result of evalexpr with c and env
+      if fresh is 1 then
+        set out to v as text
+        set fresh to 0
+      otherwise
+        set out to out plus space plus v
+      end
+    end
+    say out
+    give back "ok"
+  end
+  if result of eat1 with c and "ask" is 1 then
+    set p to result of evalexpr with c and env
+    do need1 with c and "into"
+    set nm to result of takename with c
+    do finish with c
+    ask p into got
+    set entry nm of vars to got
+    give back "ok"
+  end
+  if result of eat2 with c and "read" and "the" is 1 then
+    set mode to nothing
+    if result of eat2 with c and "lines" and "of" is 1 then
+      set mode to "lines"
+    otherwise if result of eat1 with c and "file" is 1 then
+      set mode to "file"
+    end
+    if mode is not nothing then
+      set p to result of evalexpr with c and env
+      do need1 with c and "into"
+      set nm to result of takename with c
+      do finish with c
+      if p is not a file then do fail with "cant read file '" plus p plus "'"
+      if mode is "lines" then read the lines of p into got
+      if mode is "file" then read the file p into got
+      set entry nm of vars to got
+      give back "ok"
+    end
+  end
+  if result of eat2 with c and "give" and "back" is 1 then
+    set v to nothing
+    if result of isdone with c is 0 then set v to result of evalexpr with c and env
+    do finish with c
+    set entry "back" of env to v
+    give back "back"
+  end
+  if result of eat2 with c and "stop" and "repeating" is 1 then
+    do finish with c
+    give back "stop"
+  end
+  if result of eat1 with c and "quit" is 1 then
+    do finish with c
+    quit
+  end
+  set w to result of peek with c and 0
+  set calling to 0
+  if result of eat1 with c and "do" is 1 then set calling to 1
+  if funcs has w then set calling to 1
+  if calling is 1 then
+    set v to result of evalcall with c and env
+    do finish with c
+    give back "ok"
+  end
+  set lt to result of linetext with toks
+  do fail with "dont understand '" plus lt plus "'"
+end
+
+# ---------- doing blocks of lines ----------
+
+to runblock with body and env
+  for each node in body
+    set sig to result of runnode with node and env
+    if sig is not "ok" then give back sig
+  end
+  give back "ok"
+end
+
+to runloopbody with node and env
+  set sig to result of runblock with entry "body" of node and env
+  set entry "line" of state to entry "num" of node
+  give back sig
+end
+
+to runnode with node and env
+  set entry "line" of state to entry "num" of node
+  set ty to entry "type" of node
+  if ty is "line" then give back result of runline with entry "toks" of node and env
+  if ty is "if" then
+    if result of condtoks with entry "cond" of node and env is 1 then
+      give back result of runblock with entry "yes" of node and env
+    end
+    give back result of runblock with entry "no" of node and env
+  end
+  if ty is "while" then
+    while result of condtoks with entry "cond" of node and env is 1
+      set sig to result of runloopbody with node and env
+      if sig is "stop" then stop repeating
+      if sig is "back" then give back sig
+    end
+    give back "ok"
+  end
+  if ty is "repeat" then
+    set n to result of evaltoks with entry "count" of node and env
+    set n to result of neednum with n
+    set n to n rounded down
+    set k to 1
+    while k is at most n
+      set sig to result of runloopbody with node and env
+      if sig is "stop" then stop repeating
+      if sig is "back" then give back sig
+      add 1 to k
+    end
+    give back "ok"
+  end
+  if ty is "each" then
+    set over to result of evaltoks with entry "over" of node and env
+    if the kind of over is "number" then do fail with "cant go through a number"
+    set nm to entry "name" of node
+    set vars to entry "vars" of env
+    for each x in over
+      set entry nm of vars to x
+      set sig to result of runloopbody with node and env
+      if sig is "stop" then stop repeating
+      if sig is "back" then give back sig
+    end
+    give back "ok"
+  end
+  give back "ok"
+end
+
+# ---------- sorting lines into blocks ----------
+
+to parseblock with stops
+  set body to a new list
+  while entry "pos" of pp is at most the length of lines
+    set p to entry "pos" of pp
+    set rec to item p of lines
+    set w to result of wordin with entry "toks" of rec and 1
+    if stops contains w then give back body
+    add result of parsestmt to the end of body
+  end
+  give back body
+end
+
+to closer with num and what
+  set p to entry "pos" of pp
+  set ok to 0
+  if p is at most the length of lines then
+    set rec to item p of lines
+    if result of wordin with entry "toks" of rec and 1 is "end" then set ok to 1
+  end
+  if ok is 0 then
+    set entry "line" of state to num
+    do fail with "this " plus what plus " never hits an 'end'"
+  end
+  set entry "pos" of pp to p plus 1
+end
+
+to splitthen with toks and start
+  set out to a new table
+  set cond to a new list
+  set rest to a new list
+  set found to 0
+  set k to start
+  while k is at most the length of toks
+    set tk to item k of toks
+    if found is 1 then
+      add tk to the end of rest
+    otherwise if entry "kind" of tk is "word" and entry "value" of tk is "then" then
+      set found to 1
+    otherwise
+      add tk to the end of cond
+    end
+    add 1 to k
+  end
+  set entry "cond" of out to cond
+  set entry "rest" of out to rest
+  give back out
+end
+
+to parseif with skip
+  set p to entry "pos" of pp
+  set rec to item p of lines
+  set num to entry "num" of rec
+  set st to result of splitthen with entry "toks" of rec and skip plus 1
+  set node to result of newnode with "if" and num
+  set entry "cond" of node to entry "cond" of st
+  set nolist to a new list
+  set entry "no" of node to nolist
+  set entry "pos" of pp to p plus 1
+  set rest to entry "rest" of st
+  if the length of rest is more than 0 then
+    set one to result of newnode with "line" and num
+    set entry "toks" of one to rest
+    set yes to a new list
+    add one to the end of yes
+    set entry "yes" of node to yes
+    set entry "block" of node to 0
+    give back node
+  end
+  set entry "block" of node to 1
+  set stops to a new list
+  add "otherwise" to the end of stops
+  add "else" to the end of stops
+  add "end" to the end of stops
+  set entry "yes" of node to result of parseblock with stops
+  set p to entry "pos" of pp
+  if p is at most the length of lines then
+    set rec to item p of lines
+    set t2 to entry "toks" of rec
+    set w to result of wordin with t2 and 1
+    if w is "otherwise" or w is "else" then
+      if result of wordin with t2 and 2 is "if" then
+        set inner to result of parseif with 2
+        if entry "block" of inner is 0 then
+          set entry "line" of state to entry "num" of rec
+          do fail with "'otherwise if' needs its stuff on the next lines"
+        end
+        add inner to the end of nolist
+      otherwise
+        if the length of t2 is more than 1 then
+          set entry "line" of state to entry "num" of rec
+          do fail with "'otherwise' should be alone on its line"
+        end
+        set entry "pos" of pp to p plus 1
+        set entry "no" of node to result of parseblock with ends
+      end
+    end
+  end
+  give back node
+end
+
+to parsestmt
+  set p to entry "pos" of pp
+  set rec to item p of lines
+  set num to entry "num" of rec
+  set toks to entry "toks" of rec
+  set entry "line" of state to num
+  set w to result of wordin with toks and 1
+  if w is "if" then
+    set node to result of parseif with 1
+    if entry "block" of node is 1 then do closer with num and "if"
+    give back node
+  end
+  if w is "end" or w is "otherwise" or w is "else" then do fail with "'" plus w plus "' without an 'if' or loop"
+  set size to the length of toks
+  if w is "while" then
+    set node to result of newnode with "while" and num
+    set entry "cond" of node to result of slice with toks and 2 and size
+    set entry "pos" of pp to p plus 1
+    set entry "body" of node to result of parseblock with ends
+    do closer with num and "while"
+    give back node
+  end
+  if w is "repeat" then
+    if result of wordin with toks and size is not "times" then do fail with "repeat needs 'times' at the end"
+    set node to result of newnode with "repeat" and num
+    set entry "count" of node to result of slice with toks and 2 and size minus 1
+    set entry "pos" of pp to p plus 1
+    set entry "body" of node to result of parseblock with ends
+    do closer with num and "repeat"
+    give back node
+  end
+  if w is "for" then
+    set c to result of cursor with toks and 2
+    do need1 with c and "each"
+    set nm to result of takename with c
+    do need1 with c and "in"
+    set node to result of newnode with "each" and num
+    set entry "name" of node to nm
+    set entry "over" of node to result of slice with toks and entry "i" of c and size
+    set entry "pos" of pp to p plus 1
+    set entry "body" of node to result of parseblock with ends
+    do closer with num and "for each"
+    give back node
+  end
+  if w is "to" then
+    set c to result of cursor with toks and 2
+    set nm to result of takename with c
+    set params to a new list
+    if result of eat1 with c and "with" is 1 then
+      add result of takename with c to the end of params
+      while result of eat1 with c and "and" is 1
+        add result of takename with c to the end of params
+      end
+    end
+    do finish with c
+    set entry "pos" of pp to p plus 1
+    set f to a new table
+    set entry "params" of f to params
+    set entry "body" of f to result of parseblock with ends
+    do closer with num and "to"
+    set entry nm of funcs to f
+    give back result of newnode with "none" and num
+  end
+  set node to result of newnode with "line" and num
+  set entry "toks" of node to toks
+  set entry "pos" of pp to p plus 1
+  give back node
+end
+
+# ---------- start here ----------
+
+set args to the arguments
+if the length of args is 0 then
+  say "usage: python3 boot.py plain.plain yourfile.plain"
+  quit
+end
+
+set state to a new table
+set entry "line" of state to 0
+set entry "depth" of state to 0
+set pp to a new table
+set entry "pos" of pp to 1
+set funcs to a new table
+set ends to a new list
+add "end" to the end of ends
+set thewords to a new list
+add "length" to the end of thewords
+add "kind" to the end of thewords
+add "keys" to the end of thewords
+add "arguments" to the end of thewords
+add "result" to the end of thewords
+add "item" to the end of thewords
+add "letter" to the end of thewords
+add "letters" to the end of thewords
+add "entry" to the end of thewords
+
+set path to item 1 of args
+if path is not a file then
+  say "error: cant read file '" plus path plus "'"
+  quit
+end
+read the lines of path into rawlines
+
+set lines to a new list
+set num to 0
+for each raw in rawlines
+  add 1 to num
+  set entry "line" of state to num
+  set toks to result of tokenize with raw
+  if the length of toks is more than 0 then
+    set ft to item 1 of toks
+    set skip to 0
+    if entry "kind" of ft is "word" and letter 1 of entry "value" of ft is "#" then set skip to 1
+    if skip is 0 then
+      set rec to a new table
+      set entry "num" of rec to num
+      set entry "toks" of rec to toks
+      add rec to the end of lines
+    end
+  end
+end
+
+set top to result of parseblock with a new list
+
+set g to a new table
+set env to a new table
+set entry "vars" of env to g
+set entry "globals" of env to g
+set rest to a new list
+set k to 2
+while k is at most the length of args
+  add item k of args to the end of rest
+  add 1 to k
+end
+set entry "args" of env to rest
+set sig to result of runblock with top and env
