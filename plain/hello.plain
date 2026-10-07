@@ -1,0 +1,21 @@
+# lines starting with # are comments
+set name to "landon"
+say hey name
+
+set item_model to "diamond_sword"
+if item_model says diamond_sword then say nice sword
+
+set x to 3
+repeat 3 times
+  add 1 to x
+  say "x is now" x
+end
+
+if x is more than 5 and name is landon then
+  say big
+otherwise
+  say small
+end
+
+set total to x times 2 plus 1
+say "total:" total
