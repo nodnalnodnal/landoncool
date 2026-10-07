@@ -1,74 +1,461 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>landon is the best</title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="style.css">
-        <link rel="icon" type="image/x-icon" href="favicon.ico">
-        <style>
-            .topnav {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 14px 24px;
-                font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-                font-size: 14px;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-            }
-            .topnav a {
-                color: #8a8a8a;
-                text-decoration: none;
-                transition: color .15s;
-            }
-            .topnav a:hover { color: #fff; }
-            .topnav .brand { color: #fff; font-weight: 600; }
-            .topnav .links { display: flex; gap: 20px; }
-            .topnav .links a.active { color: #00ff7f; }
-            @media (max-width: 500px) {
-                .topnav { padding: 12px 16px; }
-                .topnav .links { gap: 14px; }
-            }
-        </style>
-    </head>
-    <body>
-        <nav class="topnav">
-            <a href="/" class="brand">landon.cool</a>
-            <div class="links">
-                <a href="/commandforge/">commandforge</a>
-                <a href="/pacman/">pacman</a>
+<!doctype html>
+<html lang="en" data-theme="noir">
+<head>
+<meta charset="utf-8">
+<title>landon.cool :: welcome to my homepage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="landon.cool: commandforge, pacman, a skin lab that makes your minecraft skin blink, and one cow.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" id="favicon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div id="boot" hidden aria-hidden="true"></div>
+
+<nav id="icons" aria-label="desktop">
+  <button class="dicon" data-open="w-nav" data-ic="globe"><i></i><span>landon.cool</span></button>
+  <a class="dicon" href="/commandforge/" data-ic="cube"><i></i><span>commandforge.exe</span></a>
+  <button class="dicon" data-go="skin" data-ic="cow"><i></i><span><b class="new">new</b>skin_lab.exe</span></button>
+  <a class="dicon" href="/pacman/" data-ic="pac"><i></i><span>pacman.exe</span></a>
+  <button class="dicon" data-open="w-moo" data-ic="cow"><i></i><span>moo.exe</span></button>
+  <button class="dicon" data-open="w-sus" data-ic="img"><i></i><span>hmmmsus.png</span></button>
+  <button class="dicon" data-open="w-gb" data-ic="chat"><i></i><span>guestbook.txt</span></button>
+  <button class="dicon" data-open="w-sweep" data-ic="mine"><i></i><span>cowsweeper.exe</span></button>
+  <button class="dicon" data-open="w-amp" data-ic="cd"><i></i><span>cowamp.exe</span></button>
+  <button class="dicon" data-open="w-sb" data-ic="note"><i></i><span>soundboard.exe</span></button>
+  <button class="dicon" data-open="w-ach" data-ic="trophy"><i></i><span>achievements.exe</span></button>
+  <button class="dicon" data-open="w-readme" data-ic="txt"><i></i><span>readme.txt</span></button>
+  <button class="dicon" data-open="w-bin" data-ic="bin"><i></i><span>recycle bin</span></button>
+</nav>
+
+<canvas id="bgfx" aria-hidden="true"></canvas>
+
+<!-- main browser window -->
+<div class="win out active" id="w-nav" data-title="landon.cool - cow navigator" data-ic="globe">
+  <div class="tbar">
+    <svg class="pix" data-pic="cow" width="14" height="14"></svg>
+    <span class="ttl">landon.cool - home - cow navigator 2.0</span>
+    <span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="max" aria-label="maximize"><svg class="pix" data-pic="wmax" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button>
+  </div>
+  <div class="wbody">
+    <div class="tabs" role="navigation" aria-label="site">
+      <a class="tab on" href="#top"><svg class="pix" data-pic="star" width="12" height="12"></svg>home</a>
+      <a class="tab" href="#skin"><svg class="pix" data-pic="cow" width="12" height="12"></svg>skin lab <b>new!</b></a>
+      <a class="tab" href="#projects"><svg class="pix" data-pic="gear" width="12" height="12"></svg>projects</a>
+      <a class="tab" href="/commandforge/"><svg class="pix" data-pic="cube" width="12" height="12"></svg>commandforge</a>
+      <a class="tab" href="/pacman/"><svg class="pix" data-pic="pac" width="12" height="12"></svg>pacman</a>
+      <a class="tab" href="#" data-open="w-gb"><svg class="pix" data-pic="chat" width="12" height="12"></svg>guestbook</a>
+      <span class="tab plus" aria-hidden="true">+</span>
+    </div>
+    <div class="toolbar out">
+      <button class="btn" onclick="history.back()" aria-label="back">&lt;</button>
+      <button class="btn" onclick="history.forward()" aria-label="forward">&gt;</button>
+      <button class="btn" onclick="location.reload()" aria-label="reload">reload</button>
+      <button class="btn" data-go="top" aria-label="home"><svg class="pix" data-pic="home" width="12" height="12"></svg></button>
+      <form class="addr in" id="addr"><svg class="pix" data-pic="cow" width="13" height="13"></svg><input id="addrIn" value="http://landon.cool/" aria-label="address" spellcheck="false"><span aria-hidden="true">*</span></form>
+      <div class="spin" id="spin"><svg class="pix" data-pic="gear" width="16" height="16"></svg></div>
+    </div>
+    <div class="bmarks">
+      <span>bookmarks</span>
+      <a href="#skin">* skin lab</a><a href="#tv">landon-vision</a><a href="#menu">try the menu</a><a href="/commandforge/">commandforge</a>
+      <span class="sp"></span>
+      <button id="bmTheme"><svg class="pix" data-pic="palette" width="12" height="12"></svg><span id="themeName">noir</span></button>
+      <button id="bmCrt">crt: off</button>
+      <button id="bmSnd">sound: off</button>
+    </div>
+    <div class="marq" aria-hidden="true"><div id="marq"></div></div>
+
+    <div class="page in" id="page">
+      <div class="cols" id="top">
+        <main>
+          <section class="hero">
+            <h1 class="sr">landon.cool</h1>
+            <canvas id="logo" aria-hidden="true"></canvas>
+            <div class="acts">
+              <a class="btn big" href="/commandforge/">open commandforge</a>
+              <a class="btn big" href="#skin">skin lab <span class="newb">new!</span></a>
             </div>
-        </nav>
+            <div class="ver">v2.0 <span class="newb">new!</span> &nbsp;now its a whole computer</div>
+          </section>
 
-        <h1 class="joe">i did some updates :D</h1>
-        <p class="jim">this website will have some game stuff and yeah</p>
-        <p class="jim">i hope you will enjoy it make sure to come back to the site so i get money</p>
-        <p class="jim">the jolly christmas backround will comeback when its november</p>
+          <section class="callout">
+            <div class="intro"><span class="newb">new!</span> i made a thing</div>
+            <h2>skin lab</h2>
+            <p>put in any minecraft username and the skin starts blinking. blink, wave, random or strobe, and you pick how fast. it loads my skin first because its my website</p>
+            <a class="btn" href="#skin">try it</a>
+          </section>
 
-        <a href="https://google.com">click me for google</a>
+          <section>
+            <h2>welcome!!</h2>
+            <p>hi im landon (mrcowlord). this is my website. it has some game stuff and a bunch of random things i made. click on everything, theres a lot of secret stuff in here</p>
+            <p>make sure to come back to the site so i get money</p>
+            <p class="small">tips: <kbd>right shift</kbd> opens the menu. theres a terminal at the bottom, type help. right click the desktop. feed the cow.</p>
+            <button class="ach-strip in" data-open="w-ach"><svg class="pix" data-pic="trophy" width="16" height="16"></svg><span id="achStrip">achievements: 0</span><span class="bar"><i id="achBar" style="width:0"></i></span></button>
+          </section>
+          <hr>
 
-        <div class="bob">
-            <a href="https://logwork.com/countdown-timer"
-               class="countdown-timer"
-               data-timezone="America/New_York"
-               data-date="2027-01-01 20:00">
-               Countdown Until 2027
-            </a>
-        </div>
+          <section id="tv">
+            <h2>landon-vision</h2>
+            <p>6 channels. no ads. one of them is just a cow</p>
+            <div class="tv out">
+              <div class="screen in" id="screen"><div class="chlabel" id="chlabel">ch 01</div><canvas id="tvc" width="160" height="120"></canvas></div>
+              <div class="knobs">
+                <div class="brand">landon-vision<br>2000</div>
+                <div class="chg" id="chg"></div>
+                <button class="btn power" id="power" aria-label="power"><svg class="pix" data-pic="power" width="14" height="14"></svg></button>
+              </div>
+            </div>
+          </section>
+          <hr>
 
-        <div class="snow"></div>
+          <section id="menu">
+            <h2>the menu</h2>
+            <p>these actually mess with the site. left click turns stuff on, right click for settings, middle click to bind it to a key. or just start typing to search</p>
+            <div class="menu out" id="mbox">
+              <div class="side" role="tablist">
+                <div class="mlogo">landon.cool</div>
+                <button class="mtab" role="tab" data-tab="all" aria-selected="true">all</button>
+                <button class="mtab" role="tab" data-tab="visual" aria-selected="false">visual</button>
+                <button class="mtab" role="tab" data-tab="fun" aria-selected="false">fun</button>
+                <button class="mtab" role="tab" data-tab="audio" aria-selected="false">audio</button>
+              </div>
+              <div class="mmain">
+                <div class="msearch">search: <span id="mq"></span><span class="small" id="mqh">start typing</span></div>
+                <div class="mlist" id="mlist" tabindex="0" role="listbox" aria-label="modules"></div>
+                <div class="shell" id="shell">landon@cool:~$ <span id="shtxt"></span><span class="cur">&nbsp;</span></div>
+              </div>
+            </div>
+          </section>
+          <hr>
 
-        <div class="jim">
-            <img src="hmmmsus.png">
-        </div>
+          <section id="projects">
+            <h2>projects</h2>
+            <div class="grid">
+              <fieldset><legend>commandforge</legend><p>minecraft command builder. type what you want in normal words and it makes the command for you. works on java and bedrock. theres also a block thing like scratch</p><a class="btn" href="/commandforge/">open it</a></fieldset>
+              <fieldset><legend>pacman</legend><p>its pacman</p><a class="btn" href="/pacman/">play</a></fieldset>
+              <fieldset><legend>scratch games</legend><p>i made a war story game, a meme clicker you control with a terminal, and a mining game with credits at the end</p></fieldset>
+              <fieldset><legend>roblox game</legend><p>retro gta iv style game in roblox studio with its own story. not gta v. iv. still working on it</p></fieldset>
+              <fieldset><legend>cow skins</legend><p>the cow head guy. i made him in streetwear, a suit, holiday, halloween, a glitched one, gold and a bartender</p><a class="btn" href="#skin">see him blink</a></fieldset>
+            </div>
+          </section>
+          <hr>
 
-        <script src="https://cdn.logwork.com/widget/countdown.js"></script>
-        <script>
-            document.querySelectorAll('.topnav .links a').forEach(a => {
-                if (location.pathname.startsWith(a.getAttribute('href'))) a.classList.add('active');
-            });
-        </script>
-    </body>
+          <section id="skin">
+            <h2>skin lab</h2>
+            <p>drag him around, scroll to zoom</p>
+            <div class="lab">
+              <div class="stage in" id="stage"><canvas id="skincv"></canvas></div>
+              <div class="ctl">
+                <label for="skinName">minecraft username</label>
+                <form class="row" id="skinForm"><input type="text" id="skinName" class="in" value="mrcowlord" spellcheck="false" autocomplete="off"><button class="btn">load skin</button></form>
+                <label>pattern</label>
+                <div class="row" id="pats">
+                  <button class="btn" data-p="off" aria-pressed="false">off</button>
+                  <button class="btn" data-p="blink" aria-pressed="true">blink</button>
+                  <button class="btn" data-p="wave" aria-pressed="false">wave</button>
+                  <button class="btn" data-p="random" aria-pressed="false">random</button>
+                  <button class="btn" data-p="strobe" aria-pressed="false">strobe</button>
+                </div>
+                <label for="ticks">ticks between changes: <span id="tickv">6</span></label>
+                <input type="range" id="ticks" min="1" max="20" value="6">
+                <label>pose</label>
+                <div class="row" id="poses">
+                  <button class="btn" data-a="idle" aria-pressed="true">idle</button>
+                  <button class="btn" data-a="walk" aria-pressed="false">walk</button>
+                  <button class="btn" data-a="run" aria-pressed="false">run</button>
+                  <button class="btn" data-a="spin" aria-pressed="true">auto spin</button>
+                </div>
+                <div class="labmsg" id="labmsg"></div>
+              </div>
+            </div>
+          </section>
+          <hr>
+
+          <section>
+            <h2>terminal</h2>
+            <div class="dos in" id="dos"><div class="dout" id="dosOut"></div><label class="line"><span id="dosPs">c:\landon&gt;&nbsp;</span><input id="dosIn" spellcheck="false" autocomplete="off" aria-label="terminal command"></label></div>
+            <p class="small" style="margin-top:6px">its real. type help. some commands arent in help</p>
+          </section>
+        </main>
+
+        <aside>
+          <div class="box">
+            <h4>currently</h4>
+            <div>making a gta iv style game in roblox studio</div>
+            <div class="small" style="margin-top:4px">mrcowlord on most things</div>
+            <div class="np" id="nowPlaying" hidden></div>
+          </div>
+          <div class="box">
+            <h4>landons top 8</h4>
+            <div class="top8" id="top8"></div>
+            <div class="small" id="t8msg" style="margin-top:6px;min-height:15px">click them</div>
+          </div>
+          <div class="box">
+            <h4>pick a theme</h4>
+            <div class="swatches" id="swatches"></div>
+            <div class="swatch-name">current: <span id="themeName2">noir</span></div>
+            <div class="small">it remembers</div>
+          </div>
+          <div class="box">
+            <h4>live stats</h4>
+            <div class="small" style="text-align:center">youve been here this many times</div>
+            <div class="odo" id="odo"></div>
+            <div class="statl" id="statl"></div>
+          </div>
+          <div class="box">
+            <h4>countdown until 2027</h4>
+            <div class="cd" id="cd"></div>
+            <div class="small" id="xmas" style="margin-top:6px"></div>
+          </div>
+          <div class="box poll">
+            <h4>poll</h4>
+            <div style="margin-bottom:6px">best minecraft mob?</div>
+            <div id="poll"></div>
+          </div>
+          <div class="box">
+            <h4>guestbook</h4>
+            <button class="btn" data-open="w-gb"><svg class="pix spin3d" data-pic="chat" width="14" height="14"></svg>sign my guestbook!</button>
+          </div>
+          <div class="box shout">
+            <h4>shoutbox</h4>
+            <div class="shl in" id="shl"></div>
+            <form id="shf" class="row" style="margin-top:6px"><input id="shi" class="in" maxlength="80" placeholder="say something" autocomplete="off"><button class="btn">shout!</button></form>
+          </div>
+          <div class="box ring">
+            <h4>webring</h4>
+            <div class="rn">moo</div>
+            <div class="small">the cow webring</div>
+            <div><a href="#" id="rprev">&laquo; prev</a> / <a href="#" id="rrand">random</a> / <a href="#" id="rnext">next &raquo;</a></div>
+          </div>
+          <div class="box">
+            <h4>link to me!!</h4>
+            <a class="badge" href="/" style="margin:0 auto 8px" data-tip="thats my badge"><b>moo</b><span>landon.cool</span></a>
+            <textarea class="in lnk" id="lnk" rows="3" readonly aria-label="link code"></textarea>
+            <button class="btn" id="lnkCopy" style="margin-top:6px">copy code</button>
+          </div>
+          <div class="box">
+            <h4>awards</h4>
+            <div class="awards" id="awards"></div>
+          </div>
+          <div class="construct"><span>under construction</span></div>
+          <div class="small" style="text-align:center;margin-top:6px">this site will never be done</div>
+        </aside>
+      </div>
+
+      <div class="blinkies" id="blinkies"></div>
+      <div class="badges">
+        <a class="badge" href="/"><b>moo</b><span>landon.cool</span></a>
+        <span class="badge"><b>deb</b><span>debian powered</span></span>
+        <span class="badge"><b>mc</b><span>java and bedrock</span></span>
+        <span class="badge"><b>b&amp;w</b><span>black and white</span></span>
+        <span class="badge"><b>txt</b><span>made with notepad</span></span>
+        <span class="badge"><b>800</b><span>best at 800x600</span></span>
+        <span class="badge"><b>no</b><span>flash player</span></span>
+        <span class="badge"><b>ie6</b><span>best viewed in ie 6</span></span>
+        <span class="badge"><b>y2k</b><span>y2k compliant</span></span>
+        <span class="badge"><b>4.01</b><span>valid html (no)</span></span>
+      </div>
+      <div class="foot">&copy; 2026 landon.cool / not affiliated with mojang or microsoft / minecraft is a trademark of mojang ab</div>
+    </div>
+
+    <div class="status">
+      <div class="in grow" id="stxt">done</div>
+      <div class="in">1 online</div>
+      <div class="in"><svg class="pix" data-pic="globe" width="12" height="12"></svg> internet</div>
+    </div>
+  </div>
+</div>
+
+<!-- moo.exe -->
+<div class="win out" id="w-moo" hidden data-title="moo.exe" data-ic="cow">
+  <div class="tbar"><svg class="pix" data-pic="cow" width="14" height="14"></svg><span class="ttl">moo.exe</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><canvas id="mooc" width="120" height="100" class="in"></canvas>
+    <div class="pet" id="pet"></div>
+    <div class="row" style="margin-top:8px;justify-content:space-between"><button class="btn" id="mooBtn">moo</button><span class="small" id="mooCount"></span></div></div>
+</div>
+
+<!-- hmmmsus.png -->
+<div class="win out" id="w-sus" hidden data-title="hmmmsus.png" data-ic="img">
+  <div class="tbar"><svg class="pix" data-pic="img" width="14" height="14"></svg><span class="ttl">hmmmsus.png - image viewer</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><div class="in" style="background:var(--page);padding:6px"><img src="hmmmsus.png" alt="hmmm. sus." id="susImg" style="cursor:pointer"></div><div class="small" id="susMeter" style="margin-top:6px;font:18px var(--term)">sus meter: [..........]</div></div>
+</div>
+
+<!-- guestbook -->
+<div class="win out" id="w-gb" hidden data-title="guestbook.txt" data-ic="chat">
+  <div class="tbar"><svg class="pix" data-pic="chat" width="14" height="14"></svg><span class="ttl">guestbook.txt - notepad</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody">
+    <div id="gblist" class="in"></div>
+    <form id="gbform" style="display:flex;flex-direction:column;gap:6px">
+      <input id="gbname" class="in" placeholder="your name" maxlength="24" autocomplete="off">
+      <textarea id="gbmsg" class="in" rows="2" placeholder="say something nice. or don't." maxlength="200"></textarea>
+      <div class="row" style="justify-content:space-between;align-items:center"><span class="small">saved in your browser for now</span><button class="btn">sign it</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- recycle bin -->
+<div class="win out" id="w-bin" hidden data-title="recycle bin" data-ic="bin">
+  <div class="tbar"><svg class="pix" data-pic="bin" width="14" height="14"></svg><span class="ttl">recycle bin</span><span class="grip"></span>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody">
+    <div class="binl in">
+      <div><svg class="pix" data-pic="txt" width="16" height="16"></svg>old_homepage.html</div>
+      <div><svg class="pix" data-pic="img" width="16" height="16"></svg>jolly_christmas_bg.png <span class="small">(back in november)</span></div>
+      <div><svg class="pix" data-pic="globe" width="16" height="16"></svg>ridgesmp.net</div>
+      <div><svg class="pix" data-pic="txt" width="16" height="16"></svg>aerobics_feelings.txt</div>
+    </div>
+    <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn" id="emptyBin">empty recycle bin</button></div>
+  </div>
+</div>
+
+<div class="win out" id="w-sweep" hidden data-title="cowsweeper.exe" data-ic="mine">
+  <div class="tbar"><svg class="pix" data-pic="mine" width="14" height="14"></svg><span class="ttl">cowsweeper.exe</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><div class="sw-top in"><span class="sw-num" id="swMines">010</span><button class="btn sw-face" id="swFace" aria-label="new game">:)</button><span class="sw-num" id="swTime">000</span></div>
+    <div class="sw-grid in" id="swGrid"></div>
+    <div class="row" style="margin-top:6px;justify-content:space-between;align-items:center"><button class="btn" id="swFlag" aria-pressed="false"><svg class="pix" data-pic="flag" width="10" height="10"></svg>flag mode</button><span class="small" id="swBest"></span></div></div>
+</div>
+<div class="win out" id="w-sb" hidden data-title="soundboard.exe" data-ic="note">
+  <div class="tbar"><svg class="pix" data-pic="note" width="14" height="14"></svg><span class="ttl">soundboard.exe</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><div class="sbg" id="sbg"></div><div class="small" style="margin-top:6px">these play even if sound is off. you clicked it, thats on you</div></div>
+</div>
+<div class="win out" id="w-ach" hidden data-title="achievements.exe" data-ic="trophy">
+  <div class="tbar"><svg class="pix" data-pic="trophy" width="14" height="14"></svg><span class="ttl">achievements.exe</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><div class="in" style="background:var(--page);padding:6px 8px;font:18px var(--term)" id="achHead"></div><div class="achl in" id="achList"></div></div>
+</div>
+<div class="win out" id="w-readme" hidden data-title="readme.txt - notepad" data-ic="txt">
+  <div class="tbar"><svg class="pix" data-pic="txt" width="14" height="14"></svg><span class="ttl">readme.txt - notepad</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><div class="note in">readme.txt
+
+hi. this is my website. its a computer now because i thought that would be funny
+
+stuff to do:
+- type help in the terminal (and then try stuff thats not in help)
+- feed the cow. hes on the desktop. moo.exe
+- play cowsweeper
+- get all the achievements. some are secret
+- right click the desktop
+- dont touch anything for a while
+- sign the guestbook
+- make sure to come back to the site so i get money
+
+the jolly christmas background comes back in november
+
+- landon</div></div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="clippy" hidden><div class="bubble"><div id="clipTxt"></div><div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn" id="clipNext">another tip</button><button class="btn" id="clipX">go away</button></div></div><button class="ccow" id="clipCow" aria-label="moo-ssistant"><svg class="pix" data-pic="cow" width="52" height="52"></svg></button></div>
+<canvas id="saver" hidden aria-hidden="true"></canvas>
+<div id="bsod" hidden></div>
+<div id="ctx" class="out" hidden><ul>
+  <li><button data-c="refresh">refresh</button></li>
+  <li><button data-c="arrange">arrange icons</button></li>
+  <li><button data-c="theme">next theme</button></li>
+  <li class="sep"></li>
+  <li><button data-c="folder">new folder</button></li>
+  <li><button data-c="term">open terminal</button></li>
+  <li><button data-c="moo">moo</button></li>
+  <li class="sep"></li>
+  <li><button data-c="props">properties</button></li>
+</ul></div>
+
+<div class="win out" id="w-amp" hidden data-title="cowamp" data-ic="cd">
+  <div class="tbar"><svg class="pix" data-pic="cd" width="14" height="14"></svg><span class="ttl">cowamp 2.91</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody amp">
+    <div class="amp-lcd">
+      <div class="amp-l"><div class="amp-time" id="ampTime">0:00</div><canvas id="ampViz" width="80" height="26"></canvas></div>
+      <div class="amp-r"><div class="amp-title"><span id="ampTitle">cowamp. press play</span></div><div class="amp-info"><span>128 kbps</span><span>44 khz</span><span id="ampState">stopped</span></div></div>
+    </div>
+    <div class="amp-seek"><i id="ampSeek"></i></div>
+    <div class="amp-ctl">
+      <button class="btn" id="ampPrev" aria-label="previous">|&lt;</button><button class="btn" id="ampPlay" aria-label="play">&gt;</button><button class="btn" id="ampPause" aria-label="pause">||</button><button class="btn" id="ampStop" aria-label="stop">[]</button><button class="btn" id="ampNext" aria-label="next">&gt;|</button>
+      <label class="amp-vol">vol<input type="range" id="ampVol" min="0" max="100" value="60"></label>
+    </div>
+    <div class="amp-pl" id="ampPl"></div>
+  </div>
+</div>
+<div id="splash" hidden>
+  <div class="sp-in">
+    <div class="sp-logo">landon.cool</div>
+    <div class="sp-sub">a website by landon. established 2026</div>
+    <div class="sp-load"><div class="bar"><i id="spBar"></i></div><span id="spPct">loading... 0%</span></div>
+    <div class="sp-btns"><button class="btn big" id="spEnter" disabled>enter site</button><a class="btn big" href="https://google.com">click me for google</a></div>
+    <div class="sp-note">best viewed in internet explorer 6 at 800x600<br>turn your speakers on</div>
+  </div>
+</div>
+<div id="tip" hidden></div>
+<div id="ctext" hidden aria-hidden="true"></div>
+<!-- taskbar -->
+<div id="taskbar">
+  <button class="btn" id="start" aria-expanded="false" aria-controls="smenu"><svg class="pix" data-pic="cow" width="16" height="16"></svg>start</button>
+  <div class="ql">
+    <button data-go="top" aria-label="home"><svg class="pix" data-pic="star" width="16" height="16"></svg></button>
+    <button data-go="skin" aria-label="skin lab"><svg class="pix" data-pic="cow" width="16" height="16"></svg></button>
+    <a href="/commandforge/" aria-label="commandforge"><svg class="pix" data-pic="cube" width="16" height="16"></svg></a>
+  </div>
+  <div id="tasks"></div>
+  <div class="tray in">
+    <button id="trSnd" aria-label="sound" aria-pressed="false"><svg class="pix" data-pic="note" width="14" height="14"></svg></button>
+    <button id="trCrt" aria-label="crt" aria-pressed="false"><svg class="pix" data-pic="eye" width="14" height="14"></svg></button>
+    <span id="clock">00:00</span>
+  </div>
+</div>
+
+<div id="smenu" class="out" hidden>
+  <div class="band">landon.cool</div>
+  <ul>
+    <li><button data-go="top"><svg class="pix" data-pic="star" width="16" height="16"></svg>home</button></li>
+    <li><button data-go="skin"><svg class="pix" data-pic="cow" width="16" height="16"></svg><span>skin lab<small>your skin, but it blinks</small></span></button></li>
+    <li><button data-go="projects"><svg class="pix" data-pic="gear" width="16" height="16"></svg>projects</button></li>
+    <li><a href="/commandforge/"><svg class="pix" data-pic="cube" width="16" height="16"></svg>commandforge</a></li>
+    <li><a href="/pacman/"><svg class="pix" data-pic="pac" width="16" height="16"></svg>pacman</a></li>
+    <li><button data-open="w-gb"><svg class="pix" data-pic="chat" width="16" height="16"></svg>guestbook</button></li>
+    <li class="sep"></li>
+    <li><button id="smTheme"><svg class="pix" data-pic="palette" width="16" height="16"></svg>next theme</button></li>
+    <li><button data-tog="crt"><svg class="pix" data-pic="eye" width="16" height="16"></svg>crt on/off</button></li>
+    <li><button data-tog="sound"><svg class="pix" data-pic="note" width="16" height="16"></svg>sound on/off</button></li>
+    <li><button data-tog="trail"><svg class="pix" data-pic="star" width="16" height="16"></svg>cursor trail</button></li>
+    <li><button data-open="w-moo"><svg class="pix" data-pic="cow" width="16" height="16"></svg>moo.exe</button></li>
+    <li><button data-open="w-amp"><svg class="pix" data-pic="cd" width="16" height="16"></svg><span>cowamp<small>it really moos the llamas</small></span></button></li>
+    <li><button data-open="w-sweep"><svg class="pix" data-pic="mine" width="16" height="16"></svg>cowsweeper</button></li>
+    <li><button data-open="w-sb"><svg class="pix" data-pic="note" width="16" height="16"></svg>soundboard</button></li>
+    <li class="sep"></li>
+    <li><button id="logoff"><svg class="pix" data-pic="wx" width="16" height="16"></svg>log off</button></li>
+    <li><button id="shut"><svg class="pix" data-pic="power" width="16" height="16"></svg>turn off computer</button></li>
+  </ul>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="crt" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
+<div id="off" hidden>it's now safe to close this tab.<br><span style="font-size:20px;opacity:.6">(or click to turn it back on)</span></div>
+
+<script src="assets/skinview3d.bundle.js" defer></script>
+<script src="assets/main.js" defer></script>
+<script src="assets/extras.js" defer></script>
+<script src="assets/retro.js" defer></script>
+</body>
 </html>

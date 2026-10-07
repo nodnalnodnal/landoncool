@@ -2,74 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>404</title>
+<title>404 :: landon.cool</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@700&family=VT323&display=swap" rel="stylesheet">
 <style>
-body{margin:0;min-height:100vh;font-family:Arial,sans-serif}
-a{color:inherit}
-.home{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-size:13px}
-/* win98 */
-.w98{background:#008080;display:flex;align-items:center;justify-content:center;min-height:100vh}
-.dlg{background:#c0c0c0;border:2px solid;border-color:#fff #000 #000 #fff;width:340px;font:12px Tahoma,"MS Sans Serif",sans-serif;position:relative}
-.dlg .tb{background:#000080;color:#fff;font-weight:bold;padding:3px 5px;display:flex;justify-content:space-between}
-.dlg .tb span:last-child{background:#c0c0c0;color:#000;border:1px solid;border-color:#fff #000 #000 #fff;width:14px;text-align:center;line-height:12px}
-.dlg .bd{padding:16px;display:flex;gap:14px;align-items:flex-start}
-.ic{width:32px;height:32px;border-radius:50%;background:red;color:#fff;font:bold 22px Arial;display:flex;align-items:center;justify-content:center;flex:none}
-.dlg .bt{text-align:center;padding:0 0 14px;position:relative;height:30px}
-.dlg button{font:12px Tahoma,sans-serif;background:#c0c0c0;border:2px solid;border-color:#fff #000 #000 #fff;width:75px;height:23px;position:absolute;top:0;transition:left .12s,top .12s}
-/* chase */
-.chase{background:#fff;overflow:hidden;cursor:pointer}
-#run{position:fixed;font:900 64px "Arial Black",Arial;color:#000;user-select:none}
-.chase p{text-align:center;margin-top:30px;color:#666}
-/* time */
-.time{background:#222;color:#999;font:18px Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
-.time b{color:#ddd;font-size:40px;font-weight:normal;margin:20px}
-/* bar */
-.bar{background:#f2f2f2;display:flex;flex-direction:column;align-items:center;justify-content:center;font:14px Verdana,sans-serif}
-.track{width:min(400px,80vw);height:22px;border:1px solid #777;background:#fff;padding:2px;margin:12px}
-.fill{height:100%;width:0;background:repeating-linear-gradient(90deg,#2a62d6 0 10px,#fff 10px 12px)}
-/* fact */
-.fact{background:#fffbd1;font:20px "Times New Roman",serif;max-width:560px;margin:0 auto;padding:12vh 24px}
-.fact small{color:#887;font-size:13px}
-/* cow */
-.ate{background:#6fae3c;color:#1f3d0c;font:16px Verdana,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.ate pre{font:13px/1.1 monospace;color:#000}
+html,body{height:100%;margin:0}
+body{background:#000;color:#efefef;font:13px Tahoma,Verdana,sans-serif;display:grid;place-items:center;padding:20px;box-sizing:border-box;
+  background-image:repeating-conic-gradient(#161616 0 25%,transparent 0 50%);background-size:4px 4px}
+.box{background:#0a0a0a;border:2px solid #efefef;max-width:520px;width:100%;box-shadow:6px 6px 0 rgba(0,0,0,.5)}
+.bar{background:#efefef;color:#000;font-weight:700;padding:3px 6px;display:flex;justify-content:space-between}
+.in{padding:20px 22px;text-align:center}
+h1{font:700 64px/1 "Pixelify Sans",Tahoma,sans-serif;margin:0 0 6px}
+pre{font:20px/1.1 VT323,monospace;display:inline-block;text-align:left;margin:10px 0}
+p{font:20px VT323,monospace;color:#8a8a8a;margin:6px 0 16px}
+a.btn,button{font:12px Tahoma,sans-serif;color:#efefef;background:#151515;border:2px solid;border-color:#6a6a6a #000 #000 #6a6a6a;padding:5px 14px;text-decoration:none;cursor:pointer;display:inline-block;margin:3px}
+a.btn:active,button:active{border-color:#000 #6a6a6a #6a6a6a #000}
 </style>
 </head>
 <body>
-<div id="root"></div>
-<a class="home" href="/">go home</a>
-<script>
-const R=document.getElementById('root'),B=document.body,path=location.pathname;
-const pages=[
-function(){B.className='w98';B.innerHTML=`<div class="dlg"><div class="tb"><span>landon.cool</span><span>x</span></div><div class="bd"><div class="ic">x</div><div>the page <b>${esc(path)}</b> caused a general protection fault in module 404.DLL and will be terminated.<br><br>it was never there to begin with.</div></div><div class="bt"><button id="ok" style="left:85px">ok</button><button id="ok2" style="left:175px">also ok</button></div></div><a class="home" href="/" style="color:#fff">go home</a>`;
-  ['ok','ok2'].forEach(id=>{const b=document.getElementById(id);b.onmouseenter=()=>{b.style.left=Math.random()*260+'px';b.style.top=(Math.random()*-120)+'px'}});},
-function(){B.className='chase';B.innerHTML=`<p>this page doesnt exist. catch the 404 to go home</p><div id="run">404</div><a class="home" href="/">or just click here, coward</a>`;
-  const r=document.getElementById('run');let x=innerWidth/2-70,y=innerHeight/2-40,vx=3,vy=2,caught=0;
-  addEventListener('pointermove',e=>{const dx=x+70-e.clientX,dy=y+35-e.clientY,d=Math.hypot(dx,dy);if(d<160){vx+=dx/d*1.3;vy+=dy/d*1.3}});
-  r.onpointerdown=()=>{caught=1;r.textContent='ok fine';setTimeout(()=>location.href='/',700)};
-  (function L(){if(!caught){vx*=.96;vy*=.96;vx+=(Math.random()-.5)*.6;vy+=(Math.random()-.5)*.6;x+=vx;y+=vy;
-    if(x<0||x>innerWidth-150){vx*=-1;x=Math.max(0,Math.min(x,innerWidth-150))}if(y<60||y>innerHeight-110){vy*=-1;y=Math.max(60,Math.min(y,innerHeight-110))}
-    r.style.left=x+'px';r.style.top=y+'px'}requestAnimationFrame(L)})();},
-function(){B.className='time';const s=Date.now();B.innerHTML=`<div>congrats, you found the secret page. there is nothing here.<br>you have wasted</div><b id="t">0 seconds</b><div id="m">of your life on it</div><a class="home" href="/">go home</a>`;
-  const m=['of your life on it','still here huh','ok this is getting weird','i dont have anything else','please go home','fine. stay. see if i care','you have outlasted the page itself'];
-  setInterval(()=>{const n=Math.floor((Date.now()-s)/1000);document.getElementById('t').textContent=n+(n==1?' second':' seconds');document.getElementById('m').textContent=m[Math.min(m.length-1,Math.floor(n/15))]},250);},
-function(){B.className='bar';B.innerHTML=`<div>loading ${esc(path)}</div><div class="track"><div class="fill" id="f"></div></div><div id="p">0%</div><a class="home" href="/">go home</a>`;
-  let p=0;const f=document.getElementById('f'),pp=document.getElementById('p');
-  (function S(){p+=p<60?Math.random()*9:p<90?Math.random()*3:p<99?Math.random()*.6:0;if(p>99)p=99;f.style.width=p+'%';pp.textContent=p>=99?'99% (this is as far as it goes)':Math.floor(p)+'%';setTimeout(S,200+Math.random()*500)})();},
-function(){B.className='';const f=['cows have four stomachs. one of them is for storing 404 pages.','the first 404 error happened in 1404. nobody found what they were looking for that year either.','minecraft cows can see in 7 dimensions but choose not to.','this page weighs 0 grams. it is the lightest page on the site.','if you type a url wrong three times in a row a small man in your router gets sad.','the number 404 is illegal in 2 countries. guess which ones.'];
-  B.innerHTML=`<div class="fact"><p>the page you wanted isnt here. instead, here is a fact:</p><p><b>${f[Math.floor(Math.random()*f.length)]}</b></p><p><small>facts are not verified. facts are barely facts.</small></p></div><a class="home" href="/">go home</a>`;},
-function(){B.className='ate';B.innerHTML=`<pre>
-   ^__^
-   (oo)\\_______
-   (__)\\       )\\/\\
-       ||----w |
-       ||     ||
-</pre><p>a cow ate ${esc(path)}<br>she is not sorry</p><a class="home" href="/">go home</a>`;}
-];
-function esc(s){return s.replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';')}
-pages[Math.floor(Math.random()*pages.length)]();
-</script>
-<script src="/konami.js"></script>
+<div class="box">
+  <div class="bar"><span>error - cow navigator 2.0</span><span>x</span></div>
+  <div class="in">
+    <h1>404</h1>
+    <pre>        ___________
+       < page gone >
+        -----------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||</pre>
+    <p>the cow ate this page. it was delicious</p>
+    <a class="btn" href="/">go home</a>
+    <a class="btn" href="/commandforge/">commandforge</a>
+    <a class="btn" href="/pacman/">pacman</a>
+  </div>
+</div>
 </body>
 </html>
