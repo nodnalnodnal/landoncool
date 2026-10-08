@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>innioasis y1 / y2 :: rooting, jailbreaks and custom firmware</title>
-<meta name="description" content="everything about jailbreaking, rooting and putting custom firmware (rockbox, solar, jj launcher, inniclassic) on the innioasis y1 and y2 mp3 players.">
+<title>innioasis g1 :: jailbreak, root and installing apps</title>
+<meta name="description" content="how to jailbreak the innioasis g1 android mp3 player so it can install any app. lumos, adb, sp flash tool, firmware versions and unbricking.">
 <style>
 body{margin:0;background:#001a00;background-image:radial-gradient(#3f3 1px,transparent 1.5px),radial-gradient(#9f9 1px,transparent 1.5px);background-size:61px 53px,37px 41px;background-position:0 0,19px 23px;color:#fff;font-family:"Times New Roman",Times,serif;font-size:17px}
 .wrap{max-width:720px;margin:0 auto;padding:16px}
@@ -22,15 +22,13 @@ hr{border:0;height:6px;background:repeating-linear-gradient(90deg,red 0 20px,ora
 .box a{color:#0000ee}.box a:visited{color:#551a8b}
 .box b.t{display:block;background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font:bold 14px Arial;margin:-12px -14px 10px;padding:3px 6px}
 .toc a{display:inline-block;margin:2px 6px}
-.new{color:#ff0000;font:bold 14px Arial}
-.blink{animation:bl 1s steps(1) infinite}@keyframes bl{50%{visibility:hidden}}
 pre{background:#000;color:#33ff33;font:15px "Courier New",monospace;border:3px inset #666;padding:10px;overflow-x:auto;margin:8px 0;line-height:1.35}
 pre .c{color:#888}
 code{background:#000;color:#33ff33;font:15px "Courier New",monospace;padding:0 3px}
 table.w{width:100%;border-collapse:collapse;background:#003300;border:3px ridge #ccc;font-size:16px}
 table.w th{background:#006600;color:#ffff66;text-align:left;padding:5px 8px;border:1px solid #363}
 table.w td{border:1px solid #363;padding:5px 8px;vertical-align:top}
-table.w td:first-child{color:#ffff66;font-weight:bold;white-space:nowrap}
+table.w td:first-child{color:#ffff66;font-weight:bold;font-family:"Courier New",monospace;font-size:15px}
 .y{color:#33ff33;font-weight:bold}.n{color:#ff6666;font-weight:bold}
 ol li,ul li{margin:4px 0}
 .hits{text-align:center;margin:18px 0 6px;font-size:14px}
@@ -39,156 +37,160 @@ ol li,ul li{margin:4px 0}
 .badge{display:inline-block;width:88px;height:31px;box-sizing:border-box;border:2px outset #ddd;font:bold 10px/12px Verdana,Arial;padding:3px 2px;margin:2px;vertical-align:middle;text-align:center}
 a{color:#00ffff}a:visited{color:#ff66ff}
 .ft{text-align:center;font-size:13px;color:#aaa;margin:24px 0}
-@media (max-width:520px){h1{font-size:32px}table.w td:first-child{white-space:normal}table.w{font-size:14px}}
+@media (max-width:520px){h1{font-size:32px}table.w{font-size:14px}}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<h1>~*~ innioasis zone ~*~</h1>
-<p class="sub">rooting, jailbreaking and custom firmware for the <b>innioasis y1</b> and <b>y2</b></p>
-<div class="mq"><span>your $40 click wheel player can do way more than it shipped with!!! rockbox!!! wifi streaming!!! ipod mode!!! root!!! read the warning first!!!</span></div>
+<h1>~*~ innioasis g1 zone ~*~</h1>
+<p class="sub">jailbreaking the <b>innioasis g1</b> so it can install <b>any app</b></p>
+<div class="mq"><span>its literally an android phone with no sim slot and they locked the app store!!! free your g1!!! nova launcher!!! real keyboard!!! any music app you want!!! read the warning first!!!</span></div>
 <hr>
 
 <div class="box toc">
   <b class="t">contents.txt</b>
-  <a href="#what">what is it</a> &middot; <a href="#warn">read this first</a> &middot; <a href="#updater">the easy way</a> &middot; <a href="#firmware">firmware list</a> &middot; <a href="#pick">which one</a> &middot; <a href="#root">root + adb</a> &middot; <a href="#manual">manual / nerd way</a> &middot; <a href="#unbrick">unbrick</a> &middot; <a href="#links">links</a>
+  <a href="#what">what is it</a> &middot; <a href="#lock">whats locked</a> &middot; <a href="#warn">read this first</a> &middot; <a href="#lumos">lumos</a> &middot; <a href="#check">check your firmware</a> &middot; <a href="#install">install it</a> &middot; <a href="#after">after</a> &middot; <a href="#root">root</a> &middot; <a href="#unbrick">unbrick</a> &middot; <a href="#links">links</a>
 </div>
 
-<h2 id="what">what even is an innioasis</h2>
-<p>innioasis makes cheap mp3 players that look a lot like an ipod classic, click wheel and all. the two that matter here are the <b>y1</b> (silver) and the <b>y2</b> (black). under the hood theyre tiny android devices on a mediatek chip (the y1 uses an mt6572), which is why people can flash them, root them and run whole different music apps on them.</p>
-<p>"jailbreak" in the innioasis world basically means flashing community firmware that replaces or patches the stock music app. the community calls the whole scene <b>modding and jailbreaking</b>.</p>
+<h2 id="what">what even is a g1</h2>
+<p>the innioasis g1 is a little 4 inch touchscreen music player. its basically a tiny android phone without the phone part:</p>
+<table class="w">
+<tr><th>part</th><th>what it has</th></tr>
+<tr><td>os</td><td>customized android (newer firmwares are android 9)</td></tr>
+<tr><td>cpu</td><td>8 core, up to 1.9ghz, mediatek</td></tr>
+<tr><td>ram</td><td>2gb</td></tr>
+<tr><td>storage</td><td>16gb (about 10 to 12 usable) + microsd up to 1tb</td></tr>
+<tr><td>screen</td><td>4.0 inch 480x800 touchscreen</td></tr>
+<tr><td>battery</td><td>1500mah</td></tr>
+<tr><td>wireless</td><td>dual band wifi, bluetooth 4.2 (sbc + aac)</td></tr>
+</table>
+
+<h2 id="lock">so whats locked</h2>
+<p>out of the box the g1 <b>wont let you install apps</b>. no play store, and sideloading is turned off. it only runs the apps it came with (spotify, amazon music, etc). innioasis keeps a whitelist so you can update those preinstalled apps with an apk, but anything new gets blocked.</p>
+<p>the bootloader cant be unlocked as far as anyone knows, so the usual phone stuff (unlock, flash twrp, magisk) is off the table. "jailbreaking" the g1 means patching the system so app installs work again.</p>
 
 <div class="warn" id="warn"><div>
-  read this first: flashing firmware can brick your player. stuff to know:<br>
-  &bull; <b>y1 and y2 firmware are NOT the same.</b> use the model printed on your player. dont mix them.<br>
-  &bull; use a real <b>data</b> usb cable. charge only cables wont work and a cable that wiggles mid flash is how you brick it.<br>
-  &bull; dont plug the player in until the updater tells you to.<br>
-  &bull; community firmware can be rough around the edges. read the release notes first.<br>
-  &bull; the way back is always: flash <b>original software</b> for your model.
+  read this first: the g1 jailbreak rewrites your boot and system partitions. stuff to know:<br>
+  &bull; it <b>can brick your g1</b>. if it gets stuck on the innioasis logo you have to reflash with sp flash tool.<br>
+  &bull; if you dont know how to use sp flash tool, <b>learn that before you do this</b>.<br>
+  &bull; have it <b>plugged in and above 20%</b> battery (lumos wont even start otherwise).<br>
+  &bull; <b>firmware updates wipe the jailbreak.</b> dont update without checking it still works.<br>
+  &bull; spanish firmware (G1_ES v6.xx) is <b>not supported</b>.
 </div></div>
 
-<h2 id="updater">the easy way: innioasis updater</h2>
-<p>the community made <b>innioasis updater</b> (aka updater ce). its a gui that downloads firmware from the community archive and flashes it for you. it bundles sp flash tool and mtkclient so you dont have to mess with them. this is what you should use unless you really know what youre doing.</p>
+<h2 id="lumos">the jailbreak: lumos</h2>
+<p><b>lumos</b> by seph29 is an android app that runs on the g1 itself and patches it so you can install apps. no bootloader unlock needed.</p>
+<ul>
+  <li>uses <b>mtk-su</b> (a mediatek temp root exploit by diplomatic) to get root just long enough to patch</li>
+  <li>patches <code>boot</code> first, reboots, then patches <code>system</code></li>
+  <li>backs up the originals so you can restore</li>
+  <li>checks signatures on the files it writes so it doesnt flash garbage</li>
+  <li>in english, french and german, and detects your firmware version on its own</li>
+  <li>if your firmware isnt supported it can upload a dump so the dev can add it</li>
+</ul>
 
-<h3>windows</h3>
-<ol>
-  <li>download and run <code>DriverInstall.exe</code> (mediatek usb drivers)</li>
-  <li>download and run the updater <code>installer.exe</code></li>
-  <li>reboot your pc before plugging in the player</li>
-</ol>
-<p>both are on the <a href="https://innioasis.app/guide.html#windows">guide page</a>.</p>
-
-<h3>mac</h3>
-<ol>
-  <li>install <a href="https://brew.sh">homebrew</a> (the updater needs it)</li>
-  <li>grab <code>Innioasis.Updater.for.Mac.dmg</code> and drag the app into applications</li>
-  <li>if macos says unidentified developer, control-click the app and hit open</li>
-  <li>check the <a href="https://innioasis.app/drivers.html#macos">mac driver notes</a> for permissions</li>
-</ol>
-
-<h3>linux</h3>
-<p>one command:</p>
-<pre>curl -sL https://github.com/y1-community/Innioasis-Updater/releases/latest/download/run_linux.sh | bash</pre>
-<p>if it cant see the player, check the <a href="https://innioasis.app/drivers.html">drivers page</a> for linux permissions / udev stuff.</p>
-
-<h3>flashing</h3>
-<ol>
-  <li><b>device type:</b> y1 that shipped with original software 2.0.0 or newer = <b>type a</b> (default). older y1 = <b>type b</b>.</li>
-  <li><b>device model:</b> y1 or y2. whatever is printed on it.</li>
-  <li><b>software:</b> pick a firmware (list below). stable release is recommended.</li>
-  <li>hit <b>install / restore</b> and wait for it to download.</li>
-  <li>power the player <b>fully off</b>. if it wont turn off, do what the app prompt says.</li>
-  <li>when the app says ready, plug in the data cable. dont touch the cable.</li>
-  <li>success message, unplug, power on. done.</li>
-</ol>
-<p>the button combo for connecting is shown live in the app for your model, so just follow that.</p>
-
-<h2 id="firmware">the firmware list</h2>
+<h2 id="check">step 0: check your firmware</h2>
+<p>go to <b>settings &gt; about</b> on the g1 and find the build / firmware version. it looks like <code>G1_EN-V2.14.250109</code> or <code>G1-1.35</code>.</p>
 <table class="w">
-<tr><th>name</th><th>what it is</th><th>y1</th><th>y2</th></tr>
-<tr><td>original software</td><td>stock firmware. local music + bluetooth. the safe baseline and the way back if anything breaks.</td><td class="y">yes</td><td class="y">yes</td></tr>
-<tr><td>rockbox</td><td>the legendary open source player. tag based library, gapless, crossfade, eq, tons of themes including ipod ones. fully offline.</td><td class="y">yes</td><td class="y">yes</td></tr>
-<tr><td>solar</td><td>turns on wifi. streaming and downloads (deezer, soulseek via reach, podcasts, youtube) plus a stem player that splits songs into parts. comes with rockbox too so you can switch without reflashing.</td><td class="y">yes</td><td class="y">yes</td></tr>
-<tr><td>jj launcher</td><td>fast wheel friendly launcher. quick library scans, eq presets, skip tracks from any screen, wifi file uploads, bluetooth pairing in app, themes.</td><td class="y">yes</td><td class="y">yes</td></tr>
-<tr><td>koensayr</td><td>not a new ui, its a patcher for stock. adds artist to album browsing, better bluetooth metadata and car stereo controls, <b>root</b>, and debloats the system.</td><td class="y">yes</td><td class="n">no</td></tr>
-<tr><td>inniclassic</td><td>ipod classic tribute built on jj launcher. classic menu, click wheel music quiz, synced lyrics, last.fm scrobbling, podcasts, fm radio, video.</td><td class="y">yes</td><td class="n">no</td></tr>
-<tr><td>y2player</td><td>music first home screen. persistent queue, gapless + crossfade, resumable audiobooks, lots of formats, bluetooth. no internet needed.</td><td class="n">no</td><td class="y">yes</td></tr>
+<tr><th>firmware</th><th>lumos</th></tr>
+<tr><td>G1_EN-V2.06 to V2.21</td><td class="y">works</td></tr>
+<tr><td>G1_FR-V3.00 to V3.08</td><td class="y">works</td></tr>
+<tr><td>G1_DE-V2.05 to V2.12</td><td class="y">works</td></tr>
+<tr><td>V2.00 to V5.01 (old style)</td><td class="y">works</td></tr>
+<tr><td>G1-1.15 to G1-1.39 (old style)</td><td class="y">works</td></tr>
+<tr><td>G1_ES-V6.01 / V6.03</td><td class="n">no, not planned</td></tr>
+<tr><td>G1-9_EN-V1.03-20260707</td><td class="n">no</td></tr>
+<tr><td>G1-9_MULTI-V3.01-20260720</td><td class="n">no</td></tr>
 </table>
-<p>full release list and downloads: <a href="https://innioasis.app/firmware.html">innioasis.app/firmware.html</a></p>
+<p>exact list is in the <a href="https://github.com/Seph29/Lumos-G1/blob/main/docs/build-compatibility.md">compatibility table</a>. if your version isnt on there, the lumos site says to update to a supported one first. the newest <code>G1-9</code> android 9 builds are the ones that dont work yet, so if youre on an older firmware, <b>dont update</b>.</p>
 
-<h2 id="pick">ok which one do i get</h2>
-<ul>
-  <li><b>i just want it to play music really well:</b> rockbox</li>
-  <li><b>i want streaming / wifi:</b> solar</li>
-  <li><b>i want it to feel like an actual ipod:</b> inniclassic (y1) or rockbox with an ipod theme</li>
-  <li><b>i want it fast and customizable:</b> jj launcher</li>
-  <li><b>i like stock but it annoys me / i want root:</b> koensayr (y1)</li>
-  <li><b>y2 + audiobooks:</b> y2player</li>
-</ul>
-
-<h2 id="root">root and adb</h2>
-<p>for most people <b>you dont need to root anything yourself</b>. the updater flashes full images, so root isnt required to install rockbox, solar, etc.</p>
-<p>if you actually want root on a y1, the easy route is <b>koensayr</b>, which gives you root while keeping the stock software. root lets you mess with <code>/system</code>, remove preinstalled apps, change key mappings and so on.</p>
-<p>the old manual way (from the original rockbox y1 port) was: turn on adb, root with <b>framaroot 1.9.3</b>, then remount system as writable. basic adb stuff once you have it:</p>
-<pre><span class="c"># see if the player shows up</span>
+<h2 id="install">step 1: install it</h2>
+<h3>get lumos onto the g1</h3>
+<p>the g1 blocks normal sideloading, so you push lumos over usb with adb. turn on usb debugging on the g1 first: <b>settings &gt; about</b>, tap <b>build number</b> 7 times, then <b>settings &gt; developer options &gt; usb debugging</b> on. plug it in and allow the prompt on the screen.</p>
+<p>need adb? grab <a href="https://developer.android.com/tools/releases/platform-tools">platform tools</a>, or:</p>
+<pre><span class="c"># linux (debian/ubuntu)</span>
+sudo apt install adb
+<span class="c"># mac</span>
+brew install android-platform-tools
+<span class="c"># windows</span>
+winget install Google.PlatformTools</pre>
+<p>then download and install lumos:</p>
+<pre><span class="c"># check the releases page for the newest version</span>
+curl -LO https://github.com/Seph29/Lumos-G1/releases/download/v1.1.2/lumos-v1.1.2.apk
 adb devices
-<span class="c"># get a shell</span>
-adb shell
-<span class="c"># become root (needs a rooted player)</span>
-su
-<span class="c"># make /system writable</span>
-mount -o remount,rw /system
-<span class="c"># install an apk</span>
-adb install something.apk</pre>
-<p>the exact remount command can vary by firmware. if <code>mount -o remount,rw /system</code> fails, run <code>mount</code> to see what /system is actually mounted from.</p>
+adb install lumos-v1.1.2.apk</pre>
+<p>if <code>adb devices</code> says unauthorized, look at the g1 screen and hit allow.</p>
 
-<h2 id="manual">the manual / nerd way</h2>
-<p>if you dont want the gui, you can flash by hand. the y1 is a mediatek mt6572 so the classic tools work:</p>
+<h3>run it</h3>
+<ol>
+  <li>plug the g1 into a charger, battery over 20%</li>
+  <li>open <b>lumos</b>, tap <b>INJECT</b></li>
+  <li>it patches boot and reboots</li>
+  <li>open lumos <b>again</b> and tap <b>INJECT</b> again</li>
+  <li>it patches system. done, apps install now.</li>
+</ol>
+
+<h2 id="after">step 2: now what</h2>
+<p>you can install apks normally now (or keep using <code>adb install</code>). once its patched you can even uninstall lumos. stuff people put on it:</p>
 <ul>
-  <li><b>sp flash tool</b> (v5.1904 is the one used for y1) with the mt6572 scatter file from the firmware package</li>
-  <li><b>mtkclient</b> for low level stuff. the updater is literally a fork of it.</li>
+  <li><b>nova launcher</b> for a real home screen</li>
+  <li><b>gboard</b> because the stock keyboard sucks</li>
+  <li><b>cx file explorer</b> for a better file manager</li>
+  <li>any music app you want (poweramp, youtube music, a podcast app, whatever)</li>
 </ul>
-<pre><span class="c"># mtkclient on linux, if you want to poke at it yourself</span>
-git clone https://github.com/bkerler/mtkclient
-cd mtkclient
-pip3 install -r requirements.txt --break-system-packages
-python3 mtk.py printgpt</pre>
-<p>honestly only do this if you know mediatek flashing. the updater does all of it for you and is way less likely to brick.</p>
+<p>remember it has 2gb of ram and a 480x800 screen. its not gonna run genshin.</p>
+<p>lumos also has a <b>partial restore</b> that only reverts system and leaves boot patched, so you can flip app installs off and back on quickly.</p>
+
+<h2 id="root">what about root</h2>
+<p>lumos only uses root <b>temporarily</b> during patching. after reboot your g1 is <b>not rooted</b>. thats on purpose, it keeps the player stable.</p>
+<p>with usb debugging on you can still poke around with adb:</p>
+<pre><span class="c"># shell on the device</span>
+adb shell
+<span class="c"># firmware version</span>
+adb shell getprop ro.build.display.id
+<span class="c"># android version</span>
+adb shell getprop ro.build.version.release
+<span class="c"># exact chip</span>
+adb shell getprop ro.board.platform
+<span class="c"># list installed apps</span>
+adb shell pm list packages
+<span class="c"># push music</span>
+adb push song.flac /sdcard/Music/</pre>
+<p>the g1 is a mediatek device, which is why mtk-su works on it. mtk-su only works on older security patch levels though, which is probably why the newest android 9 firmwares arent supported yet.</p>
 
 <h2 id="unbrick">it broke help</h2>
 <ol>
-  <li><b>dont panic</b>, mediatek devices are really hard to perma brick. bootrom mode still works even when android doesnt.</li>
-  <li>open the updater, pick <b>original software</b> for your <b>exact model</b>, and run install / restore again.</li>
-  <li>dont delete folders or hidden files by hand first, even if you came from solar or rockbox. just flash stock.</li>
-  <li>if it stops before the usb prompt: check drivers / permissions, try a different data cable, double check y1 vs y2, double check type a vs type b.</li>
-  <li>still dead? sp flash tool and mtkclient are the advanced recovery tools. restore guides: <a href="https://innioasis.app/guides/restore-original-y1.html">y1</a> &middot; <a href="https://innioasis.app/guides/restore-original-y2.html">y2</a></li>
+  <li><b>dont panic.</b> mediatek devices are really hard to perma brick.</li>
+  <li>if it still boots, open lumos and use <b>restore</b>. it puts the original boot and system back from the backup it made.</li>
+  <li>stuck on the <b>innioasis logo</b>? you need <b>sp flash tool</b> and the stock firmware for your exact version. flash the original <code>boot.img</code> and <code>system.img</code> (or the whole firmware) back.</li>
+  <li>dont have the firmware? ask in the lumos discord or email innioasis support with your version number.</li>
+  <li>use a real data cable, not a charge only one.</li>
 </ol>
 
 <h2 id="links">links</h2>
 <div class="box">
   <b class="t">bookmarks.htm</b>
-  <a href="https://innioasis.app">innioasis.app</a> (community site + updater)<br>
-  <a href="https://innioasis.app/guide.html">install guide</a><br>
-  <a href="https://innioasis.app/firmware.html">firmware archive</a><br>
-  <a href="https://innioasis.app/firmware-faq.html">firmware faq / help me choose</a><br>
-  <a href="https://innioasis.app/guides/rockbox-y1.html">rockbox on y1</a> &middot; <a href="https://innioasis.app/guides/rockbox-y2.html">rockbox on y2</a><br>
-  <a href="https://github.com/y1-community/Innioasis-Updater">innioasis updater on github</a><br>
-  <a href="https://github.com/multiwirth/rockbox-y1">original rockbox y1 port</a> (archived, history lesson)<br>
-  <a href="https://github.com/bkerler/mtkclient">mtkclient</a><br>
-  <a href="https://www.reddit.com/r/innioasis/">r/innioasis</a>
+  <a href="https://github.com/Seph29/Lumos-G1">lumos on github</a><br>
+  <a href="https://github.com/Seph29/Lumos-G1/releases">lumos releases (apk)</a><br>
+  <a href="https://seph29.github.io/Lumos-G1/">lumos site</a><br>
+  <a href="https://github.com/Seph29/Lumos-G1/blob/main/docs/build-compatibility.md">firmware compatibility table</a><br>
+  <a href="https://discord.gg/ttfbVCavBk">lumos discord</a><br>
+  <a href="https://www.youtube.com/watch?v=F3ZEJCmKp9I">lumos demo video</a><br>
+  <a href="https://developer.android.com/tools/releases/platform-tools">adb (platform tools)</a><br>
+  <a href="https://www.innioasis.com/products/g1">official g1 page</a>
 </div>
 
-<div class="warn"><div>not affiliated with innioasis. i didnt make any of this firmware, the y1 community did. flash at your own risk, im not paying for your mp3 player.</div></div>
+<div class="warn"><div>not affiliated with innioasis. i didnt make lumos, seph29 did. go star the repo. jailbreak at your own risk, im not paying for your mp3 player.</div></div>
 
 <div class="hits">you are visitor number
 <span id="hc"></span></div>
 
 <div class="badges">
-  <span class="badge" style="background:#000;color:#33ff33">ROCKBOX<br>POWERED</span>
-  <span class="badge" style="background:#c0c0c0;color:#000">CLICK WHEEL<br>CERTIFIED</span>
+  <span class="badge" style="background:#000;color:#33ff33">LUMOS<br>INJECTED</span>
+  <span class="badge" style="background:#3ddc84;color:#000">ANDROID<br>UNCHAINED</span>
   <span class="badge" style="background:#c00;color:#fff">MAY CAUSE<br>BRICKS</span>
-  <span class="badge" style="background:#fff;color:#000">BEST VIEWED<br>800x600</span>
+  <span class="badge" style="background:#fff;color:#000">BEST VIEWED<br>480x800</span>
 </div>
 
 <p class="ft"><a href="/">back to landon.cool</a> &middot; <a href="/guestbook/">sign my guestbook</a><br>&copy; 2026 landon.cool</p>
