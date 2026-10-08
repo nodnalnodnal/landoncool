@@ -15,27 +15,20 @@ function nz(d,v,type,f,when=0,q=1,f2=null){const a=A(),t=a.currentTime+when,len=
   g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl).connect(g).connect(out());s.start(t)}
 function osc(f,d,type,v,when=0,f2=null,att=.003){const a=A(),t=a.currentTime+when,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(out());o.start(t);o.stop(t+d+.05)}
+const PL=(n,v,o)=>L.play(n,{vol:v,...(o||{})});
 const S={
-  click(){nz(.014,.55,'highpass',1800);osc(2400,.012,'sine',.07);nz(.01,.28,'highpass',3200,.075)},
-  hover(){nz(.007,.1,'bandpass',5200,0,2)},
-  type(){nz(.022,.3,'bandpass',1600+Math.random()*2000,0,1.4);osc(160+Math.random()*60,.025,'sine',.12)},
-  open(){nz(.24,.4,'bandpass',350,0,1.1,3200);osc(520,.2,'sine',.1,.03,880,.04)},
-  close(){nz(.2,.35,'bandpass',3000,0,1.1,320);osc(760,.16,'sine',.09,0,420,.02)},
-  min(){nz(.15,.3,'bandpass',2400,0,1.4,280)},
-  ding(){[[880,1.2,.22],[1320,.9,.1],[1760,.6,.05],[887,1.1,.06]].forEach(([f,d,v])=>osc(f,d,'sine',v))},
-  error(){osc(392,.45,'triangle',.28);osc(415,.45,'triangle',.14);osc(196,.3,'square',.04)},
-  notify(){osc(1046,.35,'sine',.2);osc(1318,.55,'sine',.2,.12)},
-  on(){osc(1175,.06,'sine',.14);osc(1568,.09,'sine',.12,.05)},
-  off(){osc(1175,.06,'sine',.14);osc(784,.09,'sine',.12,.05)},
-  startup(){[[311,0],[466,.16],[622,.32],[784,.5],[932,.68],[1244,.9]].forEach(([f,w])=>{osc(f,2.8-w,'sine',.13,w,null,.09);osc(f*2.005,1.3,'sine',.025,w+.02,null,.05)});
-    osc(155.5,3,'triangle',.12,0,null,.4);osc(233,2.6,'sine',.05,.2,null,.5);nz(1.6,.04,'bandpass',3200,.8,.6)},
-  shutdown(){[[1244,0],[932,.18],[784,.36],[622,.54],[466,.72],[311,.9]].forEach(([f,w])=>osc(f,2-w*.6,'sine',.12,w,null,.05));osc(155.5,2.4,'triangle',.1,.6,null,.3)},
-  pop(){osc(600,.08,'sine',.2,0,1200);nz(.04,.2,'highpass',2000)},
-  blip(f,d){if(performance.now()-lastClick<90)return;osc(Math.min(2400,Math.max(200,f)),Math.max(.05,d),'sine',.07)},
+  click(){PL('click',.45)},
+  hover(){PL('hover',.14,{rate:1.1})},
+  type(){PL('type',.22,{rate:.85+Math.random()*.4})},
+  open(){PL('open',.4)},close(){PL('close',.4)},min(){PL('min',.4)},
+  ding(){PL('ding',.55)},error(){PL('error',.6)},notify(){PL('notify',.5)},
+  on(){PL('on',.35)},off(){PL('off',.35)},pop(){PL('pop',.5)},glitch(){PL('glitch',.5)},
+  startup(){PL('startup',.55)},shutdown(){PL('shutdown',.55)},coin(){PL('coin',.6)},
+  blip(f,d){if(performance.now()-lastClick<90)return;PL('hover',.22,{rate:Math.min(2,Math.max(.6,f/1200))})},
 };
 const SFX={};Object.keys(S).forEach(k=>SFX[k]=(...a)=>{if(!armed||!mods.sound.on)return;try{S[k](...a)}catch(e){}});
 window.SFX=SFX;L.SFX=SFX;
-const arm=()=>{if(armed)return;armed=true;try{A().resume()}catch(e){}};
+const arm=()=>{if(armed)return;armed=true;try{A().resume();L.preloadS()}catch(e){}};
 addEventListener('pointerdown',arm,true);addEventListener('keydown',arm,true);
 const INTER='a,button,[role=switch],.mod,.cell,.dicon,.swatch,summary,label,input[type=range],input[type=radio],select,canvas#logo,.top8 figure,.blinkie,.award,.tab';
 addEventListener('pointerdown',e=>{if(e.button>1)return;const el=e.target.closest&&e.target.closest(INTER);if(el&&!el.disabled){SFX.click();lastClick=performance.now()}},true);
@@ -45,6 +38,10 @@ document.addEventListener('pointerover',e=>{if(e.pointerType==='touch')return;co
 document.addEventListener('keydown',e=>{if(!e.target.matches||!e.target.matches('input,textarea'))return;if(e.key.length===1||e.key==='Backspace'||e.key==='Enter'||e.key===' '){const n=performance.now();if(n-lastType<25)return;lastType=n;SFX.type()}});
 on('open',()=>SFX.open());on('close',()=>SFX.close());on('min',()=>SFX.min());on('shut',()=>SFX.shutdown());on('theme',()=>SFX.notify());
 on('toggle',id=>{mods[id]&&(mods[id].on?SFX.on():SFX.off())});on('logo',()=>SFX.pop());
+
+/* ================= lc coin ================= */
+(()=>{const c=$('#spin');if(!c)return;let n=store.get('coins',0);c.onclick=e=>{e.preventDefault();c.classList.remove('flip');void c.offsetWidth;c.classList.add('flip');SFX.coin();n++;store.set('coins',n);
+  L.status(n===1?'you found a landon coin':'landon coins: '+n);setTimeout(()=>c.classList.remove('flip'),950)}})();
 
 /* ================= custom cursors ================= */
 const ARROW=["#...........","##..........","#o#.........","#oo#........","#ooo#.......","#oooo#......","#ooooo#.....","#oooooo#....","#ooooooo#...","#oooooooo#..","#ooooo#####.","#oo#oo#.....","#o#.#oo#....","##..#oo#....","#....#oo#...",".....###...."];
@@ -63,10 +60,10 @@ document.addEventListener('pointerover',e=>{const el=e.target.closest&&e.target.
 addEventListener('pointermove',e=>{tx=e.clientX;ty=e.clientY;if(!tip.hidden)place()},{passive:true});
 addEventListener('pointerdown',()=>{clearTimeout(tipT);tip.hidden=true},true);
 function place(){const r=tip.getBoundingClientRect();tip.style.left=Math.min(tx+14,innerWidth-r.width-6)+'px';tip.style.top=Math.min(ty+22,innerHeight-r.height-6)+'px'}
-const TIPS={'w-nav':'the website','w-amp':'music. it slaps','w-sweep':'minesweeper but cows','w-sb':'vine boom is on here','w-ach':'how many have you got','w-readme':'read me','w-moo':'feed him','w-sus':'hmmm','w-gb':'sign it','w-bin':'dont empty it'};
+const TIPS={'w-nav':'the website','w-amp':'music. it slaps','w-sweep':'minesweeper but cows','w-sb':'real farm animals','w-ach':'how many have you got','w-readme':'read me','w-moo':'feed him','w-sus':'hmmm','w-gb':'sign it','w-bin':'dont empty it'};
 $$('.dicon').forEach(d=>{d.dataset.tip=TIPS[d.dataset.open]||('open '+d.textContent.trim())});
 $$('.badge').forEach(b=>{if(!b.dataset.tip)b.dataset.tip=rnd(['i made this one','88x31. the best size','click it. nothing happens','100% authentic','collect them all'])});
-const ttips={'#start':'click here to begin','#trSnd':'sound on/off','#trCrt':'crt on/off','#clock':new Date().toDateString().toLowerCase(),'#spin':'its loading. probably','#addr':'type a page and hit enter','#bmTheme':'next theme','#power':'power'};
+const ttips={'#start':'click here to begin','#trSnd':'sound on/off','#trCrt':'crt on/off','#clock':new Date().toDateString().toLowerCase(),'#spin':'LC. click it','#addr':'type a page and hit enter','#bmTheme':'next theme','#power':'power'};
 Object.entries(ttips).forEach(([k,v])=>{const el=$(k);if(el)el.dataset.tip=v});
 
 /* ================= splash ================= */
@@ -129,16 +126,18 @@ ui();
 /* ================= top 8 ================= */
 (()=>{const box=$('#top8');const F=[['MHF_Cow','bessie'],['MHF_Pig','pig'],['MHF_Chicken','chicken'],['MHF_Creeper','creeper'],['MHF_Enderman','enderman'],['MHF_Zombie','zombie'],['MHF_Skeleton','skeleton'],['MHF_Villager','villager']];
   const clicked=new Set(store.get('t8',[]));const msg=t=>$('#t8msg').textContent=t;
+  const pl=(n,v,o)=>{if(armed)L.play(n,{vol:v,...(o||{})})};
   const SND={
     bessie:()=>{moo(true);return (L.pet?L.pet.get().name:'bessie')+': moo'},
-    pig:()=>{if(armed){[0,.16].forEach(w=>{osc(300,.12,'sawtooth',.12,w,170);nz(.1,.15,'bandpass',500,w,3)})}return 'oink'},
-    chicken:()=>{if(armed)[0,.11,.22].forEach((w,i)=>osc(i===2?1100:850,.07,'square',.06,w,i===2?1500:650));return 'bawk'},
-    creeper:(fig)=>{if(armed){nz(1.3,.25,'highpass',2500,0,1,6000)}msg('sssssss...');setTimeout(()=>{if(armed){nz(1.2,.9,'lowpass',400,0,1,60);osc(90,1,'sine',.6,0,30)}const w=$('#w-nav');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');msg('aw man');unlock('creeper')},1300);return null},
-    enderman:(fig)=>{if(armed){nz(.35,.3,'bandpass',600,0,6,3000);osc(200,.35,'sine',.1,0,900)}const figs=[...box.children];box.insertBefore(fig,rnd(figs));return 'dont look at him'},
-    zombie:()=>{if(armed){const a=A();osc(110,.9,'sawtooth',.12,0,80,.1);nz(.8,.1,'bandpass',300,0,4)}return 'uuuhhh'},
-    skeleton:()=>{if(armed)for(let i=0;i<6;i++)nz(.03,.3,'bandpass',1800+Math.random()*1500,i*.06,4);return '*bone noises*'},
-    villager:()=>{if(armed){osc(190,.32,'sawtooth',.1,0,140,.04);nz(.3,.1,'bandpass',700,0,5)}return 'hrmm'},
+    pig:()=>{pl('pig',.8);return 'oink'},
+    chicken:()=>{pl('hen',.8);return 'bawk'},
+    creeper:(fig)=>{if(armed){nz(1.3,.25,'highpass',2500,0,1,6000)}msg('sssssss...');setTimeout(()=>{pl('boom',.9);const w=$('#w-nav');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');msg('aw man');unlock('creeper')},1300);return null},
+    enderman:(fig)=>{pl('teleport',.7);const figs=[...box.children];box.insertBefore(fig,rnd(figs));return 'dont look at him'},
+    zombie:()=>{pl('bear',.7,{rate:.7});return 'uuuhhh'},
+    skeleton:()=>{pl('dice',.7,{rate:1.3});return '*bone noises*'},
+    villager:()=>{pl('goat',.7,{rate:.7});return 'hrmm'},
   };
+
   F.forEach(([u,n])=>{const f=document.createElement('figure');f.tabIndex=0;f.setAttribute('role','button');f.dataset.tip=n==='bessie'?'my cow':n;
     const im=new Image();im.alt=n;im.src='https://mc-heads.net/avatar/'+u+'/40';im.onerror=()=>{const s=svg(n==='creeper'?'mine':'cow',40);im.replaceWith(s)};
     im.oncontextmenu=e=>{e.preventDefault();noSteal()};

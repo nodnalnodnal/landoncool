@@ -12,24 +12,30 @@ function tone(f,d,type='square',v=.15,when=0,to=null,dest=null){const a=A(),t=a.
   g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(dest||gainOut(1));o.start(t);o.stop(t+d+.05)}
 function noise(d,v=.2,when=0,type='lowpass',freq=1000){const a=A(),t=a.currentTime+when,b=a.createBuffer(1,a.sampleRate*d,a.sampleRate),c=b.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1;
   const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type=type;f.frequency.value=freq;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f).connect(g).connect(gainOut(1));s.start(t)}
+const SB=(n,v=.8,o)=>()=>L.play(n,{vol:v,...(o||{})});
 const SOUNDS={
   'moo':()=>moo(true),
-  'vine boom':()=>{tone(120,1.1,'sine',.9,0,35);tone(60,1.1,'sine',.6,0,30);noise(.25,.5,0,'lowpass',300)},
-  'airhorn':()=>{[0,.18,.36].forEach((w,i)=>[466,587,698].forEach(f=>tone(f,i<2?.14:.7,'sawtooth',.07,w)))},
-  'xp orb':()=>{for(let i=0;i<4;i++)tone(rnd([1318,1397,1568,1760]),.12,'sine',.25,i*.07)},
-  'error':()=>{tone(784,.6,'triangle',.3);tone(1046,.6,'triangle',.2,.02)},
-  'dial-up':()=>{[[697,1209],[770,1336],[852,1477],[941,1336],[697,1477],[852,1209]].forEach((p,i)=>p.forEach(f=>tone(f,.09,'sine',.12,i*.12)));
-    tone(2100,.6,'sine',.12,.9);tone(980,.9,'sawtooth',.06,1.5,2400);noise(1.4,.15,1.6,'bandpass',1800);tone(1200,.5,'square',.05,2.3,600);noise(.9,.12,2.7,'highpass',2500)},
-  'sad trombone':()=>{const a=A(),f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=900;f.connect(gainOut(1));[392,370,349].forEach((n,i)=>tone(n,.45,'sawtooth',.25,i*.5,null,f));
-    const t=a.currentTime+1.5,o=a.createOscillator(),g=a.createGain(),lf=a.createOscillator(),lg=a.createGain();o.type='sawtooth';o.frequency.value=330;lf.frequency.value=5;lg.gain.value=8;lf.connect(lg).connect(o.frequency);
-    g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.0001,t+1.4);o.connect(g).connect(f);o.start(t);lf.start(t);o.stop(t+1.5);lf.stop(t+1.5)},
-  'rimshot':()=>{tone(180,.15,'sine',.6,0,60);noise(.08,.4,0,'highpass',1500);tone(180,.15,'sine',.6,.18,60);noise(.08,.4,.18,'highpass',1500);tone(160,.3,'sine',.6,.45,50);noise(.9,.25,.45,'highpass',6000)},
-  'oof':()=>{tone(320,.22,'square',.2,0,140)},
-  'emergency meeting':()=>{for(let i=0;i<6;i++)tone(i%2?660:880,.2,'square',.12,i*.22)},
-  'bonk':()=>{tone(900,.18,'sine',.5,0,300);noise(.05,.3,0,'highpass',3000)},
-  'level up':()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.25,'square',.08,i*.1))},
+  'deep moo':SB('moo3',.9,{rate:.8}),
+  'boom':SB('boom',.9),
+  'laser':SB('laser',.6),
+  'teleport':SB('teleport',.6),
+  'coins':SB('coin',.7),
+  'bonk':SB('bonk',.8),
+  'punch':SB('punch',.8),
+  'error':SB('error',.7),
+  'level up':SB('win',.6),
+  'door':SB('door',.8),
+  'dice':SB('dice',.7),
+  'oink':SB('pig'),
+  'bawk':SB('hen'),
+  'cock-a-doodle':SB('rooster',.7),
+  'baa':SB('sheep',1),
+  'neigh':SB('horse',.7),
+  'quack':SB('duck',.7),
+  'woof':SB('dog',.7),
+  'hee-haw':SB('donkey',.6),
 };
-function xp(){if(!mods.sound.on)return;tone(1318,.1,'sine',.2,0);tone(1568,.18,'sine',.2,.08)}
+function xp(){if(!mods.sound.on)return;L.play('achieve',{vol:.5})}
 
 /* ========== achievements ========== */
 const ACH=[
@@ -130,7 +136,7 @@ const TIPS=[
  'middle click a module in the menu to bind it to a key',
  'type format c: in the terminal. actually dont',
  'the terminal theme goes hard. try it',
- 'theres a soundboard on the desktop. vine boom is on there',
+ 'theres a soundboard on the desktop. it has a real cow on it',
  'you can play cowsweeper. the mines are not cows. i checked',
  'make sure to come back to the site so i get money',
  'click hmmmsus.png a bunch of times',
@@ -175,7 +181,7 @@ function openTerm(){const n=$('#w-nav');n.hidden=false;delete n.dataset.closed;$
     tm=setInterval(()=>$('#swTime').textContent=String(Math.min(999,(Date.now()-t0)/1000|0)).padStart(3,'0'),250)}
   function tog(i){if(over||open[i])return;flag[i]=!flag[i];beep(700,.02);draw()}
   function reveal(i){if(over||flag[i]||open[i])return;if(!started)place(i);
-    if(mine[i]){over=true;clearInterval(tm);boomI=i;mine.forEach((m,j)=>{if(m)open[j]=true});$('#swFace').textContent='x(';SOUNDS['vine boom']();unlock('boom');draw();return}
+    if(mine[i]){over=true;clearInterval(tm);boomI=i;mine.forEach((m,j)=>{if(m)open[j]=true});$('#swFace').textContent='x(';SOUNDS.boom();unlock('boom');draw();return}
     const st=[i];while(st.length){const c=st.pop();if(open[c]||flag[c])continue;open[c]=true;if(!nb(c).some(j=>mine[j]))nb(c).forEach(j=>{if(!open[j])st.push(j)})}
     beep(1500,.015);
     if(open.filter((o,j)=>o&&!mine[j]).length===N*N-M){over=true;clearInterval(tm);$('#swFace').textContent='B)';const sec=(Date.now()-t0)/1000|0;const best=store.get('swBest',null);
@@ -189,7 +195,7 @@ function openTerm(){const n=$('#w-nav');n.hidden=false;delete n.dataset.closed;$
 
 /* ========== soundboard ========== */
 (()=>{const g=$('#sbg'),played=new Set(store.get('sbPlayed',[]));Object.keys(SOUNDS).forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;
-  b.onclick=()=>{try{SOUNDS[k]()}catch(e){}played.add(k);store.set('sbPlayed',[...played]);if(played.size>=Object.keys(SOUNDS).length)unlock('dj')};g.append(b)})})();
+  b.onclick=()=>{try{SOUNDS[k]()}catch(e){}played.add(k);store.set('sbPlayed',[...played]);if(Object.keys(SOUNDS).every(x=>played.has(x)))unlock('dj')};g.append(b)})})();
 
 /* ========== cow pet ========== */
 (()=>{const box=$('#pet');let p=store.get('pet',{name:'bessie',h:70,j:70,t:Date.now(),pets:0});
@@ -209,7 +215,7 @@ function openTerm(){const n=$('#w-nav');n.hidden=false;delete n.dataset.closed;$
 
 /* ========== sus meter ========== */
 (()=>{const img=$('#susImg');if(!img)return;let n=0;img.onclick=()=>{n=Math.min(10,n+1);$('#susMeter').textContent='sus meter: ['+'#'.repeat(n)+'.'.repeat(10-n)+']';beep(400+n*80,.05);
-  if(n===10){$('#susMeter').textContent='emergency meeting';SOUNDS['emergency meeting']();unlock('sus');setTimeout(()=>{n=0;$('#susMeter').textContent='sus meter: [..........]'},3000)}}})();
+  if(n===10){$('#susMeter').textContent='emergency meeting';SOUNDS.boom();SOUNDS.error();unlock('sus');setTimeout(()=>{n=0;$('#susMeter').textContent='sus meter: [..........]'},3000)}}})();
 
 /* ========== tab title + xmas ========== */
 const T0=document.title;document.addEventListener('visibilitychange',()=>{document.title=document.hidden?'come back so i get money':T0});
@@ -225,7 +231,7 @@ CM.neofetch=()=>{const n=ACH.filter(a=>got[a[0]]).length,up=Math.floor(performan
 CM.achievements=()=>ACH.map(([id,n,d,s])=>(got[id]?'[x] ':'[ ] ')+(got[id]||!s?n+': '+d:'???')).join('\n');
 CM.cowsweeper=()=>{L.openWin('w-sweep');return 'good luck'};CM.sweep=CM.cowsweeper;
 CM.soundboard=()=>{L.openWin('w-sb');return 'opened soundboard.exe'};
-CM.play=a=>{const k=a.join(' ').toLowerCase();if(!SOUNDS[k])return 'sounds: '+Object.keys(SOUNDS).join(', ');SOUNDS[k]();return 'playing '+k};
+CM.play=a=>{if(a[0]==='vine'&&a[1]==='boom')a=['boom'];const k=a.join(' ').toLowerCase();if(!SOUNDS[k])return 'sounds: '+Object.keys(SOUNDS).join(', ');SOUNDS[k]();return 'playing '+k};
 CM.feed=()=>{L.pet.feed();return L.pet.get().name+' ate some wheat. moo'};
 CM.pet=()=>{L.openWin('w-moo');const p=L.pet.get();return p.name+': food '+Math.round(p.h)+'%, happy '+Math.round(p.j)+'%'};
 CM.readme=()=>{L.openWin('w-readme');return 'opened readme.txt'};

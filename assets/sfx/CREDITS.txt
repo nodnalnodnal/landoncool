@@ -1,0 +1,11 @@
+sound credits
+
+ui sounds, jingles, impacts, lasers, coins, dice, doors:
+  kenney (www.kenney.nl) - interface sounds, music jingles, impact sounds,
+  digital audio, rpg audio, casino audio, sci-fi sounds
+  license: cc0 (public domain)
+
+moos and farm animals (moo1, moo2, moo3, pig, hen, rooster, sheep, goat,
+horse, duck, dog, donkey, bear):
+  tux paint stamps (tuxpaint.org)
+  license: gpl-2

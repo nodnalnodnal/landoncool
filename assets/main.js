@@ -72,34 +72,16 @@ $$('.dicon').forEach(b=>{const s=document.createElementNS('http://www.w3.org/200
 let AC;const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
 function vol(){return (mods.sound.val||5)/10}
 function beep(f=880,d=.04,type='square',v=.05){if(!mods.sound.on)return;if(window.SFX){SFX.blip(f,d);return}try{const a=ac(),o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v*vol(),a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+d+.02)}catch(e){}}
-function mooVoice(a,dest,t,r,D){
-  const nodes=[];const N=x=>(nodes.push(x),x);
-  const env=a.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(1,t+.14);env.gain.setValueAtTime(1,t+D*.62);env.gain.exponentialRampToValueAtTime(.0001,t+D);
-  const comp=a.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=4;const f1=a.createBiquadFilter(),f2=a.createBiquadFilter();f1.type=f2.type='lowpass';f1.frequency.value=1500;f2.frequency.value=2000;f1.Q.value=f2.Q.value=.6;env.connect(f1).connect(f2).connect(comp).connect(dest);
-  // vocal source: two detuned saws with a pitch contour (low hum, swell up, slow droop)
-  const src=a.createGain();
-  const mk=(det,amp)=>{const o=N(a.createOscillator()),g=a.createGain();o.type='sawtooth';const f=o.frequency;
-    f.setValueAtTime(88*r+det,t);f.exponentialRampToValueAtTime(138*r+det,t+.3);f.linearRampToValueAtTime(128*r+det,t+D*.58);f.exponentialRampToValueAtTime(96*r+det,t+D);
-    g.gain.value=amp;o.connect(g).connect(src);return o};
-  const o1=mk(0,1),o2=mk(1.3,.55),o3=mk(-.8,.35);
-  // vibrato + slight wobble
-  const lf=N(a.createOscillator()),lg=a.createGain();lf.frequency.value=5.4;lg.gain.value=1.8;lf.connect(lg);[o1,o2,o3].forEach(o=>lg.connect(o.frequency));
-  const lf2=N(a.createOscillator()),lg2=a.createGain();lf2.frequency.value=0.9;lg2.gain.value=3;lf2.connect(lg2);[o1,o2,o3].forEach(o=>lg2.connect(o.frequency));
-  // breath noise
-  const len=a.sampleRate*(D+.1)|0,b=a.createBuffer(1,len,a.sampleRate),c=b.getChannelData(0);for(let i=0;i<len;i++)c[i]=Math.random()*2-1;
-  const ns=N(a.createBufferSource()),nf=a.createBiquadFilter(),ng=a.createGain();ns.buffer=b;nf.type='bandpass';nf.frequency.value=1300;nf.Q.value=.8;ng.gain.value=.05;ns.connect(nf).connect(ng).connect(src);
-  // throat grit
-  const sh=a.createWaveShaper(),cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(1.8*x)}sh.curve=cv;src.connect(sh);
-  // mouth: closed (mmm) -> open (ooo) -> closing (uh)
-  const lp=a.createBiquadFilter();lp.type='lowpass';lp.Q.value=.6;lp.frequency.setValueAtTime(320,t);lp.frequency.exponentialRampToValueAtTime(1300,t+.34);lp.frequency.exponentialRampToValueAtTime(850,t+D*.7);lp.frequency.exponentialRampToValueAtTime(500,t+D);
-  sh.connect(lp);
-  const body=a.createGain();body.gain.value=.22;lp.connect(body).connect(env);
-  [[[250,520,430,330],6,2.4],[[560,980,820,640],8,1.5],[[2250,2450,2350,2300],11,.12]].forEach(([fs,q,gn])=>{const bp=a.createBiquadFilter(),g=a.createGain();bp.type='bandpass';bp.Q.value=q;
-    bp.frequency.setValueAtTime(fs[0],t);bp.frequency.exponentialRampToValueAtTime(fs[1],t+.32);bp.frequency.exponentialRampToValueAtTime(fs[2],t+D*.7);bp.frequency.exponentialRampToValueAtTime(fs[3],t+D);g.gain.value=gn;lp.connect(bp).connect(g).connect(env)});
-  nodes.forEach(n=>{n.start(t);n.stop(t+D+.1)});
-}
-function moo(force){if(!force&&!mods.sound.on)return;try{const a=ac();if(a.resume)a.resume();const t=a.currentTime+.02,r=.85+Math.random()*.3,D=1.2+Math.random()*.5;
-  const out=a.createGain();out.gain.value=.75*(mods.sound.on?vol():.5)*1.6;out.connect(a.destination);mooVoice(a,out,t,r,D);bump('moos');emit('moo',stats.moos)}catch(e){}}
+/* real sound files live in assets/sfx */
+const SFX_FILES=['click','hover','type','open','close','min','ding','error','notify','on','off','pop','glitch','startup','shutdown','achieve','win','lose','coin','coin2','boom','laser','teleport','bonk','punch','door','dice','book','moo1','moo2','moo3','pig','hen','rooster','sheep','goat','horse','duck','dog','donkey','bear'];
+const SBUF={},SLOAD={};
+function loadS(n){if(SBUF[n])return Promise.resolve(SBUF[n]);if(SLOAD[n])return SLOAD[n];const a=ac();
+  SLOAD[n]=fetch('assets/sfx/'+n+'.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>new Promise((res,rej)=>a.decodeAudioData(b,res,rej))).then(b=>SBUF[n]=b).catch(()=>{delete SLOAD[n]});return SLOAD[n]}
+function preloadS(){SFX_FILES.forEach(loadS)}
+function play(n,o={}){try{const a=ac();if(a.state==='suspended')a.resume();const v=(o.vol??1)*vol()*1.5,b=SBUF[n];
+  if(b){const s=a.createBufferSource(),g=a.createGain();s.buffer=b;s.playbackRate.value=o.rate||1;g.gain.value=v;s.connect(g).connect(a.destination);s.start(a.currentTime+(o.when||0));return s}
+  loadS(n);const el=new Audio('assets/sfx/'+n+'.mp3');el.volume=Math.min(1,v);if(o.rate){el.preservesPitch=false;el.playbackRate=o.rate}setTimeout(()=>el.play().catch(()=>{}),(o.when||0)*1000);return el}catch(e){return null}}
+function moo(force){if(!force&&!mods.sound.on)return;const r=Math.random(),n=r<.12?'moo3':r<.55?'moo2':'moo1';play(n,{vol:.9,rate:.93+Math.random()*.14});bump('moos');emit('moo',stats.moos)}
 
 /* ---------- themes ---------- */
 const THEMES=['noir','paper','terminal','amber','moo','fog','blueprint'];
@@ -457,6 +439,6 @@ readColors();sizeFx();fxKick();tick();renderStats();window.wireWin=wireWin;windo
 function fitNav(){const n=$('#w-nav');if(innerWidth<=700||n.classList.contains('max')||n.dataset.moved)return;const r=Math.max(...$$('.dicon').map(d=>d.getBoundingClientRect().right));
   const left=Math.round(r+12);n.style.left=left+'px';n.style.top='10px';n.style.width=Math.min(1240,innerWidth-left-14)+'px';n.style.height=(innerHeight-parseInt(getComputedStyle(root).getPropertyValue('--tb'))-20)+'px'}
 fitNav();addEventListener('resize',fitNav);
-window.LC={drawCow,store,stats,bump,beep,moo,ac,vol,openWin,closeWin,toggle,mods,MODS,setTheme,THEMES,getC:()=>C,P,paint,pixSvg,status,COMMANDS,renderStats,emit,reduce,gb};
+window.LC={play,preloadS,drawCow,store,stats,bump,beep,moo,ac,vol,openWin,closeWin,toggle,mods,MODS,setTheme,THEMES,getC:()=>C,P,paint,pixSvg,status,COMMANDS,renderStats,emit,reduce,gb};
 document.addEventListener('click',e=>{if(e.target.closest('button,a,.mod'))beep(1600,.015,'square',.03)});
 })();
