@@ -5,7 +5,7 @@ const CHANGES=[
   ['10/07/2026','web ','moo-ssistant. hes here to help. kind of'],
   ['10/07/2026','web ','cow navigator 2.0: the whole site is a desktop now'],
   ['10/07/2026','web ','skin lab: make any minecraft skin blink'],
-  ['10/07/2026','web ','7 themes, crt mode, landon-vision, a start menu that works'],
+  ['10/07/2026','web ','7 themes, crt mode, a start menu that works'],
   ['earlier   ','game','pacman moved in'],
 ];
 // custom terminal commands. a string gets printed, a function gets (args) and returns text to print.
@@ -337,33 +337,6 @@ $('#marq').textContent=['*** i did some updates :D','the whole site is a compute
   (document.fonts?Promise.race([document.fonts.load('22px VT323'),new Promise(r=>setTimeout(r,1200))]):Promise.resolve()).catch(()=>{}).then(go);
 })();
 
-/* ---------- landon-vision ---------- */
-(()=>{const cv=$('#tvc'),x=cv.getContext('2d'),W=160,H=120;let ch=0,sw=0,on=true,f=0;
-  const CH=[['static',noise],['starfield',stars],['cube',cube],['landon.cool',dvd],['moo.tv',mootv],['test card',test]];
-  const chg=$('#chg');CH.forEach((c,i)=>{const b=document.createElement('button');b.className='btn';b.textContent=i+1;b.setAttribute('aria-label','channel '+(i+1)+', '+c[0]);b.onclick=()=>setCh(i);chg.append(b)});
-  function setCh(i){if(!on)power();ch=i;sw=12;bump('flips');beep(200+i*60,.05,'sawtooth',.03);$('#chlabel').textContent='ch 0'+(i+1)+' '+CH[i][0];$$('.btn',chg).forEach((b,j)=>b.setAttribute('aria-pressed',j===i));emit('tv',i)}
-  function power(){on=!on;$('#screen').classList.toggle('off',!on);$('#chlabel').style.display=on?'':'none';beep(on?600:150,.12,'triangle');if(on)setCh(ch)}
-  $('#power').onclick=power;
-  const img=x.createImageData(W,H);
-  function noise(){const d=img.data;for(let i=0;i<d.length;i+=4){const v=Math.random()*255|0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255}x.putImageData(img,0,0)}
-  const st=Array.from({length:140},()=>[Math.random()*2-1,Math.random()*2-1,Math.random()]);
-  function stars(){x.fillStyle='#000';x.fillRect(0,0,W,H);x.fillStyle='#fff';for(const s of st){s[2]-=.008;if(s[2]<=.01){s[0]=Math.random()*2-1;s[1]=Math.random()*2-1;s[2]=1}const k=1/s[2];const X=W/2+s[0]*k*30,Y=H/2+s[1]*k*30;const sz=s[2]<.3?2:1;x.fillRect(X|0,Y|0,sz,sz)}}
-  const V=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],E=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-  function cube(){x.fillStyle='#000';x.fillRect(0,0,W,H);const a=f*.03,b=f*.021;const p=V.map(([X,Y,Z])=>{let x1=X*Math.cos(a)-Z*Math.sin(a),z1=X*Math.sin(a)+Z*Math.cos(a);let y1=Y*Math.cos(b)-z1*Math.sin(b),z2=Y*Math.sin(b)+z1*Math.cos(b);const k=70/(z2+4);return [W/2+x1*k,H/2+y1*k]});
-    x.strokeStyle='#fff';x.lineWidth=1;x.beginPath();E.forEach(([i,j])=>{x.moveTo(p[i][0],p[i][1]);x.lineTo(p[j][0],p[j][1])});x.stroke()}
-  let dv={x:10,y:10,vx:.7,vy:.55,inv:false};
-  function dvd(){x.fillStyle=dv.inv?'#fff':'#000';x.fillRect(0,0,W,H);x.font='16px VT323, monospace';const tw=x.measureText('landon.cool').width+8;dv.x+=dv.vx;dv.y+=dv.vy;let hit=0;
-    if(dv.x<0||dv.x+tw>W){dv.vx*=-1;hit++}if(dv.y<0||dv.y+16>H){dv.vy*=-1;hit++}if(hit===2)dv.inv=!dv.inv;
-    x.fillStyle=dv.inv?'#000':'#fff';x.fillRect(dv.x,dv.y,tw,16);x.fillStyle=dv.inv?'#fff':'#000';x.fillText('landon.cool',dv.x+4,dv.y+12)}
-  function mootv(){x.fillStyle='#000';x.fillRect(0,0,W,H);x.fillStyle='#2a2a2a';x.fillRect(0,H-26,W,26);const s=3,cw=P.cow[0].length*s,px=W-((f*.7)%(W+cw+20))|0,bob=(f>>3)%2;
-    drawCow(x,px,H-26-P.cow.length*s+2-bob,s);x.fillStyle='#fff';x.font='18px VT323, monospace';x.textAlign='center';x.fillText(f%60<40?'moo':'',W/2,H-10);x.textAlign='left'}
-  function test(){const g=['#fff','#d4d4d4','#aaa','#808080','#555','#2b2b2b','#000'];g.forEach((c,i)=>{x.fillStyle=c;x.fillRect(i*W/7,0,W/7+1,H)});x.fillStyle='#000';x.fillRect(30,40,100,40);x.strokeStyle='#fff';x.beginPath();x.arc(W/2,H/2,34,0,7);x.stroke();
-    x.fillStyle='#fff';x.font='16px VT323, monospace';x.textAlign='center';x.fillText('landon-vision',W/2,58);x.fillText(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),W/2,72);x.textAlign='left'}
-  let vis=true;new IntersectionObserver(es=>vis=es[0].isIntersecting).observe(cv);
-  function loop(){f++;if(on&&vis){if(sw>0){sw--;noise()}else CH[ch][1]()}requestAnimationFrame(loop)}
-  setCh(0);if(reduce){CH[2][1]()}else loop();
-})();
-
 /* ---------- moo.exe ---------- */
 let mooRun=false;
 function mooStart(){if(mooRun)return;mooRun=true;const cv=$('#mooc'),x=cv.getContext('2d');let f=0;
@@ -399,13 +372,13 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
 
 /* ---------- terminal ---------- */
 (()=>{const box=$('#dos'),out=$('#dosOut'),inp=$('#dosIn');let cwd='landon',hist=store.get('hist',[]),hi=hist.length;
-  const PAGES={pacman:'/pacman/',home:'#top',skin:'#skin',projects:'#projects',tv:'#tv',menu:'#menu'};
+  const PAGES={pacman:'/pacman/',home:'#top',skin:'#skin',projects:'#projects',menu:'#menu'};
   const ps=()=>'c:\\'+cwd+'> ';
   const print=t=>{out.textContent+=t+'\n';box.scrollTop=box.scrollHeight};
   const changes=()=>CHANGES.map(c=>c.join('  ')).join('\n');
   const B={
     help:()=>['commands:','  help              this list','  type changes.txt  what\'s new','  dir               list files','  cls               clear the screen','  open <page>       '+Object.keys(PAGES).join(', '),
-      '  theme [name]      '+THEMES.join(', '),'  mod [name]        list or toggle menu modules','  skin <username>   load a skin in the skin lab','  tv <1-6>          change the channel','  moo               moo','  echo <text>       says it back','  date / time / ver','  guestbook <msg>   sign the guestbook','  clear history','  exit',
+      '  theme [name]      '+THEMES.join(', '),'  mod [name]        list or toggle menu modules','  skin <username>   load a skin in the skin lab','  moo               moo','  echo <text>       says it back','  date / time / ver','  guestbook <msg>   sign the guestbook','  clear history','  exit',
       ...(Object.keys(COMMANDS).length?['','more: '+Object.keys(COMMANDS).filter(k=>!((window.LC&&LC.hidden)||[]).includes(k)).join(', ')]:[])].join('\n'),
     type:a=>{const f=(a[0]||'').toLowerCase();if(f==='changes.txt')return changes();if(f==='readme.txt')return 'type help. that\'s the readme.';if(f==='guestbook.txt')return gb().map(e=>e.n+': '+e.m).join('\n');return f?'file not found: '+f:'type what? try: type changes.txt'},
     dir:()=>[' directory of c:\\'+cwd,'','  changes.txt','  readme.txt','  guestbook.txt','  pacman.exe','  moo.exe','  skin_lab.exe'].join('\n'),
@@ -418,7 +391,6 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
     theme:a=>{if(!a[0])return 'current theme: '+root.dataset.theme+'\navailable: '+THEMES.join(', ');if(!THEMES.includes(a[0]))return 'no theme called '+a[0];setTheme(a[0]);return 'theme set to '+a[0]},
     mod:a=>{if(!a[0])return MODS.map(m=>(mods[m.id].on?'[on]  ':'[off] ')+m.id).join('\n');const m=MODS.find(x=>x.id===a[0]||x.name===a.join(' '));if(!m)return 'no module called '+a.join(' ');toggle(m.id);return m.name+' '+(mods[m.id].on?'on':'off')},
     skin:a=>{if(!a[0])return 'usage: skin <username>';$('#skinName').value=a[0];$('#skinForm').requestSubmit();$('#skin').scrollIntoView({behavior:reduce?'auto':'smooth'});return 'loading '+a[0]+'\'s skin...'},
-    tv:a=>{const n=+a[0];if(!(n>=1&&n<=6))return 'usage: tv <1-6>';$$('#chg .btn')[n-1].click();return 'channel '+n},
     moo:()=>{moo(true);return 'moo.'},
     echo:a=>a.join(' '),
     date:()=>new Date().toLocaleDateString(),time:()=>new Date().toLocaleTimeString(),
@@ -443,7 +415,7 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
 
 /* ---------- sidebar ---------- */
 function renderStats(){const v=String(stats.visits).padStart(7,'0');$('#odo').innerHTML=[...v].map(c=>`<span>${c}</span>`).join('');
-  const rows=[['online now','1'],['your visits',stats.visits],['page views',stats.views],['menu toggles',stats.toggles],['moos',stats.moos],['skin blinks',stats.blinks],['channel flips',stats.flips],['guestbook',gb().length]];
+  const rows=[['online now','1'],['your visits',stats.visits],['page views',stats.views],['menu toggles',stats.toggles],['moos',stats.moos],['skin blinks',stats.blinks],['guestbook',gb().length]];
   $('#statl').innerHTML=rows.map(r=>`<span>${r[0]}</span><b>${r[1]}</b>`).join('')}
 setInterval(renderStats,1000);
 function cd(now){const end=new Date(2027,0,1);let s=Math.floor((end-now)/1000);if(s<=0){$('#cd').textContent="it's 2027. happy new year.";return}

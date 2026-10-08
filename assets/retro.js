@@ -166,7 +166,7 @@ $('#lnk').value='<a href="https://landon.cool">landon.cool - the best website in
 $('#lnkCopy').onclick=()=>{const t=$('#lnk');t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).catch(()=>{try{document.execCommand('copy')}catch(e){}}).finally(()=>{dialog({title:'copied!',ic:'star',html:'copied!! now put it on your website<br>i will know if you dont'});unlock('link')})};
 const AW=[['golden cow award 2026','thank you to the academy'],['best website in my house','i voted for myself'],['site of the day','every day actually'],['most moos per page','a record']];
 AW.forEach(([n,r])=>{const b=document.createElement('button');b.className='award';b.append(svg('trophy',18));b.append(n);b.onclick=()=>{SFX.ding();L.status(r)};$('#awards').append(b)});
-const BL=['i <3 cows','minecraft addict','certified gamer','i survived y2k','debian user','proud scratcher','gta iv > gta v','powered by moo','no flash no problem','i read the readme'];
+const BL=['i <3 cows','minecraft addict','certified gamer','debian user','proud scratcher','gta iv > gta v','powered by moo','no flash no problem','i read the readme'];
 BL.forEach((t,i)=>{const b=document.createElement('button');b.className='blinkie';b.textContent=t;b.style.setProperty('--sp',(0.6+(i%4)*.35)+'s');b.onclick=()=>{b.classList.remove('spin');void b.offsetWidth;b.classList.add('spin');setTimeout(()=>b.classList.remove('spin'),650)};$('#blinkies').append(b)});
 
 /* ================= dialogs + popups ================= */

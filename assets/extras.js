@@ -53,7 +53,6 @@ const ACH=[
  ['pet20','best friends','pet the cow 20 times'],
  ['bin','taking out the trash','empty the recycle bin'],
  ['skin','skin inspector','load somebody elses skin'],
- ['tv','channel surfer','watch all 6 channels'],
  ['roll','do a barrel roll','do a barrel roll'],
  ['saver','afk','let the screensaver turn on'],
  ['gb','signed','sign the guestbook'],
@@ -90,8 +89,6 @@ on('cmd',k=>{unlock('cmd');cmds.add(k);store.set('cmds',[...cmds]);if(cmds.size>
 on('toggle',id=>{if(id==='roll')unlock('roll')});
 on('bin',()=>unlock('bin'));on('gb',()=>unlock('gb'));on('vote',()=>unlock('vote'));on('shut',()=>unlock('bye'));
 on('skin',n=>{if(n.toLowerCase()!=='mrcowlord')unlock('skin')});
-const chans=new Set(store.get('chans',[]));
-on('tv',i=>{chans.add(i);store.set('chans',[...chans]);if(chans.size>=6)unlock('tv')});
 if(new Date().getHours()<5)setTimeout(()=>unlock('night'),3000);
 renderAch();
 
