@@ -6,7 +6,6 @@ const CHANGES=[
   ['10/07/2026','web ','cow navigator 2.0: the whole site is a desktop now'],
   ['10/07/2026','web ','skin lab: make any minecraft skin blink'],
   ['10/07/2026','web ','7 themes, crt mode, landon-vision, a start menu that works'],
-  ['08/23/2026','tool','commandforge: plain english to commands, block builder'],
   ['earlier   ','game','pacman moved in'],
 ];
 // custom terminal commands. a string gets printed, a function gets (args) and returns text to print.
@@ -16,7 +15,7 @@ const COMMANDS={
   cow:'   ^__^\n   (oo)\\_______\n   (__)\\       )\\/\\\n       ||----w |\n       ||     ||',
   roll:a=>'you rolled a '+(1+Math.random()*(+a[0]||6)|0),
 };
-const RING=['/','/commandforge/','/pacman/','/aerobics'];
+const RING=['/','/pacman/','/aerobics'];
 const SKIN_DEFAULT='mrcowlord';
 /* ----------------------------- */
 
@@ -289,7 +288,7 @@ $('#marq').textContent=['*** i did some updates :D','the whole site is a compute
    o:['       ','  ___  ',' / _ \\ ','| (_) |',' \\___/ '],
    c:['      ','  ___ ',' / __|','| (__ ',' \\___|'],
    '.':['   ','   ','   ',' _ ','(_)']};
-  const TXT='landon.cool',SCROLL='          welcome to landon.cool ... home of commandforge, pacman, a skin lab and one (1) cow ... press right shift for the menu ... type help in the terminal ... sign the guestbook ... moo          ';
+  const TXT='landon.cool',SCROLL='          welcome to landon.cool ... home of pacman, a skin lab and one (1) cow ... press right shift for the menu ... type help in the terminal ... sign the guestbook ... moo          ';
   const cols=[...TXT].reduce((n,c)=>n+G[c][0].length,0);
   function size(){dpr=Math.min(devicePixelRatio||1,2);cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr;x.setTransform(dpr,0,0,dpr,0,0)}
   const bounce=t=>{const n=7.5625,d=2.75;if(t<1/d)return n*t*t;if(t<2/d)return n*(t-=1.5/d)*t+.75;if(t<2.5/d)return n*(t-=2.25/d)*t+.9375;return n*(t-=2.625/d)*t+.984375};
@@ -373,7 +372,7 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
 
 /* ---------- terminal ---------- */
 (()=>{const box=$('#dos'),out=$('#dosOut'),inp=$('#dosIn');let cwd='landon',hist=store.get('hist',[]),hi=hist.length;
-  const PAGES={commandforge:'/commandforge/',pacman:'/pacman/',home:'#top',skin:'#skin',projects:'#projects',tv:'#tv',menu:'#menu'};
+  const PAGES={pacman:'/pacman/',home:'#top',skin:'#skin',projects:'#projects',tv:'#tv',menu:'#menu'};
   const ps=()=>'c:\\'+cwd+'> ';
   const print=t=>{out.textContent+=t+'\n';box.scrollTop=box.scrollHeight};
   const changes=()=>CHANGES.map(c=>c.join('  ')).join('\n');
@@ -382,7 +381,7 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
       '  theme [name]      '+THEMES.join(', '),'  mod [name]        list or toggle menu modules','  skin <username>   load a skin in the skin lab','  tv <1-6>          change the channel','  moo               moo','  echo <text>       says it back','  date / time / ver','  guestbook <msg>   sign the guestbook','  clear history','  exit',
       ...(Object.keys(COMMANDS).length?['','more: '+Object.keys(COMMANDS).filter(k=>!((window.LC&&LC.hidden)||[]).includes(k)).join(', ')]:[])].join('\n'),
     type:a=>{const f=(a[0]||'').toLowerCase();if(f==='changes.txt')return changes();if(f==='readme.txt')return 'type help. that\'s the readme.';if(f==='guestbook.txt')return gb().map(e=>e.n+': '+e.m).join('\n');return f?'file not found: '+f:'type what? try: type changes.txt'},
-    dir:()=>[' directory of c:\\'+cwd,'','  changes.txt','  readme.txt','  guestbook.txt','  commandforge.exe','  pacman.exe','  moo.exe','  skin_lab.exe'].join('\n'),
+    dir:()=>[' directory of c:\\'+cwd,'','  changes.txt','  readme.txt','  guestbook.txt','  pacman.exe','  moo.exe','  skin_lab.exe'].join('\n'),
     ls:a=>B.dir(a),
     cls:()=>{out.textContent='';return null},clear:a=>{if(a[0]==='history'){hist=[];hi=0;store.set('hist',[]);return 'history cleared.'}out.textContent='';return null},
     cd:a=>{if(!a[0]||a[0]==='..'||a[0]==='\\'){cwd='landon';return null}return 'the system cannot find the path specified. try open '+a[0]},
