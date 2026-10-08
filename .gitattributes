@@ -1,0 +1,4 @@
+# third-party bundles, left out of the github languages bar
+eagler.html linguist-vendored
+assets/skinview3d.bundle.js linguist-vendored
+*.pyc linguist-generated
