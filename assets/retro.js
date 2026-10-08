@@ -40,8 +40,11 @@ on('open',()=>SFX.open());on('close',()=>SFX.close());on('min',()=>SFX.min());on
 on('toggle',id=>{mods[id]&&(mods[id].on?SFX.on():SFX.off())});on('logo',()=>SFX.pop());
 
 /* ================= lc coin ================= */
-(()=>{const c=$('#spin');if(!c)return;let n=store.get('coins',0);c.onclick=e=>{e.preventDefault();c.classList.remove('flip');void c.offsetWidth;c.classList.add('flip');SFX.coin();n++;store.set('coins',n);
-  L.status(n===1?'you found a landon coin':'landon coins: '+n);setTimeout(()=>c.classList.remove('flip'),950)}})();
+(()=>{const c=$('#spin');if(!c)return;const f=c.querySelector('.c3');let n=store.get('coins',0),ang=0,last=performance.now(),flipT=0;
+  (function lp(t){const dt=Math.min(.05,(t-last)/1000);last=t;let y=0;
+    if(flipT){const p=(t-flipT)/900;if(p>=1)flipT=0;else{ang+=dt*1500*(1-p);y=-Math.sin(p*Math.PI)*14}}
+    ang+=dt*(c.classList.contains('go')?800:140);f.style.transform=`translateY(${y.toFixed(1)}px) rotateY(${(ang%360).toFixed(1)}deg)`;requestAnimationFrame(lp)})(last);
+  c.onclick=e=>{e.preventDefault();flipT=performance.now();SFX.coin();n++;store.set('coins',n);L.status(n===1?'you found a landon coin':'landon coins: '+n)}})();
 
 /* ================= custom cursors ================= */
 const ARROW=["#...........","##..........","#o#.........","#oo#........","#ooo#.......","#oooo#......","#ooooo#.....","#oooooo#....","#ooooooo#...","#oooooooo#..","#ooooo#####.","#oo#oo#.....","#o#.#oo#....","##..#oo#....","#....#oo#...",".....###...."];
