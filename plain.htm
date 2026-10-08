@@ -63,8 +63,21 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 <pre>python3 boot.py plain.plain plain.plain hello.plain</pre>
 
 <h2>how to run it</h2>
-<pre>python3 boot.py plain.plain hello.plain</pre>
-<p>make any text file ending in <code>.plain</code>, write some words in it, and run it like that. anything after the file name shows up in <code>the arguments</code>.</p>
+<p>unzip it, open a terminal in that folder, and run one of the examples. on windows use <code>py</code> or <code>python</code> instead of <code>python3</code>.</p>
+<pre>python3 boot.py plain.plain hello.plain
+python3 boot.py plain.plain examples.plain</pre>
+<p>running <code>boot.py</code> by itself does nothing useful. you always hand it <code>plain.plain</code> and then your program.</p>
+
+<h2>write your own</h2>
+<p>make a file called <code>mine.plain</code>:</p>
+<pre>ask "whats your name?" into name
+say "yo" name
+repeat 3 times
+  say moo
+end</pre>
+<p>then run it:</p>
+<pre>python3 boot.py plain.plain mine.plain</pre>
+<p>anything after the file name shows up in <code>the arguments</code>.</p>
 
 <h2>what it looks like</h2>
 <pre><span class="c"># lines starting with # are comments</span>

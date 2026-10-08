@@ -475,7 +475,13 @@ def program(src):
 
 def main():
     if len(sys.argv) < 2:
-        print('usage: python3 boot.py plain.plain yourfile.plain'); return
+        print('this is the starter for plain. give it plain.plain and your program:')
+        print('')
+        print('  python3 boot.py plain.plain hello.plain')
+        print('  python3 boot.py plain.plain examples.plain')
+        print('')
+        print('write your own in any .plain file and run it the same way.')
+        return
     path = sys.argv[1]
     G = {}
     try:
