@@ -279,35 +279,62 @@ $('#marq').textContent=['*** i did some updates :D','the whole site is a compute
   b.onclick=done;addEventListener('keydown',done)})();
 
 /* ---------- logo ---------- */
-(()=>{const cv=$('#logo'),x=cv.getContext('2d');let start=0,cw=0,ch=0,dpr=1;
+(()=>{const cv=$('#logo'),x=cv.getContext('2d');let cw=0,ch=0,dpr=1,t0=0,mx=-1,my=-1;
+  const B=['......','......','......'];
   const G={
-   l:[' _ ','| |','| |','| |','|_|'],
-   a:['       ','  __ _ ',' / _` |','| (_| |',' \\__,_|'],
-   n:['       ',' _ __  ',"| '_ \\ ",'| | | |','|_| |_|'],
-   d:['     _ ','  __| |',' / _` |','| (_| |',' \\__,_|'],
-   o:['       ','  ___  ',' / _ \\ ','| (_) |',' \\___/ '],
-   c:['      ','  ___ ',' / __|','| (__ ',' \\___|'],
-   '.':['   ','   ','   ',' _ ','(_)']};
-  const TXT='landon.cool',SCROLL='          welcome to landon.cool ... home of pacman, a skin lab and one (1) cow ... press right shift for the menu ... type help in the terminal ... sign the guestbook ... moo          ';
-  const cols=[...TXT].reduce((n,c)=>n+G[c][0].length,0);
-  function size(){dpr=Math.min(devicePixelRatio||1,2);cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr;x.setTransform(dpr,0,0,dpr,0,0)}
-  const bounce=t=>{const n=7.5625,d=2.75;if(t<1/d)return n*t*t;if(t<2/d)return n*(t-=1.5/d)*t+.75;if(t<2.5/d)return n*(t-=2.25/d)*t+.9375;return n*(t-=2.625/d)*t+.984375};
-  function frame(now){if(!start)start=now;const t=reduce?1e9:now-start;x.clearRect(0,0,cw,ch);
-    x.font='20px VT323, monospace';const base=x.measureText('M').width/20;
-    const fs=Math.min(30,Math.floor(cw*.94/(cols*base)));const chw=base*fs,lh=fs*.92;x.font=fs+'px VT323, monospace';x.textBaseline='top';
-    const ox=Math.round((cw-cols*chw)/2),oy=10,sh=Math.max(1,Math.round(fs/12));
-    for(let pass=0;pass<2;pass++){x.fillStyle=pass?C.ink:C.mute;let col=0;
-      [...TXT].forEach((c,ci)=>{const g=G[c];const lt=Math.min(1,Math.max(0,(t-ci*85)/650));
-        if(lt>0){const dy=(1-bounce(lt))*-(ch+40)+(lt>=1&&!reduce?Math.sin(now/500+ci*.7)*2:0);
-          g.forEach((row,r)=>{for(let k=0;k<row.length;k++){if(row[k]===' ')continue;const X=ox+(col+k)*chw,Y=oy+r*lh+dy;x.fillText(row[k],pass?X:X+sh,pass?Y:Y+sh)}})}
-        col+=g[0].length})}
-    const by=oy+5*lh+18;x.font='22px VT323, monospace';x.fillStyle=C.ink;const cwid=11,L=SCROLL.length*cwid,scrollX=reduce?0:(now/22)%L;
-    for(let i=0;i<SCROLL.length;i++){const xx=(((cw-scrollX+i*cwid)%L)+L)%L-cwid;if(xx<-cwid||xx>cw)continue;x.fillText(SCROLL[i],xx,by+Math.sin(xx*.025+now/400)*7)}
+   l:['##','##','##','##','##','##','##','##','##'],
+   a:[...B,'.####.','....##','.#####','##..##','##..##','.#####'],
+   n:[...B,'#####.','##..##','##..##','##..##','##..##','##..##'],
+   d:['....##','....##','....##','.#####','##..##','##..##','##..##','##..##','.#####'],
+   o:[...B,'.####.','##..##','##..##','##..##','##..##','.####.'],
+   c:[...B,'.####.','##..##','##....','##....','##..##','.####.'],
+   '.':['..','..','..','..','..','..','..','##','##']};
+  const TXT='landon.cool',EYES=[8,9];
+  // layout in cells
+  const glyphs=[];let col=0;[...TXT].forEach((c,i)=>{glyphs.push({c,x:col,w:G[c][0].length,i});col+=G[c][0].length+1});const COLS=col-1,ROWS=9;
+  const cells=[];glyphs.forEach(g=>G[g.c].forEach((r,y)=>{for(let k=0;k<r.length;k++)if(r[k]==='#')cells.push({x:g.x+k,y,g:g.i,sx:0,sy:0,d:0})}));
+  const top=[];for(let c=0;c<COLS;c++){top[c]=ROWS;}cells.forEach(p=>{top[p.x]=Math.min(top[p.x],p.y)});
+  const gOf=[];glyphs.forEach(g=>{for(let k=-1;k<=g.w;k++)if(g.x+k>=0&&g.x+k<COLS&&gOf[g.x+k]==null)gOf[g.x+k]=g.i});
+  let s=8,ox=0,oy=0,u=3;
+  function scatter(){cells.forEach(p=>{const a=Math.random()*Math.PI*2,r=(.6+Math.random())*Math.max(cw,ch);p.sx=Math.cos(a)*r;p.sy=Math.sin(a)*r-ch*.4;p.d=p.x*14+Math.random()*260});t0=performance.now()}
+  function size(){dpr=Math.min(devicePixelRatio||1,2);cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+    const cowH=P.cow.length;s=Math.max(3,Math.min(12,Math.floor(cw*.9/COLS),Math.floor((ch-16)/(ROWS+cowH*.38+2))));u=Math.max(1,Math.round(s*.38));
+    ox=Math.round((cw-COLS*s)/2);oy=Math.round(ch-ROWS*s-Math.max(2,s*.5)-6)}
+  const ease=t=>1-Math.pow(1-t,3);
+  const bobOf=(gi,now)=>reduce?0:Math.round(Math.sin(now/520+gi*.75)*s*.18);
+  // cow
+  const cow={x:2,dir:1,stop:0,say:0,frame:0};let blinkAt=0,blinkUntil=0,glints=[];
+  function surface(cx,now){const w=P.cow[0].length*u/s;let best=ROWS;for(let c=Math.floor(cx+w*.32);c<=Math.ceil(cx+w*.82);c++){if(c<0||c>=COLS)continue;const b=bobOf(gOf[c],now)/s;best=Math.min(best,top[c]+b)}return best}
+  function frame(now){const t=reduce?1e9:now-t0;x.clearRect(0,0,cw,ch);const ink=C.ink,mute=C.mute,depth=Math.max(2,Math.round(s*.5));
+    const pos=cells.map(p=>{const k=Math.min(1,Math.max(0,(t-p.d)/900)),e=ease(k);const bx=ox+p.x*s,by=oy+p.y*s+(k>=1?bobOf(p.g,now):0);return [bx+p.sx*(1-e),by+p.sy*(1-e),k]});
+    x.fillStyle=mute;pos.forEach(([X,Y,k])=>{if(k<=0)return;for(let d=depth;d>0;d--)x.fillRect(X+d,Y+d,s,s)});
+    x.fillStyle=ink;pos.forEach(([X,Y,k])=>{if(k>0)x.fillRect(X,Y,s,s)});
+    const done=t>cells.reduce((m,p)=>Math.max(m,p.d),0)+900;
+    // eyes in "cool"
+    if(done){if(now>blinkAt){blinkUntil=now+130;blinkAt=now+2500+Math.random()*3500}
+      EYES.forEach(gi=>{const g=glyphs[gi],hx=ox+(g.x+2)*s,hy=oy+4*s+bobOf(gi,now);x.fillStyle=C.page;x.fillRect(hx,hy,2*s,4*s);
+        if(now<blinkUntil){x.fillStyle=ink;x.fillRect(hx,hy+1.5*s,2*s,Math.max(2,s*.5));return}
+        let dx=.5,dy=.5;if(mx>=0){const r=cv.getBoundingClientRect(),ex=r.left+hx+s,ey=r.top+hy+2*s,a=Math.atan2(my-ey,mx-ex),dist=Math.min(1,Math.hypot(mx-ex,my-ey)/200);dx=.5+Math.cos(a)*.5*dist;dy=.5+Math.sin(a)*.5*dist}
+        x.fillStyle=ink;x.fillRect(hx+dx*s|0,hy+(dy*2+.5)*s|0,s,s)})}
+    // cow walking along the tops
+    if(done){const cwC=P.cow[0].length*u/s;cow.frame++;
+      if(!reduce){if(cow.stop>0){cow.stop--}else{cow.x+=cow.dir*.045;if(cow.x>COLS-cwC){cow.x=COLS-cwC;cow.dir=-1}if(cow.x<0){cow.x=0;cow.dir=1}if(Math.random()<.003){cow.stop=110;cow.say=110}}}
+      if(cow.say>0)cow.say--;
+      const gy=oy+surface(cow.x,now)*s,step=cow.stop>0||reduce?0:((cow.frame>>3)%2)*u,cx=ox+cow.x*s|0,cy=gy-P.cow.length*u-step+u;
+      drawCow(x,cx,cy,u,cow.dir<0);cow.box=[cx,cy,P.cow[0].length*u,P.cow.length*u];
+      if(cow.say>0){const tx=cow.dir<0?cx-4:cx+P.cow[0].length*u+4;x.font=Math.max(14,s*2)+'px VT323, monospace';x.textAlign=cow.dir<0?'right':'left';x.fillStyle=ink;x.fillText('moo',tx,cy+4*u);x.textAlign='left'}
+      // glints
+      if(!reduce&&Math.random()<.012){const p=cells[Math.random()*cells.length|0];glints.push({x:ox+p.x*s+s/2,y:oy+p.y*s+s/2,b:now})}
+      glints=glints.filter(gl=>now-gl.b<600);glints.forEach(gl=>{const k=Math.sin((now-gl.b)/600*Math.PI),L=Math.round(s*1.6*k);x.fillStyle=C.page;x.fillRect(gl.x-L,gl.y,L*2+1,1);x.fillRect(gl.x,gl.y-L,1,L*2+1);x.fillRect(gl.x-1,gl.y-1,3,3)})}
     if(!reduce)requestAnimationFrame(frame)}
-  cv.style.cursor='pointer';cv.title='click me';cv.onclick=()=>{start=0;emit('logo');if(reduce)requestAnimationFrame(frame)};
-  const go=()=>{size();requestAnimationFrame(frame)};
+  addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY},{passive:true});
+  cv.style.cursor='pointer';cv.dataset.tip='click me';
+  cv.onclick=e=>{const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,b=cow.box;
+    if(b&&px>=b[0]-4&&px<=b[0]+b[2]+4&&py>=b[1]-4&&py<=b[1]+b[3]+4){moo(true);cow.stop=110;cow.say=110;cow.dir*=-1;return}
+    scatter();emit('logo');if(reduce)requestAnimationFrame(frame)};
   addEventListener('resize',()=>{size();if(reduce)requestAnimationFrame(frame)});
-  (document.fonts?Promise.race([document.fonts.load('22px VT323'),new Promise(r=>setTimeout(r,1500))]):Promise.resolve()).catch(()=>{}).then(go);
+  const go=()=>{size();scatter();requestAnimationFrame(frame)};
+  (document.fonts?Promise.race([document.fonts.load('22px VT323'),new Promise(r=>setTimeout(r,1200))]):Promise.resolve()).catch(()=>{}).then(go);
 })();
 
 /* ---------- landon-vision ---------- */
