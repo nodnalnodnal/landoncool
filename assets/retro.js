@@ -115,7 +115,7 @@ function prevTrack(){cur=(cur-1+TRACKS.length)%TRACKS.length;if(playing){stepI=0
 function fmt(s){s=Math.max(0,s|0);return (s/60|0)+':'+String(s%60).padStart(2,'0')}
 function ui(){const T=TRACKS[cur];$('#ampTitle').textContent=(cur+1)+'. landon - '+T.name+' ('+fmt(T.len)+')';$('.amp-title').classList.toggle('scroll',!reduce);
   $('#ampState').textContent=playing?(paused?'paused':'playing'):'stopped';$$('#ampPl button').forEach((b,i)=>b.classList.toggle('on',i===cur));
-  const np=$('#nowPlaying');np.hidden=!(playing&&!paused);np.textContent='listening to: '+T.name}
+  const np=$('#nowPlaying');if(np){np.hidden=!(playing&&!paused);np.textContent='listening to: '+T.name}}
 $('#ampPl').innerHTML='';TRACKS.forEach((t,i)=>{const b=document.createElement('button');b.innerHTML=`<span>${i+1}. ${t.name}</span><span>${fmt(t.len)}</span>`;b.ondblclick=b.onclick=()=>{cur=i;if(playing){stepI=0;nextT=A().currentTime+.05;startT=nextT}else play();ui()};$('#ampPl').append(b)});
 $('#ampPlay').onclick=()=>{if(paused)pause();else play()};$('#ampPause').onclick=pause;$('#ampStop').onclick=stop;$('#ampNext').onclick=()=>nextTrack();$('#ampPrev').onclick=prevTrack;
 $('#ampVol').oninput=()=>{if(ampG)ampG.gain.value=$('#ampVol').value/100*.5};
