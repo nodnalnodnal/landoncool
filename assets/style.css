@@ -100,7 +100,17 @@ hr{border:0;border-top:1px dashed var(--line);margin:0 0 30px}
 kbd{font:16px var(--term);border:1px solid var(--ink);padding:0 5px}
 
 .hero{text-align:center;padding-top:6px}
-#logo{width:100%;height:clamp(110px,22vw,210px);display:block}
+.hero{margin:-18px -22px 18px;padding:0;text-align:center;border-bottom:2px solid var(--line);background:var(--page)}
+#logo{width:100%;height:340px;display:block}
+.hero .cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;padding:16px;background:var(--face);border-top:2px solid var(--hi)}
+.hero .ver{font:18px/1.1 var(--term);text-align:left}.hero .ver .dim{color:var(--mute)}
+.ach-row{display:flex;justify-content:center;margin-bottom:6px}
+.burst{position:relative;display:inline-grid;place-items:center;width:36px;height:36px;margin:-10px -10px -10px 0;font:700 9px var(--ui);color:var(--page);isolation:isolate;animation:burstp 1.2s ease-in-out infinite}
+.burst::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--ink);clip-path:polygon(50% 0,59% 18%,79% 9%,76% 30%,97% 33%,82% 49%,97% 65%,76% 69%,80% 90%,60% 81%,50% 100%,40% 81%,20% 90%,24% 69%,3% 65%,18% 49%,3% 33%,24% 30%,21% 9%,41% 18%);animation:spin 8s linear infinite}
+@keyframes burstp{50%{transform:scale(1.12)}}
+.pulse{position:relative}
+.pulse::before{content:"";position:absolute;inset:-6px;border:2px solid var(--ink);opacity:0;animation:pring 2s ease-out infinite;pointer-events:none}
+@keyframes pring{0%{opacity:.7;transform:scale(.96)}100%{opacity:0;transform:scale(1.12)}}
 .hero .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px}
 .hero .ver{font:18px var(--term);color:var(--mute)}
 .newb{display:inline-block;font:700 10px var(--ui);background:var(--ink);color:var(--page);padding:1px 4px;vertical-align:middle;animation:blink 1s steps(1) infinite}
@@ -396,6 +406,7 @@ html.pcur .tbar,html.pcur .tbar .ttl,html.pcur .tbar .grip{cursor:move}
 
 @media (max-width:860px){
   .cols{grid-template-columns:1fr;padding:14px}
+  .hero{margin:-14px -14px 16px}#logo{height:230px}
   .grid,.lab{grid-template-columns:1fr}
 }
 @media (max-width:700px){
