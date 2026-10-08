@@ -69,6 +69,9 @@ const ACH=[
  ['scan','antivirus','scan your computer for moo'],
  ['shout','loud','post in the shoutbox'],
  ['link','spread the word','copy the link to me code'],
+ ['explorer','explorer','visit 5 pages from my computer'],
+ ['nope','persistence','close the browser anyway',1],
+ ['wave','the wave','you know what you typed',1],
  ['all','completionist','get every other achievement'],
 ];
 let got=store.get('ach',{});
@@ -80,7 +83,7 @@ function renderAch(){const n=ACH.filter(a=>got[a[0]]).length;$('#achStrip').text
   $('#achHead').textContent=`${n} of ${ACH.length} unlocked`;const l=$('#achList');l.innerHTML='';
   ACH.forEach(([id,name,desc,secret])=>{const d=document.createElement('div');const g=got[id];if(!g)d.className='lock';d.append(svg(g?'trophy':'wx',g?18:12));
     const t=document.createElement('div');t.style.cssText='display:block;border:0;padding:0';const b=document.createElement('b');b.textContent=g||!secret?name:'???';const sp=document.createElement('span');sp.textContent=g||!secret?desc:'secret';t.append(b,sp);d.append(t);l.append(d)})}
-L.unlock=unlock;
+L.unlock=unlock;L.ACH=ACH;
 on('moo',n=>{unlock('moo');if(n>=50)unlock('moo50')});
 const seenT=new Set(store.get('seenThemes',[]));
 on('theme',t=>{unlock('theme');seenT.add(t);store.set('seenThemes',[...seenT]);if(seenT.size>=7)unlock('allthemes')});
@@ -215,7 +218,6 @@ function openTerm(){const n=$('#w-nav');n.hidden=false;delete n.dataset.closed;$
   if(n===10){$('#susMeter').textContent='emergency meeting';SOUNDS.boom();SOUNDS.error();unlock('sus');setTimeout(()=>{n=0;$('#susMeter').textContent='sus meter: [..........]'},3000)}}})();
 
 /* ========== tab title + xmas ========== */
-const T0=document.title;document.addEventListener('visibilitychange',()=>{document.title=document.hidden?'come back so i get money':T0});
 (()=>{const d=new Date(),m=d.getMonth();let t;if(m>=10)t='the christmas background is back. turn on snow in the menu';else{const nov=new Date(d.getFullYear(),10,1);t=Math.ceil((nov-d)/864e5)+' days until the christmas background comes back'}$('#xmas').textContent=t})();
 
 /* ========== terminal commands ========== */
