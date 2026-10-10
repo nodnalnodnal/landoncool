@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow chat</title>
+<style>
+html,body{margin:0;height:100%;background:#008080;font:13px Tahoma,Verdana,sans-serif;color:#000}
+body{display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+.win{width:100%;max-width:560px;height:min(640px,calc(100vh - 24px));background:#c0c0c0;border:2px solid;border-color:#fff #404040 #404040 #fff;display:flex;flex-direction:column;box-shadow:2px 2px 0 #000}
+.bar{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-weight:bold;padding:4px 6px;display:flex;justify-content:space-between;align-items:center}
+.bar a{color:#fff;text-decoration:none;background:#c0c0c0;color:#000;border:1px solid;border-color:#fff #404040 #404040 #fff;padding:0 5px;font-size:11px}
+.info{padding:5px 8px;font-size:11px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#log{flex:1;margin:0 8px;background:#fff;border:2px solid;border-color:#404040 #fff #fff #404040;overflow-y:auto;padding:6px 8px;line-height:1.45}
+#log .m{margin:1px 0;word-wrap:break-word}
+#log .n{font-weight:bold}
+#log .t{color:#888;font-size:10px;margin-right:4px}
+#log .sys{color:#666;font-style:italic}
+form{display:flex;gap:6px;padding:8px;flex-wrap:wrap}
+input{font:13px Tahoma,sans-serif;padding:3px 5px;border:2px solid;border-color:#404040 #fff #fff #404040;min-width:0}
+#name{width:90px}
+#msg{flex:1}
+button{font:bold 13px Tahoma;background:#c0c0c0;border:2px solid;border-color:#fff #404040 #404040 #fff;padding:2px 14px;cursor:pointer}
+button:active{border-color:#404040 #fff #fff #404040}
+#err{color:#a00;padding:0 8px 6px;font-size:11px;min-height:14px}
+</style>
+</head>
+<body>
+<div class="win">
+<div class="bar"><span>&#128004; cow chat</span><a href="/" title="back to landon.cool">x</a></div>
+<div class="info"><span id="online">connecting...</span><span>be nice or the cow will find you</span></div>
+<div id="log" aria-live="polite"><div class="sys">loading messages...</div></div>
+<form id="f" autocomplete="off">
+<input id="name" maxlength="20" placeholder="name" aria-label="your name" spellcheck="false">
+<input id="msg" maxlength="200" placeholder="say something" aria-label="message">
+<button>send</button>
+</form>
+<div id="err"></div>
+</div>
+
+<script>
+// real chat for everyone on landon.cool. api.landon.cool/api/chat keeps the
+// last 200 messages, this polls every 2s for anything newer than what we have
+const API = 'https://api.landon.cool/api';
+const $ = id => document.getElementById(id);
+const log = $('log');
+let last = 0, first = true;
+
+try { $('name').value = localStorage.getItem('chatName') || ''; } catch (e) {}
+$('name').addEventListener('input', () => { try { localStorage.setItem('chatName', $('name').value.trim()); } catch (e) {} });
+
+// same color for the same name every time
+function color(name) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `hsl(${h} 70% 35%)`;
+}
+
+function add(m) {
+  const d = document.createElement('div');
+  d.className = 'm';
+  const t = document.createElement('span');
+  t.className = 't';
+  t.textContent = new Date(m.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const n = document.createElement('span');
+  n.className = 'n';
+  n.style.color = color(m.name);
+  n.textContent = m.name + ': ';
+  d.append(t, n, document.createTextNode(m.msg));
+  log.appendChild(d);
+}
+
+async function poll() {
+  try {
+    const r = await fetch(`${API}/chat?after=${last}`);
+    const j = await r.json();
+    if (first) { log.innerHTML = ''; if (!j.messages.length) log.innerHTML = '<div class="sys">no messages yet. say hi!</div>'; first = false; }
+    if (j.messages.length) {
+      // only follow new messages if you're already at the bottom, so scrolling up to read works
+      const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40, initial = last === 0;
+      if (initial) log.innerHTML = '';
+      j.messages.forEach(add);
+      last = j.messages[j.messages.length - 1].id;
+      if (atBottom || initial) log.scrollTop = log.scrollHeight;
+    }
+  } catch (e) {
+    if (first) log.innerHTML = '<div class="sys">the chat server is down, try again later</div>';
+  }
+}
+
+// how many people are around, from the live visitors api
+const id = Math.random().toString(36).slice(2, 12).padEnd(10, '0');
+async function here() {
+  if (document.hidden) return;
+  try {
+    const r = await fetch(`${API}/here`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, page: '/chat/', x: null, y: null }),
+    });
+    const j = await r.json();
+    if (j.here != null) $('online').textContent = `${j.here} in chat, ${j.online} on landon.cool`;
+  } catch (e) {}
+}
+
+$('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = $('msg').value.trim();
+  if (!msg) return;
+  $('err').textContent = '';
+  try {
+    const r = await fetch(`${API}/chat`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: $('name').value.trim(), msg }),
+    });
+    const j = await r.json();
+    if (!r.ok) { $('err').textContent = j.error || 'that didnt send'; return; }
+    $('msg').value = '';
+    poll();
+  } catch (e) { $('err').textContent = 'cant reach the server'; }
+});
+
+poll(); here();
+setInterval(poll, 2000);
+setInterval(here, 3000);
+</script>
+</body>
+</html>

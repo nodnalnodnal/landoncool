@@ -459,7 +459,7 @@ $('#emptyBin').onclick=()=>{$('.binl').innerHTML='<div class="small">the recycle
 
 /* ---------- sidebar ---------- */
 function renderStats(){const v=String(stats.visits).padStart(7,'0');$('#odo').innerHTML=[...v].map(c=>`<span>${c}</span>`).join('');
-  const rows=[['online now','1'],['your visits',stats.visits],['page views',stats.views],['menu toggles',stats.toggles],['moos',stats.moos],['skin blinks',stats.blinks],['guestbook',gb().length]];
+  const rows=[['online now',window.liveOnline||1],['your visits',stats.visits],['page views',stats.views],['menu toggles',stats.toggles],['moos',stats.moos],['skin blinks',stats.blinks],['guestbook',gb().length]];
   $('#statl').innerHTML=rows.map(r=>`<span>${r[0]}</span><b>${r[1]}</b>`).join('')}
 setInterval(renderStats,1000);
 function cd(now){const end=new Date(2027,0,1);let s=Math.floor((end-now)/1000);if(s<=0){$('#cd').textContent="it's 2027. happy new year.";return}

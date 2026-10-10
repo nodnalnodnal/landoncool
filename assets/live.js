@@ -60,12 +60,23 @@
       });
       const j = await r.json();
       if (j.error) return;
+      window.liveOnline = j.online; // the live stats box in main.js shows this
       if (badge) {
         badge.textContent = '● ' + j.online;
         badge.title = `${j.online} on landon.cool right now, ${j.here} on this page`;
       }
       render(j.cursors || []);
     } catch (e) {}
+  }
+
+  // visitor counter: the api counts each person once every 12 hours
+  const odo = document.getElementById('visOdo');
+  if (odo) {
+    fetch('https://api.landon.cool/api/visits', { method: 'POST' }).then(r => r.json()).then(j => {
+      const n = String(j.you || j.visits).padStart(7, '0');
+      odo.innerHTML = [...n].map(c => `<span>${c}</span>`).join('');
+      odo.title = `${j.visits} visitors total`;
+    }).catch(() => {});
   }
 
   ping();

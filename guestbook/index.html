@@ -31,6 +31,13 @@ button:active{border-style:inset}
 .blink{animation:bl 1s steps(1) infinite}@keyframes bl{50%{visibility:hidden}}
 a{color:#00ffff}a:visited{color:#ff66ff}
 .ft{text-align:center;font-size:13px;color:#aaa;margin:30px 0}
+#pad{width:160px;height:160px;image-rendering:pixelated;background:#fff;border:2px inset #888;cursor:crosshair;touch-action:none;display:block}
+.pal{display:flex;flex-wrap:wrap;gap:2px;width:160px;margin-top:4px}
+.pal button{width:18px;height:18px;padding:0;border:2px outset #fff}
+.pal button.on{border:2px inset #000;outline:1px solid #000}
+.small{font-size:12px}
+.e canvas{float:left;width:64px;height:64px;image-rendering:pixelated;background:#fff;border:2px ridge #ccc;margin:0 10px 4px 0}
+.e:after{content:"";display:block;clear:both}
 </style>
 </head>
 <body>
@@ -43,6 +50,7 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 <table class="f"><tr><td>name:</td><td><input id="name" maxlength="40"></td></tr>
 <tr><td>where u from:</td><td><input id="from" maxlength="60"></td></tr>
 <tr><td valign="top">message:</td><td><textarea id="msg" maxlength="500"></textarea></td></tr>
+<tr><td valign="top">doodle:<br><span class="small">(optional)</span></td><td><canvas id="pad" width="16" height="16" aria-label="draw a doodle"></canvas><div class="pal" id="pal"></div><button type="button" id="clr" class="small" style="margin-top:4px;font-size:12px;padding:1px 8px">clear</button></td></tr>
 <tr><td></td><td><button id="sign">sign it</button> <span id="err"></span></td></tr></table>
 <hr>
 <div id="list"><p style="text-align:center">loading entries...</p></div>
@@ -55,16 +63,29 @@ function show(j,hit){
   if(hit){const h=document.getElementById('hits');h.innerHTML='';String(j.hits).padStart(6,'0').split('').forEach(d=>h.appendChild(el('span','dig',d)))}
   L.innerHTML='';
   if(!j.entries.length){L.appendChild(el('p',null,'nobody has signed yet. be the first!!!'));return}
-  j.entries.forEach(x=>{const d=el('div','e');d.appendChild(el('span','dt',new Date(x.t).toLocaleDateString()));d.appendChild(el('span','nm',x.name));if(x.from)d.appendChild(el('span','fr',' from '+x.from));d.appendChild(el('div','ms',x.msg));L.appendChild(d)});
+  j.entries.forEach(x=>{const d=el('div','e');if(x.d)d.appendChild(doodle(x.d));d.appendChild(el('span','dt',new Date(x.t).toLocaleDateString()));d.appendChild(el('span','nm',x.name));if(x.from)d.appendChild(el('span','fr',' from '+x.from));d.appendChild(el('div','ms',x.msg));L.appendChild(d)});
 }
+// doodles: 16x16 pixels, each one a hex digit picking a color from PAL. 0 is blank
+const PAL=['','#000','#fff','#e00','#f80','#ff0','#6f3','#070','#0ff','#03f','#90f','#f6c','#842','#888','#ccc','#fc9'];
+const pad=document.getElementById('pad'),pctx=pad.getContext('2d'),px=Array(256).fill('0');let pen='1',down=false;
+function paint(){pctx.clearRect(0,0,16,16);px.forEach((c,i)=>{if(c!=='0'){pctx.fillStyle=PAL[parseInt(c,16)];pctx.fillRect(i%16,i/16|0,1,1)}})}
+function doodle(str){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');[...str].forEach((ch,i)=>{if(ch!=='0'){g.fillStyle=PAL[parseInt(ch,16)];g.fillRect(i%16,i/16|0,1,1)}});return c}
+function dot(e){const r=pad.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*16),y=Math.floor((e.clientY-r.top)/r.height*16);if(x<0||y<0||x>15||y>15)return;px[y*16+x]=pen;paint()}
+pad.addEventListener('pointerdown',e=>{down=true;pad.setPointerCapture(e.pointerId);dot(e)});
+pad.addEventListener('pointermove',e=>{if(down)dot(e)});
+pad.addEventListener('pointerup',()=>down=false);pad.addEventListener('pointercancel',()=>down=false);
+const palEl=document.getElementById('pal');
+PAL.forEach((c,i)=>{const b=document.createElement('button');b.type='button';b.style.background=c||'repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/8px 8px';b.title=i?c:'eraser';b.setAttribute('aria-label',i?'color '+c:'eraser');if(i===1)b.className='on';b.onclick=()=>{pen=i.toString(16);palEl.querySelectorAll('button').forEach(x=>x.className='');b.className='on'};palEl.appendChild(b)});
+document.getElementById('clr').onclick=()=>{px.fill('0');paint()};
 async function load(hit){try{const r=await fetch('https://api.landon.cool/api/guestbook'+(hit?'?hit=1':''));show(await r.json(),hit)}catch(e){L.innerHTML='';L.appendChild(el('p',null,'the guestbook server is down. try again later'))}}
 document.getElementById('sign').onclick=async()=>{
   E.textContent='';
-  const b={name:document.getElementById('name').value,from:document.getElementById('from').value,msg:document.getElementById('msg').value};
-  if(!b.name.trim()||!b.msg.trim()){E.textContent='you need a name and a message';return}
+  const b={name:document.getElementById('name').value,from:document.getElementById('from').value,msg:document.getElementById('msg').value,doodle:px.join('')};
+  const drew=/[1-9a-f]/.test(b.doodle);if(!drew)delete b.doodle;
+  if(!b.name.trim()||(!b.msg.trim()&&!drew)){E.textContent='you need a name and a message (or a doodle)';return}
   try{const r=await fetch('https://api.landon.cool/api/guestbook',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await r.json();
     if(!r.ok){E.textContent=j.error||'that didnt work';return}
-    document.getElementById('msg').value='';E.textContent='thx!!!';load(false);
+    document.getElementById('msg').value='';px.fill('0');paint();E.textContent='thx!!!';load(false);
   }catch(e){E.textContent='cant reach the server, try again later'}
 };
 load(true);
