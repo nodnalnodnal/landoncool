@@ -138,7 +138,7 @@ const PAGES=[
  ['/flip/','flip a coin','star'],['/fridge/','the fridge','folder'],['/goose/','goose','chat'],['/guestbook/','guestbook','chat'],['/hold/','hold the button','star'],
  ['/lag/','lag','gear'],['/minecraft-time/','minecraft time','cube'],['/moo/','text the cow','chat'],['/moon/','moon','star'],['/oracle/','the oracle','eye'],['/pacman/','pacman','pac'],
  ['/pet/','cowgotchi','cow'],['/piano/','piano','note'],['/radio/','cow fm','note'],['/rain/','rain','globe2'],['/rate/','i rate things','trophy'],['/receipt/','receipt','txt'],
- ['/scream/','scream','chat'],['/screensaver/','screensaver','pc'],['/skin-ascii/','skin to ascii','cube'],['/stare/','hi','eye'],['/sus/','text cowifier','txt'],['/tv/','tv','pc'],
+ ['/scream/','scream','chat'],['/screensaver/','screensaver','pc'],['/seed/','seed map','globe'],['/skin-ascii/','skin to ascii','cube'],['/stare/','hi','eye'],['/sus/','text cowifier','txt'],['/tv/','tv','pc'],
  ['/typewriter/','typewriter','txt'],['/void/','the void','folder'],['/weather/','local forecast','globe2'],['/wiki/','landonpedia','globe'],
  ['/innioasis.htm','innioasis g1 zone','gear'],['/plain.htm','plain (my language)','txt'],['/game.html','scratch game','cube'],
 ];
