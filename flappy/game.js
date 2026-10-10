@@ -16,6 +16,7 @@ const names = [
   'backround_light', 'backround_dark', 'bird_frame_1', 'bird_frame_2', 'bird_frame_3',
   'pipe_green_up', 'pipe_green_down', 'gameover', 'getready', 'restart', 'flappylogo',
   '0_score', '1_score', '2_score', '3_score', '4_score', '5_score', '6_score', '7_score', '8_score', '9_score',
+  'coin_gold_light', 'coin_gold_dark', 'coin_silver_light', 'coin_silver_dark',
 ];
 const img = {};
 let loading = names.length;
@@ -28,9 +29,42 @@ const birdFrames = ['bird_frame_1', 'bird_frame_2', 'bird_frame_3'];
 
 // game state: 'menu' -> 'ready' -> 'play' -> 'dead'
 let state = 'menu';
-let bird, pipes, score, frame, deadAt;
-let best = 0;
+let bird, pipes, score, coins, frame, deadAt;
+let best = 0, bank = 0;
 try { best = +localStorage.getItem('flappyBest') || 0; } catch (e) {}
+try { bank = +localStorage.getItem('flappyCoins') || 0; } catch (e) {}
+
+// sounds are made on the fly with web audio, no files needed. m mutes
+let audio = null, muted = false;
+try { muted = localStorage.getItem('flappyMuted') === '1'; } catch (e) {}
+
+function beep(notes) {
+  if (muted) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    let t = audio.currentTime;
+    for (const [freq, len, type = 'square', vol = 0.08, slide] of notes) {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + len);
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g).connect(audio.destination);
+      o.start(t);
+      o.stop(t + len);
+      t += len * 0.8;
+    }
+  } catch (e) {}
+}
+
+const sfx = {
+  flap: () => beep([[520, 0.07, 'triangle', 0.1, 880]]),
+  point: () => beep([[880, 0.06], [1320, 0.1]]),
+  silver: () => beep([[1200, 0.05, 'square', 0.06], [1800, 0.12, 'square', 0.06]]),
+  gold: () => beep([[988, 0.05], [1319, 0.05], [1976, 0.16]]),
+  hit: () => beep([[220, 0.25, 'sawtooth', 0.12, 55]]),
+};
 
 const restartBtn = { x: WIDTH / 2 - 26, y: HEIGHT / 2 + 26, w: 52, h: 29 };
 
@@ -39,18 +73,26 @@ function reset() {
   pipes = [];
   for (let i = 0; i < 2; i++) pipes.push(newPipe(WIDTH + 40 + i * PIPE_SPACING));
   score = 0;
+  coins = 0;
   frame = 0;
 }
 
 function newPipe(x) {
-  // gapTop range keeps both pipes touching the screen edges (pipes are 160 tall)
-  return { x, gapTop: 32 + Math.floor(Math.random() * 110), scored: false };
+  // gapTop range keeps both pipes touching the screen edges (pipes are 160 tall).
+  // about a third of pipes have a coin floating between them and the next one,
+  // at a random height so you have to go out of your way for it
+  const coin = Math.random() < 0.35
+    ? { gold: Math.random() < 0.2, y: 30 + Math.floor(Math.random() * 170), taken: false }
+    : null;
+  return { x, gapTop: 32 + Math.floor(Math.random() * 110), scored: false, coin };
 }
+
+function coinX(p) { return p.x + 26 + (PIPE_SPACING - 26) / 2 - 11; }
 
 function flap() {
   if (state === 'menu') { state = 'ready'; reset(); return; }
   if (state === 'ready') state = 'play';
-  if (state === 'play') bird.vy = FLAP;
+  if (state === 'play') { bird.vy = FLAP; sfx.flap(); }
   else if (state === 'dead' && frame - deadAt > 30) { reset(); state = 'ready'; }
 }
 
@@ -61,6 +103,9 @@ function hits(ax, ay, aw, ah, bx, by, bw, bh) {
 function die() {
   state = 'dead';
   deadAt = frame;
+  sfx.hit();
+  bank += coins;
+  try { localStorage.setItem('flappyCoins', bank); } catch (e) {}
   if (score > best) {
     best = score;
     try { localStorage.setItem('flappyBest', best); } catch (e) {}
@@ -87,7 +132,12 @@ function update() {
     const bx = bird.x + 2, by = bird.y + 2, bw = 13, bh = 8;
     if (hits(bx, by, bw, bh, p.x, -1000, 26, p.gapTop + 1000) ||
         hits(bx, by, bw, bh, p.x, p.gapTop + GAP, 26, 1000)) { die(); return; }
-    if (!p.scored && p.x + 26 < bird.x) { p.scored = true; score++; }
+    if (!p.scored && p.x + 26 < bird.x) { p.scored = true; score++; sfx.point(); }
+    if (p.coin && !p.coin.taken && hits(bx, by, bw, bh, coinX(p) + 3, p.coin.y + 3, 16, 16)) {
+      p.coin.taken = true;
+      coins += p.coin.gold ? 5 : 1;
+      (p.coin.gold ? sfx.gold : sfx.silver)();
+    }
   }
 }
 
@@ -99,6 +149,23 @@ function drawNumber(n, cy) {
   const total = digits.reduce((w, d) => w + img[d].width + 1, -1);
   let x = (WIDTH - total) / 2;
   for (const d of digits) { drawSprite(d, x, cy - 9); x += img[d].width + 1; }
+}
+
+function drawCoins() {
+  // small coin + count in the corner, plus a mute marker
+  ctx.drawImage(img.coin_gold_light, 4, 4, 11, 11);
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#543847';
+  ctx.lineWidth = 3;
+  ctx.font = 'bold 9px Verdana, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.strokeText(String(coins), 18, 13);
+  ctx.fillText(String(coins), 18, 13);
+  if (muted) {
+    ctx.textAlign = 'right';
+    ctx.strokeText('MUTED', WIDTH - 4, 13);
+    ctx.fillText('MUTED', WIDTH - 4, 13);
+  }
 }
 
 function drawBird() {
@@ -124,9 +191,15 @@ function draw() {
   for (const p of pipes) {
     drawSprite('pipe_green_down', p.x, p.gapTop - 160);
     drawSprite('pipe_green_up', p.x, p.gapTop + GAP);
+    if (p.coin && !p.coin.taken) {
+      // light and dark versions swap for a little shimmer, and it bobs
+      const c = (p.coin.gold ? 'coin_gold_' : 'coin_silver_') + (Math.floor(frame / 15) % 2 ? 'dark' : 'light');
+      drawSprite(c, coinX(p), p.coin.y + Math.sin((frame + p.x) / 12) * 2);
+    }
   }
   drawBird();
   drawNumber(score, 24);
+  drawCoins();
 
   if (state === 'ready') drawCentered('getready', HEIGHT / 2 - 40);
   if (state === 'dead') {
@@ -138,6 +211,8 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.strokeText('BEST ' + best, WIDTH / 2, HEIGHT / 2 + 12);
     ctx.fillText('BEST ' + best, WIDTH / 2, HEIGHT / 2 + 12);
+    ctx.strokeText('COINS ' + bank, WIDTH / 2, HEIGHT / 2 + 23);
+    ctx.fillText('COINS ' + bank, WIDTH / 2, HEIGHT / 2 + 23);
     if (frame - deadAt > 30) drawSprite('restart', restartBtn.x, restartBtn.y);
   }
 }
@@ -164,6 +239,10 @@ resize();
 
 addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); if (!e.repeat) flap(); }
+  if (e.code === 'KeyM' && !e.repeat) {
+    muted = !muted;
+    try { localStorage.setItem('flappyMuted', muted ? '1' : '0'); } catch (e) {}
+  }
 });
 canvas.addEventListener('pointerdown', e => { e.preventDefault(); flap(); });
 
