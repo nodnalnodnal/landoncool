@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>skin to ascii</title>
+<style>
+html,body{margin:0;min-height:100%;background:#111;color:#ddd}
+body{font-family:Consolas,"Courier New",monospace;display:flex;flex-direction:column;align-items:center;padding:24px 16px;box-sizing:border-box;min-height:100vh}
+h1{margin:0 0 14px;font-size:20px;font-weight:normal}
+form,.opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px;font-size:13px}
+input,button,select{font:inherit;background:#111;color:inherit;border:1px solid #555;padding:6px 10px}
+button{cursor:pointer}button:hover{border-color:#ddd}
+label{display:flex;align-items:center;gap:6px}
+#out{margin:16px 0 0;white-space:pre;line-height:1;font-size:10px;user-select:text}
+#msg{font-size:12px;opacity:.6;min-height:1.2em}
+a{color:inherit;opacity:.6;font-size:11px;margin-top:auto;padding-top:20px}
+</style></head><body>
+<h1>skin to ascii</h1>
+<form id="f"><input id="name" placeholder="minecraft username" value="mrcowlord" spellcheck="false" autocomplete="off" aria-label="username"><button>go</button></form>
+<div class="opts">
+  <select id="part" aria-label="what to show"><option value="face">face</option><option value="body">full body</option></select>
+  <select id="set" aria-label="characters">
+    <option value="@%#*+=-:. ">classic</option><option value="█▓▒░ ">blocks</option><option value="MOOmoo.. ">moo</option><option value="10">binary</option>
+  </select>
+  <label>color <input id="col" type="checkbox" checked></label>
+  <label>size <input id="sz" type="range" min="1" max="6" value="3"></label>
+  <button id="copy" type="button">copy</button>
+</div>
+<div id="msg"></div>
+<pre id="out"></pre>
+<a href="/">leave</a>
+<script>
+const $=id=>document.getElementById(id);
+let skin=null;
+// front-facing parts on a 64x64 skin: [sx,sy,w,h,dx,dy]
+const BASE=[[8,8,8,8,4,0],[20,20,8,12,4,8],[44,20,4,12,0,8],[36,52,4,12,12,8],[4,20,4,12,4,20],[20,52,4,12,8,20]];
+const OVER=[[40,8,8,8,4,0],[20,36,8,12,4,8],[44,36,4,12,0,8],[52,52,4,12,12,8],[4,36,4,12,4,20],[4,52,4,12,8,20]];
+function load(name){
+  $('msg').textContent='loading...';
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{skin=img;$('msg').textContent='';draw()};
+  img.onerror=()=>{$('msg').textContent='no skin for that name';$('out').textContent=''};
+  img.src='https://mc-heads.net/skin/'+encodeURIComponent(name)+'?t='+Date.now();
+  try{history.replaceState(null,'','?u='+encodeURIComponent(name))}catch(e){}
+}
+function compose(){
+  const body=$('part').value==='body',c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});
+  c.width=body?16:8;c.height=body?32:8;x.imageSmoothingEnabled=false;
+  const legacy=skin.height===32;
+  const put=(p,over)=>{let[sx,sy,w,h,dx,dy]=p;if(!body){dx-=4}
+    if(legacy&&sy>=32){ // old skins: mirror the right limb
+      const src=sx===36?[44,20]:[4,20];if(over)return;
+      x.save();x.translate(dx+w,dy);x.scale(-1,1);x.drawImage(skin,src[0],src[1],w,h,0,0,w,h);x.restore();return}
+    if(legacy&&over&&sy>=32)return;
+    x.drawImage(skin,sx,sy,w,h,dx,dy,w,h)};
+  const parts=body?[BASE,OVER]:[[BASE[0]],[OVER[0]]];
+  parts[0].forEach(p=>put(p,false));parts[1].forEach(p=>put(p,true));
+  return x.getImageData(0,0,c.width,c.height);
+}
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function draw(){
+  if(!skin)return;
+  const d=compose(),chars=$('set').value,n=chars.length-1,col=$('col').checked,s=+$('sz').value;
+  let html='',txt='';
+  for(let y=0;y<d.height;y++){
+    let row='',rt='';
+    for(let i=0;i<d.width;i++){
+      const p=(y*d.width+i)*4,[r,g,b,a]=[d.data[p],d.data[p+1],d.data[p+2],d.data[p+3]];
+      let ch=' ';
+      if(a>20){const l=(r*.299+g*.587+b*.114)/255;ch=chars[Math.min(n,Math.round((1-l)*n))]||'@';if(ch===' ')ch=chars[n-1]||'.'}
+      const cell=ch.repeat(s*2); // chars are ~2x taller than wide
+      rt+=cell;row+=col&&a>20?`<span style="color:rgb(${r},${g},${b})">${esc(cell)}</span>`:esc(cell);
+    }
+    for(let k=0;k<s;k++){html+=row+'\n';txt+=rt.replace(/\s+$/,'')+'\n'}
+  }
+  $('out').innerHTML=html;$('out').dataset.txt=txt;
+}
+$('f').onsubmit=e=>{e.preventDefault();const n=$('name').value.trim();if(n)load(n)};
+['part','set','col','sz'].forEach(id=>$(id).addEventListener('input',draw));
+$('copy').onclick=()=>navigator.clipboard.writeText($('out').dataset.txt||'').then(()=>$('msg').textContent='copied',()=>$('msg').textContent='clipboard said no');
+const q=new URLSearchParams(location.search).get('u');if(q)$('name').value=q;
+load($('name').value);
+</script>
+<script src="/konami.js"></script>
+</body></html>
