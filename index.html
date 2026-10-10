@@ -21,6 +21,7 @@
   <button class="dicon" data-go="skin" data-ic="cow"><i></i><span><b class="new">new</b>skin_lab.exe</span></button>
   <a class="dicon" href="/pacman/" data-ic="pac"><i></i><span>pacman.exe</span></a>
   <a class="dicon" href="/flappy/" data-ic="bird"><i></i><span><b class="new">new</b>flappy.exe</span></a>
+  <button class="dicon" data-open="w-cs" data-ic="user"><i></i><span><b class="new">new</b>cowspace.exe</span></button>
   <a class="dicon" href="/webring.jpg/" data-ic="ring"><i></i><span><b class="new">new</b>webring.exe</span></a>
   <a class="dicon" href="/ismysiteblocked/" data-ic="mirror"><i></i><span><b class="new">new</b>mirrors.exe</span></a>
   <a class="dicon" href="/assets.mp3/" data-ic="folder"><i></i><span><b class="new">new</b>assets.exe</span></a>
@@ -265,6 +266,14 @@
   <div class="wbody"><div class="in" style="background:var(--page);padding:6px"><img src="hmmmsus.png" alt="hmmm. sus." id="susImg" style="cursor:pointer"></div><div class="small" id="susMeter" style="margin-top:6px;font:18px var(--term)">sus meter: [..........]</div></div>
 </div>
 
+<!-- cowspace login / editor -->
+<div class="win out" id="w-cs" hidden data-title="cowspace.exe" data-ic="user" style="width:min(720px,94vw)">
+  <div class="tbar"><svg class="pix" data-pic="user" width="14" height="14"></svg><span class="ttl">cowspace.exe - a place for cows</span><span class="grip"></span>
+    <button class="tbtn" data-act="min" aria-label="minimize"><svg class="pix" data-pic="wmin" width="8" height="8"></svg></button>
+    <button class="tbtn" data-act="close" aria-label="close"><svg class="pix" data-pic="wx" width="8" height="8"></svg></button></div>
+  <div class="wbody"><iframe id="csWin" title="cowspace" data-src="/cowspace/?embed=1" style="width:100%;height:min(560px,70vh);border:0;display:block;background:#e5e5e5"></iframe></div>
+</div>
+
 <!-- guestbook -->
 <div class="win out" id="w-gb" hidden data-title="guestbook.txt" data-ic="chat">
   <div class="tbar"><svg class="pix" data-pic="chat" width="14" height="14"></svg><span class="ttl">guestbook.txt - notepad</span><span class="grip"></span>
@@ -393,6 +402,7 @@ the jolly christmas background comes back in november
   <div class="tray in">
     <button id="trSnd" aria-label="sound" aria-pressed="false"><svg class="pix" data-pic="note" width="14" height="14"></svg></button>
     <button id="trCrt" aria-label="crt" aria-pressed="false"><svg class="pix" data-pic="eye" width="14" height="14"></svg></button>
+    <button id="trCs" data-open="w-cs" aria-label="cowspace" title="cowspace: log in" style="opacity:1;display:flex;align-items:center;gap:4px;font:12px var(--ui)"><svg class="pix" data-pic="user" width="14" height="14"></svg><span id="trCsName">log in</span></button>
     <span id="online" title="people on landon.cool right now" style="color:#3c3">&#9679; 1</span>
     <span id="clock">00:00</span>
   </div>
@@ -428,10 +438,13 @@ the jolly christmas background comes back in november
 <div id="off" hidden>it's now safe to close this tab.<br><span style="font-size:20px;opacity:.6">(or click to turn it back on)</span></div>
 
 <script src="assets/skinview3d.bundle.js" defer></script>
-<script src="assets/main.js?v=202610102200" defer></script>
+<script src="assets/main.js?v=202610102300" defer></script>
 <script src="assets/extras.js?v=202610080736" defer></script>
-<script src="assets/retro.js?v=202610080736" defer></script>
+<script src="assets/cowamp-tracks.js?v=202610102300" defer></script>
+<script src="assets/retro.js?v=202610102300" defer></script>
 <script src="assets/fx.js?v=202610080736" defer></script>
 <script src="assets/live.js?v=202610102200" defer></script>
+<script src="cowspace/cs.js?v=202610102300" defer></script>
+<script src="assets/cowspace-home.js?v=202610102300" defer></script>
 </body>
 </html>

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cowspace</title>
+<style>
+:root{--blue:#036;--light:#6699cc;--bg:#e5e5e5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font:13px Verdana,Tahoma,sans-serif;color:#111}
+a{color:#036}
+.top{background:var(--blue);color:#fff;padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top .logo{font:bold 22px Verdana,sans-serif;color:#fff;text-decoration:none;letter-spacing:-1px}
+.top .logo span{color:#fc0}
+.top .sp{flex:1}
+.top a.l{color:#cde;font-size:12px}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+.embed .top,.embed .foot{display:none}.embed .wrap{padding:6px}
+.box{background:#fff;border:1px solid var(--light);margin-bottom:12px}
+.box>h2{margin:0;background:var(--light);color:#fff;font:bold 13px Verdana;padding:5px 8px;display:flex;justify-content:space-between;align-items:center}
+.box .in{padding:10px}
+label{display:block;font-weight:bold;margin:8px 0 3px;color:#036}
+label small{font-weight:normal;color:#777}
+input,select,textarea{font:13px Verdana,sans-serif;padding:4px 6px;border:1px solid #999;width:100%;max-width:340px}
+textarea{max-width:none;resize:vertical}
+button{font:bold 12px Verdana;background:#fc0;border:1px solid #a80;padding:5px 12px;cursor:pointer;color:#000}
+button.sec{background:#eee;border-color:#999}
+button.bad{background:#c33;border-color:#900;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.msg{min-height:16px;font-size:12px;margin-top:6px}.msg.err{color:#c00}.msg.ok{color:#070}
+.auth{max-width:380px;margin:20px auto}
+.tabs{display:flex;gap:4px;margin-bottom:-1px}
+.tabs button{background:#ddd;border:1px solid var(--light);border-bottom:0;font-weight:normal}
+.tabs button.on{background:#fff;font-weight:bold}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+#pad{width:192px;height:192px;image-rendering:pixelated;border:1px solid #999;cursor:crosshair;touch-action:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/24px 24px;display:block}
+.pal{display:flex;flex-wrap:wrap;gap:2px;width:192px;margin-top:4px}
+.pal button{width:22px;height:22px;padding:0;border:2px solid #fff;outline:1px solid #999}
+.pal button.on{border-color:#000}
+.mobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.mobs button{background:#fff;border:2px solid #ddd;padding:4px;font:10px Verdana;font-weight:normal}
+.mobs button.on{border-color:#fc0;background:#ffe}
+.mobs img{width:40px;height:40px;image-rendering:pixelated;display:block;margin:0 auto 2px}
+.av-now{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.av-now img{width:64px;height:64px;image-rendering:pixelated;border:1px solid #999;background:#fff}
+#preview{width:100%;height:560px;border:1px solid #999;background:#fff}
+#css{font:12px/1.4 ui-monospace,Consolas,monospace;height:220px}
+details{font-size:12px;margin-top:6px}details code{background:#f3f3f3;padding:0 3px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.banner{background:#fee;border:1px solid #c33;padding:8px;margin-bottom:12px;color:#900}
+.foot{text-align:center;color:#888;font-size:11px;margin:16px}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="logo" href="/cowspace/">cow<span>space</span></a>
+  <span>a place for cows</span>
+  <span class="sp"></span>
+  <a class="l" href="/">landon.cool</a>
+</div>
+<div class="wrap" id="app"><p>loading...</p></div>
+<div class="foot">cowspace is part of <a href="/">landon.cool</a></div>
+
+<script src="/assets/cowamp-tracks.js"></script>
+<script src="cs.js"></script>
+<script>
+// cowspace: log in / sign up, and the profile editor
+if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
+const $ = id => document.getElementById(id);
+const app = $('app'), esc = CS.esc;
+const say = (id, text, ok) => { const m = $(id); if (m) { m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); } };
+const openProfile = name => { const url = '/@' + name; if (document.body.classList.contains('embed')) window.open(url, '_blank'); else location.href = url; };
+
+// the same 16 colors as guestbook doodles. 0 is see-through
+const PAL = ['', '000000', 'ffffff', 'ee0000', 'ff8800', 'ffff00', '66ff33', '007700', '00ffff', '0033ff', '9900ff', 'ff66cc', '884422', '888888', 'cccccc', 'ffcc99'];
+const MOB_FAVS = ['cow', 'pig', 'chicken', 'sheep', 'creeper', 'enderman', 'zombie', 'skeleton', 'villager', 'axolotl', 'allay', 'wolf', 'cat', 'fox', 'bee', 'frog', 'goat', 'panda', 'warden', 'ender dragon', 'wither'];
+const GAME_FAVS = ['flappy bird', 'cowdle', 'pacman', 'cow clicker', 'cowsweeper', 'hold the button', 'the fridge', 'draw together', 'the button', 'bonk', 'cowgotchi', 'piano'];
+const BLOCK_FAVS = ['grass block', 'dirt', 'stone', 'cobblestone', 'oak log', 'hay bale', 'diamond block', 'gold block', 'tnt', 'obsidian', 'glowstone', 'crafting table', 'bookshelf', 'sponge', 'sand', 'netherrack', 'end stone', 'slime block', 'honey block', 'redstone lamp'];
+const opts = (list, cur) => '<option value="">pick one</option>' + list.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
+
+// ---------- logged out: log in / sign up ----------
+function authView(tab = 'login') {
+  app.innerHTML = `<div class="auth">
+    <div class="tabs"><button id="tLogin" class="${tab === 'login' ? 'on' : ''}">log in</button><button id="tSignup" class="${tab === 'signup' ? 'on' : ''}">sign up</button></div>
+    <div class="box"><h2>${tab === 'login' ? 'log in to cowspace' : 'join cowspace'}</h2><div class="in">
+      <form id="authForm" autocomplete="on">
+        <label>username <small>${tab === 'signup' ? '3-16 letters, numbers or _' : ''}</small></label>
+        <input id="aUser" maxlength="16" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        <label>password <small>${tab === 'signup' ? 'at least 6 characters' : ''}</small></label>
+        <input id="aPass" type="password" maxlength="100" autocomplete="${tab === 'login' ? 'current-password' : 'new-password'}" required>
+        ${tab === 'signup' ? `<label>email <small>optional, only for password resets</small></label><input id="aEmail" type="email" maxlength="100" autocomplete="email">` : ''}
+        <div style="margin-top:12px"><button>${tab === 'login' ? 'log in' : 'make my account'}</button></div>
+        <div class="msg" id="aMsg"></div>
+        ${tab === 'login' ? '<p style="font-size:11px;color:#777">forgot your password? ask landon to reset it.</p>' : '<p style="font-size:11px;color:#777">landon will be your first friend. be nice or the cow will find you.</p>'}
+      </form>
+    </div></div></div>`;
+  $('tLogin').onclick = () => authView('login');
+  $('tSignup').onclick = () => authView('signup');
+  $('authForm').onsubmit = async e => {
+    e.preventDefault();
+    const body = { username: $('aUser').value.trim(), password: $('aPass').value };
+    if (tab === 'signup') body.email = $('aEmail').value.trim();
+    // claiming the "landon" account: add #claim=<code> to the url once
+    const claim = new URLSearchParams(location.hash.slice(1)).get('claim');
+    if (claim) body.claim = claim;
+    try {
+      const j = await CS.api(tab === 'login' ? '/login' : '/signup', body);
+      CS.setToken(j.token); CS.forget();
+      if (claim) history.replaceState(null, '', location.pathname + location.search);
+      try { parent !== window && parent.postMessage({ cowspace: 'login' }, location.origin); } catch (e) {}
+      editor(j.user, j.undeleted ? 'welcome back! your account is no longer being deleted' : tab === 'signup' ? 'welcome to cowspace! set up your profile' : '');
+    } catch (err) { say('aMsg', err.message); }
+  };
+}
+
+// ---------- logged in: the editor ----------
+const avWhat = av => !av ? 'no avatar yet, you get the default cow'
+  : 'current: ' + esc(av.src === 'draw' ? 'your drawing' : av.src === 'mob' ? av.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : 'skin of ' + av.name);
+let draft = null, padPx = Array(256).fill('0'), pen = '1', mobsCache = null;
+
+function editor(user, hello) {
+  draft = { bio: user.bio, mood: user.mood || { e: '', t: '' }, favs: { ...user.favs }, song: user.song, css: user.css };
+  // turn a drawn avatar back into palette colors so you can keep editing it
+  padPx = Array(256).fill('0');
+  if (user.avatar && user.avatar.src === 'draw') for (let i = 0; i < 256; i++) {
+    const c = user.avatar.px.slice(i * 6, i * 6 + 6), k = PAL.indexOf(c);
+    padPx[i] = k > 0 ? k.toString(16) : '0';
+  }
+  app.innerHTML = `
+  ${user.deleting ? `<div class="banner">your account will be deleted on ${new Date(user.deleting).toLocaleDateString()}. log out and log back in to cancel.</div>` : ''}
+  <div class="box"><h2><span>hi ${esc(user.username)}!</span><span class="row"><button class="sec" id="viewMe">view my profile</button><button class="sec" id="logout">log out</button></span></h2>
+    <div class="in" style="font-size:12px">your profile lives at <a href="/@${esc(user.username)}">landon.cool/@${esc(user.username)}</a>. <span class="msg ok" id="hello">${esc(hello || '')}</span></div></div>
+  <div class="grid">
+   <div>
+    <div class="box"><h2>profile picture</h2><div class="in">
+      <div class="av-now"><img id="avNow" src="${CS.avatarUrl(user.avatar)}" alt="your avatar"><div style="font-size:12px" id="avWhat">${avWhat(user.avatar)}</div></div>
+      <div class="tabs"><button class="on" data-av="draw">draw</button><button data-av="mob">pick a mob</button><button data-av="skin">minecraft skin</button></div>
+      <div style="border:1px solid var(--light);padding:10px">
+        <div data-pane="draw"><canvas id="pad" width="16" height="16"></canvas><div class="pal" id="pal"></div>
+          <div class="row" style="margin-top:6px"><button class="sec" id="padClear">clear</button><button id="padSave">use this drawing</button></div></div>
+        <div data-pane="mob" hidden><div class="mobs" id="mobs">loading mobs...</div></div>
+        <div data-pane="skin" hidden><label>minecraft username</label><div class="row"><input id="skinName" maxlength="16" placeholder="Notch" style="max-width:200px" autocapitalize="off" spellcheck="false"><button id="skinSave">use their face</button></div></div>
+        <div class="msg" id="avMsg"></div>
+      </div>
+    </div></div>
+    <div class="box"><h2>about you</h2><div class="in">
+      <label>mood</label><div class="row"><input id="moodE" maxlength="8" placeholder="&#x1F404;" style="width:60px"><input id="moodT" maxlength="40" placeholder="hungry" style="max-width:270px"></div>
+      <label>bio <small id="bioCount"></small></label><textarea id="bio" maxlength="300" rows="4"></textarea>
+      <label>favorite mob</label><select id="fMob">${opts(MOB_FAVS, draft.favs.mob)}</select>
+      <label>favorite landon.cool game</label><select id="fGame">${opts(GAME_FAVS, draft.favs.game)}</select>
+      <label>favorite block</label><select id="fBlock">${opts(BLOCK_FAVS, draft.favs.block)}</select>
+      <label>profile song <small>plays when people open your profile</small></label>
+      <div class="row"><select id="song" style="max-width:260px"><option value="-1">no song</option>${(window.COWAMP_TRACKS || []).map((t, i) => `<option value="${i}"${i === draft.song ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select><button class="sec" id="songTry">&#9654; try</button></div>
+    </div></div>
+   </div>
+   <div>
+    <div class="box"><h2><span>preview</span><span style="font-weight:normal;font-size:11px">updates as you type</span></h2><div class="in"><iframe id="preview" sandbox title="profile preview"></iframe></div></div>
+    <div class="box"><h2>custom css</h2><div class="in">
+      <textarea id="css" spellcheck="false" placeholder="body { background: hotpink; }"></textarea>
+      <details><summary>what can i style?</summary>
+        <p>everything on your profile. the main parts: <code>body</code> <code>.page</code> <code>.header</code> <code>.name</code> <code>.role</code>
+        <code>.cols</code> <code>.left</code> <code>.right</code> <code>.box</code> <code>.box h2</code> <code>.box .in</code> <code>.pic</code> <code>.avatar</code>
+        <code>.mood</code> <code>.info</code> <code>.song</code> <code>.about</code> <code>.bio</code></p>
+        <p>fonts: <code>@import url("https://fonts.googleapis.com/css2?family=Comic+Neue");</code> then use the font name.</p>
+        <p>images: anything already on landon.cool, like <code>background: url(/hmmmsus.png)</code>. see <a href="/assets.mp3/" target="_blank">every asset</a>. links to other sites are removed so nobody can track your visitors.</p>
+      </details>
+    </div></div>
+   </div>
+  </div>
+  <div class="box"><div class="in row"><button id="save" style="font-size:14px;padding:8px 22px">save profile</button><span class="msg" id="saveMsg"></span></div></div>
+  <div class="box"><h2>account</h2><div class="in">
+    <label>email <small>optional, only for password resets</small></label>
+    <div class="row"><input id="email" type="email" maxlength="100" value="${esc(user.email)}"><button class="sec" id="emailSave">save email</button></div><div class="msg" id="emailMsg"></div>
+    <label>change password</label>
+    <div class="row"><input id="pwOld" type="password" placeholder="current password" autocomplete="current-password" style="max-width:200px"><input id="pwNew" type="password" placeholder="new password" autocomplete="new-password" style="max-width:200px"><button class="sec" id="pwSave">change</button></div><div class="msg" id="pwMsg"></div>
+    <label>sessions</label><button class="sec" id="logoutAll">log out everywhere</button>
+    <label style="color:#900">delete account</label>
+    <div style="font-size:12px;margin-bottom:4px">your account gets deleted in 7 days. log back in before then to cancel.</div>
+    <div class="row"><input id="delPw" type="password" placeholder="your password" autocomplete="current-password" style="max-width:200px"><button class="bad" id="del">delete my account</button></div><div class="msg" id="delMsg"></div>
+  </div></div>`;
+
+  $('moodE').value = draft.mood.e || ''; $('moodT').value = draft.mood.t || '';
+  $('bio').value = draft.bio || ''; $('css').value = draft.css || '';
+  $('viewMe').onclick = () => openProfile(user.username);
+  $('logout').onclick = async () => { try { await CS.api('/logout', {}); } catch (e) {} CS.setToken(''); CS.forget(); try { parent !== window && parent.postMessage({ cowspace: 'logout' }, location.origin); } catch (e) {} authView(); };
+
+  // live preview: rebuild the profile from whatever is typed right now
+  let t = null;
+  const preview = () => { clearTimeout(t); t = setTimeout(() => {
+    $('bioCount').textContent = `${$('bio').value.length}/300`;
+    $('preview').srcdoc = CS.profileDoc({ ...user, bio: $('bio').value, mood: { e: $('moodE').value, t: $('moodT').value },
+      favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value });
+  }, 250); };
+  for (const id of ['bio', 'moodE', 'moodT', 'fMob', 'fGame', 'fBlock', 'song', 'css']) $(id).addEventListener('input', preview);
+  preview();
+
+  $('songTry').onclick = () => { if ($('songTry').dataset.on) { CS.stopSong(); delete $('songTry').dataset.on; $('songTry').innerHTML = '&#9654; try'; } else if (+$('song').value >= 0) { CS.playSong(+$('song').value); $('songTry').dataset.on = 1; $('songTry').innerHTML = '&#9632; stop'; } };
+
+  $('save').onclick = async () => {
+    $('save').disabled = true;
+    try {
+      const j = await CS.api('/profile', { bio: $('bio').value, mood: { e: $('moodE').value, t: $('moodT').value },
+        favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value });
+      user = j.user; CS.forget();
+      // show what the server kept (it filters bad words and removes outside links from css)
+      $('bio').value = user.bio; $('css').value = user.css; preview();
+      say('saveMsg', 'saved!', true);
+    } catch (e) { say('saveMsg', e.message); }
+    $('save').disabled = false;
+  };
+
+  // ----- avatar -----
+  const setAv = async (body) => {
+    say('avMsg', 'saving...', true);
+    try { const j = await CS.api('/avatar', body); user = j.user; CS.forget(); $('avNow').src = CS.avatarUrl(user.avatar); $('avWhat').textContent = avWhat(user.avatar); preview(); say('avMsg', 'new avatar saved!', true); }
+    catch (e) { say('avMsg', e.message); }
+  };
+  document.querySelectorAll('[data-av]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-av]').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== b.dataset.av);
+    if (b.dataset.av === 'mob') loadMobs(setAv);
+  });
+  const pad = $('pad'), pctx = pad.getContext('2d');
+  const paint = () => { pctx.clearRect(0, 0, 16, 16); padPx.forEach((c, i) => { if (c !== '0') { pctx.fillStyle = '#' + PAL[parseInt(c, 16)]; pctx.fillRect(i % 16, i / 16 | 0, 1, 1); } }); };
+  let down = false;
+  const dot = e => { const r = pad.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * 16), y = Math.floor((e.clientY - r.top) / r.height * 16); if (x < 0 || y < 0 || x > 15 || y > 15) return; padPx[y * 16 + x] = pen; paint(); };
+  pad.onpointerdown = e => { down = true; pad.setPointerCapture(e.pointerId); dot(e); };
+  pad.onpointermove = e => { if (down) dot(e); };
+  pad.onpointerup = pad.onpointercancel = () => { down = false; };
+  PAL.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.style.background = c ? '#' + c : 'repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/8px 8px';
+    b.title = i ? '#' + c : 'eraser'; b.setAttribute('aria-label', i ? 'color #' + c : 'eraser');
+    if (i === 1) b.className = 'on';
+    b.onclick = () => { pen = i.toString(16); $('pal').querySelectorAll('button').forEach(x => x.className = ''); b.className = 'on'; };
+    $('pal').appendChild(b);
+  });
+  paint();
+  $('padClear').onclick = () => { padPx.fill('0'); paint(); };
+  $('padSave').onclick = () => setAv({ src: 'draw', px: padPx.join('') });
+  $('skinSave').onclick = () => setAv({ src: 'skin', name: $('skinName').value.trim() });
+
+  // ----- account -----
+  $('emailSave').onclick = async () => { try { await CS.api('/profile', { email: $('email').value.trim() }); say('emailMsg', 'saved', true); } catch (e) { say('emailMsg', e.message); } };
+  $('pwSave').onclick = async () => { try { await CS.api('/password', { old: $('pwOld').value, new: $('pwNew').value }); $('pwOld').value = $('pwNew').value = ''; say('pwMsg', 'password changed. you got logged out everywhere else', true); } catch (e) { say('pwMsg', e.message); } };
+  $('logoutAll').onclick = async () => { try { await CS.api('/logout-all', {}); } catch (e) {} CS.setToken(''); CS.forget(); authView(); };
+  $('del').onclick = async () => {
+    if (!confirm('really delete your cowspace account? you have 7 days to change your mind by logging back in.')) return;
+    try { await CS.api('/delete', { password: $('delPw').value }); CS.setToken(''); CS.forget(); authView(); say('aMsg', 'your account will be deleted in 7 days. log in before then to cancel', true); }
+    catch (e) { say('delMsg', e.message); }
+  };
+}
+
+async function loadMobs(setAv) {
+  const box = $('mobs');
+  if (!mobsCache) { try { mobsCache = (await CS.api('/mobs')).mobs; } catch (e) { box.textContent = "couldn't load the mobs"; return; } }
+  box.innerHTML = '';
+  for (const m of mobsCache) {
+    if (!m.px) continue;
+    const b = document.createElement('button');
+    b.innerHTML = `<img src="${CS.avatarUrl({ w: 8, px: m.px })}" alt="">${esc(m.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase())}`;
+    b.onclick = () => { box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); setAv({ src: 'mob', mob: m.name }); };
+    box.appendChild(b);
+  }
+}
+
+(async () => {
+  if (!CS.token()) return authView(location.hash.includes('signup') ? 'signup' : 'login');
+  const u = await CS.me();
+  u ? editor(u) : authView();
+})();
+</script>
+</body>
+</html>

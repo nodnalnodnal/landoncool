@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <title>404 :: landon.cool</title>
+<script>
+// cowspace profiles live at landon.cool/@name. there's no real page there, so
+// github pages sends them here and cowspace/profile.js draws the profile instead
+if (/^\/@[a-z0-9_]{3,16}\/?$/i.test(location.pathname)) {
+  document.documentElement.classList.add('cs-profile');
+  document.write('<script src="/assets/cowamp-tracks.js"><\/script><script src="/cowspace/cs.js"><\/script><script src="/cowspace/profile.js" defer><\/script>');
+}
+</script>
+<style>.cs-profile body>*{display:none}</style>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@700&family=VT323&display=swap" rel="stylesheet">
 <style>
