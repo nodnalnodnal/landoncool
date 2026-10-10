@@ -133,8 +133,8 @@ safe('windows',()=>{
 
 /* ================= 5. my computer ================= */
 const PAGES=[
- ['/bonk/','bonk','punch'],['/button/','the button','star'],['/certificate/','certificate','txt'],['/clicker/','cow clicker','cow'],['/countdown/','countdown','gear'],
- ['/cow/','cow','cow'],['/dial-up/','dial-up','globe'],['/doors/','doors','folder'],['/elevator/','elevator','folder'],['/fake-update/','fake update','gear'],
+ ['/ascii/','ascii cam','eye'],['/bonk/','bonk','punch'],['/button/','the button','star'],['/certificate/','certificate','txt'],['/clicker/','cow clicker','cow'],['/countdown/','countdown','gear'],
+ ['/cow/','cow','cow'],['/cowify/','cowify (extension)','cow'],['/dial-up/','dial-up','globe'],['/doors/','doors','folder'],['/elevator/','elevator','folder'],['/fake-update/','fake update','gear'],
  ['/flip/','flip a coin','star'],['/fridge/','the fridge','folder'],['/goose/','goose','chat'],['/guestbook/','guestbook','chat'],['/hold/','hold the button','star'],
  ['/lag/','lag','gear'],['/minecraft-time/','minecraft time','cube'],['/moon/','moon','star'],['/oracle/','the oracle','eye'],['/pacman/','pacman','pac'],
  ['/pet/','cowgotchi','cow'],['/piano/','piano','note'],['/rain/','rain','globe2'],['/rate/','i rate things','trophy'],['/receipt/','receipt','txt'],

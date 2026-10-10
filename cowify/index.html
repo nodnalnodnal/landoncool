@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cowify</title>
+<style>
+body{margin:0;min-height:100vh;background:#c8e6ff;font-family:Verdana,sans-serif;color:#222;display:flex;flex-direction:column;align-items:center;padding:30px 16px;box-sizing:border-box}
+h1{margin:10px 0 4px;font-size:34px}
+.sub{margin:0 0 20px;opacity:.7}
+.cows{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.cows img{width:90px;image-rendering:pixelated;transition:transform .2s}
+.cows img:hover{transform:rotate(-8deg) scale(1.1)}
+.dl{font:inherit;font-size:18px;padding:10px 24px;border:3px solid #000;background:#5ad35a;color:#000;text-decoration:none;box-shadow:4px 4px 0 #000}
+.dl:active{transform:translate(4px,4px);box-shadow:none}
+ol{max-width:440px;line-height:1.7;font-size:14px;margin-top:26px}
+code{background:#fff8;padding:1px 5px}
+a.back{margin-top:auto;padding-top:20px;font-size:11px;color:#555}
+</style></head><body>
+<div class="cows"><img src="extension/cows/cow.png" alt=""><img src="extension/cows/cow-2.png" alt=""><img src="extension/cows/cow-4.png" alt=""><img src="extension/cows/cow-6.png" alt=""></div>
+<h1>cowify</h1>
+<p class="sub">every image on every website. cow.</p>
+<a class="dl" href="cowify.zip" download>download</a>
+<ol>
+  <li>unzip it somewhere you won't delete it</li>
+  <li>go to <code>chrome://extensions</code> (works in edge/brave too)</li>
+  <li>turn on <b>developer mode</b> (top right)</li>
+  <li>click <b>load unpacked</b> and pick the folder</li>
+  <li>open literally any website</li>
+</ol>
+<a class="back" href="/">leave</a>
+<script src="/konami.js"></script>
+</body></html>

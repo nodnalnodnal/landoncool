@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "cowify",
+  "version": "1.0",
+  "description": "replaces every image on every site with a cow. from landon.cool",
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "action": { "default_popup": "popup.html", "default_icon": { "16": "icon16.png", "48": "icon48.png" } },
+  "permissions": ["storage"],
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle", "all_frames": true }
+  ],
+  "web_accessible_resources": [
+    { "resources": ["cows/*.png"], "matches": ["<all_urls>"] }
+  ],
+  "browser_specific_settings": { "gecko": { "id": "cowify@landon.cool" } }
+}

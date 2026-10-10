@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ascii cam</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#0f0}
+body{font-family:Consolas,"Courier New",monospace;display:flex;flex-direction:column}
+#wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#out{margin:0;white-space:pre;line-height:1;letter-spacing:0;user-select:text}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#000;z-index:2}
+#start button,.bar button,.bar select{font:inherit;background:#000;color:inherit;border:1px solid currentColor;padding:6px 12px;cursor:pointer}
+#start p{margin:0;font-size:13px;opacity:.6;text-align:center;padding:0 20px}
+.bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px;font-size:12px;border-top:1px solid #0f03}
+.bar label{display:flex;align-items:center;gap:6px}
+.bar input[type=range]{accent-color:currentColor}
+a{color:inherit;opacity:.6}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);font-size:12px;opacity:0;transition:opacity .3s}
+</style></head><body>
+<div id="start"><div>ascii cam</div><button id="go">turn camera on</button><p>nothing leaves your browser. it is literally just text.</p><a href="/">leave</a></div>
+<div id="wrap"><pre id="out"></pre></div>
+<div id="toast"></div>
+<div class="bar">
+  <select id="set" aria-label="characters">
+    <option value=" .:-=+*#%@">classic</option>
+    <option value=" .'`^,:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$">detailed</option>
+    <option value=" ░▒▓█">blocks</option>
+    <option value=" 01">binary</option>
+    <option value=" mooMOO">moo</option>
+  </select>
+  <select id="col" aria-label="color">
+    <option value="#0f0">green</option><option value="#fff">white</option><option value="#fb0">amber</option><option value="real">real color</option>
+  </select>
+  <label>size <input id="res" type="range" min="40" max="200" value="100"></label>
+  <label><input id="inv" type="checkbox"> invert</label>
+  <button id="snap">copy frame</button>
+  <a href="/">leave</a>
+</div>
+<script>
+const $=id=>document.getElementById(id),out=$('out'),v=document.createElement('video'),c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});
+v.playsInline=true;v.muted=true;
+let chars=$('set').value,cols=+$('res').value,inv=false,color=$('col').value;
+$('set').onchange=e=>chars=e.target.value;
+$('res').oninput=e=>{cols=+e.target.value;fit()};
+$('inv').onchange=e=>inv=e.target.checked;
+$('col').onchange=e=>{color=e.target.value;document.body.style.color=color==='real'?'#fff':color};
+function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;setTimeout(()=>$('toast').style.opacity=0,1500)}
+$('snap').onclick=()=>navigator.clipboard.writeText(out.innerText).then(()=>toast('copied'),()=>toast('clipboard said no'));
+function fit(){
+  // chars are about twice as tall as wide, so halve the rows
+  const ar=(v.videoHeight||3)/(v.videoWidth||4),rows=Math.round(cols*ar*.5);
+  c.width=cols;c.height=rows;
+  const avail=$('wrap').clientHeight-10,fs=Math.min(innerWidth/(cols*.6),avail/rows);
+  out.style.fontSize=fs+'px';
+}
+addEventListener('resize',fit);
+const esc=s=>s==='<'?'&lt;':s==='>'?'&gt;':s==='&'?'&amp;':s;
+function frame(){
+  if(v.readyState>=2){
+    const w=c.width,h=c.height;
+    x.save();x.translate(w,0);x.scale(-1,1);x.drawImage(v,0,0,w,h);x.restore(); // mirror
+    const d=x.getImageData(0,0,w,h).data,n=chars.length-1,real=color==='real';
+    let s='';
+    for(let y=0;y<h;y++){
+      for(let i=0;i<w;i++){
+        const p=(y*w+i)*4,r=d[p],g=d[p+1],b=d[p+2];
+        let l=(r*.299+g*.587+b*.114)/255;if(inv)l=1-l;
+        const ch=esc(chars[Math.round(l*n)]);
+        s+=real?`<span style="color:rgb(${r},${g},${b})">${ch}</span>`:ch;
+      }
+      s+='\n';
+    }
+    if(real)out.innerHTML=s;else out.textContent=s.replace(/&lt;|&gt;|&amp;/g,m=>({'&lt;':'<','&gt;':'>','&amp;':'&'}[m]));
+  }
+  requestAnimationFrame(frame);
+}
+$('go').onclick=async()=>{
+  try{
+    v.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    await v.play();$('start').remove();fit();frame();
+  }catch(e){$('go').textContent='camera blocked. allow it and try again'}
+};
+</script>
+<script src="/konami.js"></script>
+</body></html>
