@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>is landon awake</title>
+<style>
+:root{--bg:#1b1d33;--fg:#e8e8ff}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--fg);font-family:Verdana,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:background 1.5s,color 1.5s;padding:0 16px}
+body.awake{--bg:#bfe6ff;--fg:#1a2a3a}
+body.idle{--bg:#d9c9ff;--fg:#2a1a3a}
+body.dnd{--bg:#ffc9c9;--fg:#3a1a1a}
+h1{font-size:clamp(28px,7vw,60px);margin:0}
+#ans{font-size:clamp(60px,18vw,150px);font-weight:bold;margin:6px 0 10px;letter-spacing:-2px}
+.stage{position:relative;width:220px;height:150px;margin:10px 0}
+#cow{width:200px;image-rendering:pixelated;position:absolute;left:10px;bottom:0;transition:transform .8s}
+body.off #cow{transform:rotate(180deg) translateY(-6px)}
+body.awake #cow{animation:hop .6s ease-in-out infinite alternate}
+body.idle #cow{animation:sway 3s ease-in-out infinite alternate}
+body.dnd #cow{animation:shake .15s linear infinite}
+@keyframes hop{to{transform:translateY(-14px)}}
+@keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+@keyframes shake{0%{transform:translateX(-2px)}50%{transform:translateX(2px)}}
+.z{position:absolute;font-size:22px;font-weight:bold;opacity:0;pointer-events:none}
+body.off .z{animation:zz 3s linear infinite}
+@keyframes zz{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(40px,-80px) scale(1.4)}}
+#doing{font-size:15px;min-height:1.4em;opacity:.85;max-width:480px}
+#clock{font-size:12px;opacity:.6;margin-top:6px}
+.stars{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity 1.5s}
+body.off .stars{opacity:1}
+.stars i{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw 2s infinite alternate}
+@keyframes tw{to{opacity:.2}}
+a{position:fixed;bottom:10px;font-size:11px;color:inherit;opacity:.6}
+</style></head><body class="off">
+<div class="stars" id="stars"></div>
+<h1>is landon awake?</h1>
+<div id="ans">...</div>
+<div class="stage"><img id="cow" src="/sprites/cow.png" alt="a cow"><span class="z" style="left:170px;top:30px">z</span><span class="z" style="left:180px;top:20px;animation-delay:1s">z</span><span class="z" style="left:190px;top:10px;animation-delay:2s">Z</span></div>
+<div id="doing"></div>
+<div id="clock"></div>
+<a href="/">leave</a>
+<script>
+const ID='1374506667500113970',$=id=>document.getElementById(id);
+for(let i=0;i<60;i++){const s=document.createElement('i');s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.animationDelay=Math.random()*2+'s';$('stars').append(s)}
+const SAY={
+  online:['yes','he is awake. probably coding something cursed.'],
+  idle:['kinda','he is awake but not at the keyboard. maybe snacking.'],
+  dnd:['yes but no','do not disturb. he is locked in.'],
+  offline:['no','asleep. or touching grass. either way, offline.'],
+};
+function clock(){$('clock').textContent='his time: '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}).toLowerCase()}
+function render(d){
+  const st=d.discord_status||'offline',[a,why]=SAY[st]||SAY.offline;
+  document.body.className={online:'awake',idle:'idle',dnd:'dnd'}[st]||'off';
+  $('ans').textContent=a;
+  let doing=why;
+  if(d.listening_to_spotify&&d.spotify)doing=`listening to ${d.spotify.song} by ${d.spotify.artist.split(';')[0]}`;
+  else{const g=(d.activities||[]).find(x=>x.type===0);if(g)doing=`playing ${g.name}`+(g.details?` (${g.details})`:'')}
+  $('doing').textContent=doing.toLowerCase();
+}
+async function check(){
+  try{const r=await fetch('https://api.lanyard.rest/v1/users/'+ID),j=await r.json();if(j.success)render(j.data);else throw 0}
+  catch(e){$('ans').textContent='??';$('doing').textContent='could not reach discord. schrodinger landon.'}
+}
+check();setInterval(check,20000);clock();setInterval(clock,10000);
+</script>
+<script src="/konami.js"></script>
+</body></html>

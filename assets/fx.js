@@ -133,12 +133,12 @@ safe('windows',()=>{
 
 /* ================= 5. my computer ================= */
 const PAGES=[
- ['/ascii/','ascii cam','eye'],['/bonk/','bonk','punch'],['/button/','the button','star'],['/certificate/','certificate','txt'],['/clicker/','cow clicker','cow'],['/countdown/','countdown','gear'],
+ ['/ascii/','ascii cam','eye'],['/awake/','is landon awake','eye'],['/bonk/','bonk','punch'],['/button/','the button','star'],['/certificate/','certificate','txt'],['/clicker/','cow clicker','cow'],['/countdown/','countdown','gear'],
  ['/cow/','cow','cow'],['/cowify/','cowify (extension)','cow'],['/dial-up/','dial-up','globe'],['/doors/','doors','folder'],['/elevator/','elevator','folder'],['/fake-update/','fake update','gear'],
  ['/flip/','flip a coin','star'],['/fridge/','the fridge','folder'],['/goose/','goose','chat'],['/guestbook/','guestbook','chat'],['/hold/','hold the button','star'],
- ['/lag/','lag','gear'],['/minecraft-time/','minecraft time','cube'],['/moon/','moon','star'],['/oracle/','the oracle','eye'],['/pacman/','pacman','pac'],
+ ['/lag/','lag','gear'],['/minecraft-time/','minecraft time','cube'],['/moo/','text the cow','chat'],['/moon/','moon','star'],['/oracle/','the oracle','eye'],['/pacman/','pacman','pac'],
  ['/pet/','cowgotchi','cow'],['/piano/','piano','note'],['/rain/','rain','globe2'],['/rate/','i rate things','trophy'],['/receipt/','receipt','txt'],
- ['/scream/','scream','chat'],['/screensaver/','screensaver','pc'],['/stare/','hi','eye'],['/sus/','text cowifier','txt'],['/tv/','tv','pc'],
+ ['/scream/','scream','chat'],['/screensaver/','screensaver','pc'],['/skin-ascii/','skin to ascii','cube'],['/stare/','hi','eye'],['/sus/','text cowifier','txt'],['/tv/','tv','pc'],
  ['/typewriter/','typewriter','txt'],['/void/','the void','folder'],['/weather/','local forecast','globe2'],['/wiki/','landonpedia','globe'],
  ['/innioasis.htm','innioasis g1 zone','gear'],['/plain.htm','plain (my language)','txt'],['/game.html','scratch game','cube'],
 ];

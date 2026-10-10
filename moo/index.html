@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>text the cow</title>
+<style>
+html,body{margin:0;height:100%}
+body{background:#ececec;font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;display:flex;justify-content:center}
+.phone{width:100%;max-width:420px;height:100%;display:flex;flex-direction:column;background:#fff}
+.top{display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;border-bottom:1px solid #ddd;background:#f7f7f7;position:relative}
+.top img{width:46px;height:46px;border-radius:50%;object-fit:contain;background:#dfefff;image-rendering:pixelated}
+.top b{font-size:12px;margin-top:3px;font-weight:500}
+.top small{font-size:10px;color:#888}
+.top a{position:absolute;left:12px;top:22px;color:#0a84ff;text-decoration:none;font-size:15px}
+#log{flex:1;overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:3px}
+.m{max-width:75%;padding:7px 12px;border-radius:18px;font-size:15px;line-height:1.3;word-wrap:break-word;animation:pop .15s ease-out}
+.me{align-self:flex-end;background:#0a84ff;color:#fff;border-bottom-right-radius:5px}
+.cow{align-self:flex-start;background:#e9e9eb;color:#000;border-bottom-left-radius:5px}
+.gap{margin-top:8px}
+.read{align-self:flex-end;font-size:10px;color:#999;margin:1px 4px 4px}
+.when{align-self:center;font-size:10px;color:#999;margin:6px 0}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.typing{display:flex;gap:4px;padding:11px 14px}
+.typing i{width:7px;height:7px;border-radius:50%;background:#999;animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+form{display:flex;gap:8px;padding:8px 10px 14px;border-top:1px solid #ddd;background:#f7f7f7}
+input{flex:1;font:inherit;font-size:15px;border:1px solid #ccc;border-radius:18px;padding:8px 14px;outline:none}
+button{width:34px;height:34px;border-radius:50%;border:0;background:#0a84ff;color:#fff;font-size:18px;cursor:pointer}
+button:disabled{background:#bbb}
+</style></head><body>
+<div class="phone">
+  <div class="top"><a href="/">&lsaquo; back</a><img src="/sprites/cow.png" alt=""><b>cow</b><small id="st">online</small></div>
+  <div id="log"><div class="when">today</div></div>
+  <form id="f"><input id="t" placeholder="text message" autocomplete="off" aria-label="message"><button id="send" aria-label="send">&uarr;</button></form>
+</div>
+<script>
+const $=id=>document.getElementById(id),log=$('log');
+const r=a=>a[Math.random()*a.length|0];
+const RULES=[
+  [/^(hi|hey|hello|yo|sup|hii+)\b/i,['moo','hello human','hi. who is this. how did you get this number','moo :)']],
+  [/how are (you|u)|how r u|hows it going/i,['i am standing in a field. same as yesterday','emotionally? grass','moo (good)','could be better. a fly is on me']],
+  [/your name|who are (you|u)|what are (you|u)/i,['i am cow','my name is moo. moo moo is my brother','i am a highly advanced cow','cow. just cow. landon named me']],
+  [/weather|rain|sunny|cold|hot/i,['it is grass outside','cloudy with a chance of hay','i looked up and the sky was there. so: sky','hot. i am wearing a full leather coat 24/7']],
+  [/time|what day|date/i,()=>[`it is ${1+Math.random()*12|0}:${String(Math.random()*60|0).padStart(2,'0')} moo time`,'it is grass o clock','cows do not have days. only grass','yesterday probably']],
+  [/(\d+)\s*([+\-*x\/])\s*(\d+)/,m=>{const a=+m[1],b=+m[3],o=m[2],v=o==='+'?a+b:o==='-'?a-b:o==='/'?a/b:a*b,w=Math.round(v+(Math.random()<.5?-1:1)*(1+Math.random()*7|0));return[`easy. ${w}`,`${w}. i used my hooves`,`its ${w}. trust`,`${w} (i counted on my spots)`]}],
+  [/love (you|u)|ily/i,['moo <3','i only love grass. sorry','ok','that is very nice. i am still a cow though']],
+  [/landon/i,['landon? he made me','landon owes me grass','he is asleep probably. or coding','landon is the cowlord. i must obey']],
+  [/minecraft|mc\b|creeper|diamond/i,['i have been killed for leather 400 times','minecraft cows are my cousins. they cannot talk. sad','punch a tree? why would you do that to the tree','i spawn in plains. like a gentleman']],
+  [/milk/i,['that is personal','no comment','we do not talk about that','i am going to pretend you did not ask that']],
+  [/burger|steak|beef|mcdonald/i,['why would you say that to me','blocked','that is so rude. moo.','i am telling the other cows']],
+  [/grass|hay/i,['GRASS','omg grass is my favorite','you get it','finally someone with taste']],
+  [/joke|funny|lol|lmao|haha/i,['why did the cow cross the road. to get to the udder side. thank you','what do you call a cow with no legs. ground beef. wait no that one is sad','lol','moo (laughing)']],
+  [/\?$/,['no','yes','idk im a cow','maybe. ask a horse','the answer is grass','i do not know but i believe in you','moo?','that is above my pay grade. i do not get paid']],
+  [/bye|gn|good ?night|cya|later/i,['bye. i will be here. in the field. forever','moo (goodbye)','gn. dream of grass','ok']],
+];
+const FILL=['moo','moo.','mooo','MOO','m o o','ok','k','sure','interesting','i was eating sorry','what','huh','that is crazy','i agree with you completely. what did you say','lol','i cannot read','did not read. had grass','wow','mhm','moo moo','thumbs up'];
+let busy=false,lastMe=null;
+function add(text,who){
+  const prev=log.lastElementChild,d=document.createElement('div');
+  d.className='m '+who+(prev&&!prev.classList.contains(who)?' gap':'');d.textContent=text;
+  if(who==='cow'&&lastMe){lastMe.remove();lastMe=null}
+  log.append(d);
+  if(who==='me'){lastMe=document.createElement('div');lastMe.className='read';lastMe.textContent='delivered';log.append(lastMe)}
+  log.scrollTop=log.scrollHeight;
+}
+function reply(msg){
+  for(const[re,ans]of RULES){const m=msg.match(re);if(m){const a=typeof ans==='function'?ans(m):ans;return r(a)}}
+  return r(FILL);
+}
+$('f').onsubmit=e=>{
+  e.preventDefault();const v=$('t').value.trim();if(!v||busy)return;
+  $('t').value='';add(v,'me');busy=true;
+  setTimeout(()=>{if(lastMe)lastMe.textContent='read';$('st').textContent='typing...';
+    const ty=document.createElement('div');ty.className='m cow typing';ty.innerHTML='<i></i><i></i><i></i>';log.append(ty);log.scrollTop=log.scrollHeight;
+    const ans=reply(v),wait=600+ans.length*40+Math.random()*900;
+    setTimeout(()=>{ty.remove();$('st').textContent='online';
+      // sometimes the cow double texts
+      ans.split(/(?<=\. )/).filter(Boolean).forEach((p,i)=>setTimeout(()=>add(p.trim(),'cow'),i*700));
+      busy=false},Math.min(wait,4000));
+  },400+Math.random()*700);
+};
+setTimeout(()=>add('moo','cow'),700);
+</script>
+<script src="/konami.js"></script>
+</body></html>
