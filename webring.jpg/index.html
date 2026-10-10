@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>landon.cool webring</title>
+<style>
+body{margin:0;background:#e9e9e9;font:13px Verdana,Geneva,sans-serif;color:#000}
+.wrap{max-width:720px;margin:16px auto;background:#fff;border:1px solid #999}
+h1{font:bold 20px Verdana,sans-serif;margin:0;padding:12px 16px;border-bottom:1px solid #999;background:#d6dde8}
+h1 small{font-weight:normal;font-size:12px;color:#555;display:block;margin-top:2px}
+h2{font:bold 14px Verdana,sans-serif;margin:0 0 10px}
+section{padding:14px 16px;border-bottom:1px solid #ccc}
+section:last-child{border-bottom:0}
+.ring{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.ring li{border:1px solid #bbb;padding:8px 10px;background:#fafafa;min-width:0}
+.ring a{font-weight:bold;color:#0033cc;word-break:break-all}
+.ring .note{color:#555;font-size:12px;margin-top:3px}
+.ring .meta{font-size:11px;margin-top:5px;color:#777}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px;background:#aaa}
+.dot.up{background:#1a1}.dot.down{background:#c22}
+.ring li.down{opacity:.65}
+.paths{list-style:none;margin:0;padding:0;columns:200px 3;column-gap:16px}
+.paths li{break-inside:avoid;padding:3px 0;border-bottom:1px dotted #ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paths a{color:#0033cc}
+.paths .t{color:#777;font-size:11px;margin-left:4px}
+.dim{color:#666}
+.count{float:right;font-weight:normal;color:#777;font-size:12px}
+.links{text-align:center;color:#888;font-size:11px;margin:10px}
+.links a{color:#666}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>the landon.cool webring<small>every site of mine, all of them, no random button</small></h1>
+
+<section>
+<h2>sites <span class="count" id="siteCount"></span></h2>
+<ul class="ring" id="sites"><li class="dim">loading...</li></ul>
+</section>
+
+<section>
+<h2>every page on landon.cool <span class="count" id="pathCount"></span></h2>
+<ul class="paths" id="paths"><li class="dim">loading...</li></ul>
+</section>
+
+<section>
+<h2>mirrors <span class="count" id="mirrorCount"></span></h2>
+<p class="dim" style="margin:0 0 10px">other domains that show landon.cool. <a href="/ismysiteblocked/">add your own</a></p>
+<ul class="ring" id="mirrors"><li class="dim">loading...</li></ul>
+</section>
+</div>
+<div class="links">checked by the server every 5 minutes &middot; <a href="/">back to landon.cool</a></div>
+
+<script>
+// same as the mirrors page: on landon.cool (github pages) go through api.landon.cool
+const API = /(^|\.)landon\.cool$/.test(location.hostname) || location.protocol === 'file:'
+  ? 'https://api.landon.cool/_mirrors' : '/_mirrors';
+const $ = id => document.getElementById(id);
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function ago(t) {
+  const s = Math.max(0, Math.round(Date.now() / 1000 - t));
+  return s < 60 ? 'just now' : s < 3600 ? Math.round(s / 60) + 'm ago' : Math.round(s / 3600) + 'h ago';
+}
+
+function card(host, up, desc, ms, checked) {
+  const here = host === location.hostname ? ' <span class="dim">(you are here)</span>' : '';
+  return `<li class="${up ? 'up' : 'down'}">
+    <span class="dot ${up ? 'up' : 'down'}" title="${up ? 'up' : 'down'}"></span><a href="https://${esc(host)}/">${esc(host)}</a>${here}
+    ${desc ? `<div class="note">${esc(desc)}</div>` : ''}
+    <div class="meta">${up ? 'up' : 'down'}${ms ? ' &middot; ' + ms + 'ms' : ''}${checked ? ' &middot; ' + ago(checked) : ''}</div>
+  </li>`;
+}
+
+async function getJSON(path) {
+  const r = await fetch(API + path);
+  return r.json();
+}
+
+async function load() {
+  try {
+    const { sites, paths } = await getJSON('/sites');
+    // relative links, so on a mirror you stay on the mirror
+    $('pathCount').textContent = paths.length + ' pages';
+    $('paths').innerHTML = paths.map(p => {
+      const t = p.title && p.title.replace(/\s*(::|\|).*$/, '');
+      return `<li><a href="${esc(p.path)}">${esc(p.path)}</a>${t && p.path !== '/' ? `<span class="t">${esc(t)}</span>` : ''}</li>`;
+    }).join('');
+    $('siteCount').textContent = sites.filter(s => s.up).length + ' of ' + sites.length + ' up';
+    $('sites').innerHTML = sites.length
+      ? sites.map(s => card(s.host, s.up, s.note || s.title, s.ms, s.last_checked)).join('')
+      : '<li class="dim">the server is still checking, give it a minute</li>';
+  } catch (e) {
+    $('sites').innerHTML = '<li class="dim">couldn\'t reach the server</li>';
+  }
+  try {
+    const { domains } = await getJSON('/list');
+    $('mirrorCount').textContent = domains.filter(d => d.https_ok).length + ' of ' + domains.length + ' up';
+    $('mirrors').innerHTML = domains.length
+      ? domains.map(d => card(d.domain, d.https_ok, null, d.ms, d.last_checked)).join('')
+      : '<li class="dim">no mirrors yet</li>';
+  } catch (e) {
+    $('mirrors').innerHTML = '<li class="dim">couldn\'t reach the server</li>';
+  }
+}
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
