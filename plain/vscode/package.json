@@ -1,0 +1,35 @@
+{
+  "name": "plain-language",
+  "displayName": "plain",
+  "description": "syntax highlighting, a run button and discord rich presence for plain, the language you write in words",
+  "version": "1.0.0",
+  "publisher": "mrcowlord",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": { "type": "git", "url": "https://github.com/nodnalnodnal/landoncool" },
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "languages": [{
+      "id": "plain",
+      "aliases": ["plain"],
+      "extensions": [".plain"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{ "language": "plain", "scopeName": "source.plain", "path": "./syntaxes/plain.tmLanguage.json" }],
+    "commands": [{ "command": "plain.run", "title": "plain: run this file", "icon": "$(play)" }],
+    "menus": { "editor/title": [{ "command": "plain.run", "when": "editorLangId == plain", "group": "navigation" }] },
+    "keybindings": [{ "command": "plain.run", "key": "f5", "when": "editorLangId == plain" }],
+    "configuration": {
+      "title": "plain",
+      "properties": {
+        "plain.folder": { "type": "string", "default": "", "description": "folder that has boot.py and plain.plain. leave empty to use the folder of the file you're running." },
+        "plain.python": { "type": "string", "default": "", "description": "python command. leave empty for python3 (py on windows)." },
+        "plain.discord.enabled": { "type": "boolean", "default": true, "description": "show 'coding in plain' on discord while a .plain file is open." },
+        "plain.discord.clientId": { "type": "string", "default": "", "description": "your discord application id (discord.com/developers/applications). its name is what discord shows after 'playing'." }
+      }
+    }
+  }
+}
