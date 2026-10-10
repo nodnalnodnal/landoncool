@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>cowdle</title>
+<style>
+:root{--bg:#121213;--ink:#f4f4f4;--dim:#818384;--tile:#3a3a3c;--key:#818384;--green:#538d4e;--yellow:#b59f3b;--gray:#3a3a3c}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:14px Verdana,Tahoma,sans-serif}
+body{display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:500px;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;box-sizing:border-box;border-bottom:1px solid var(--tile)}
+h1{font:bold 24px Verdana,sans-serif;margin:0;letter-spacing:1px}
+h1 small{font-size:12px;color:var(--dim);font-weight:normal;margin-left:6px}
+header button{background:none;border:1px solid var(--tile);color:var(--ink);font:12px Verdana;padding:4px 8px;cursor:pointer}
+#grid{display:grid;grid-template-rows:repeat(6,1fr);gap:5px;margin:16px 0 10px;width:min(300px,82vw)}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.tile{aspect-ratio:1;border:2px solid var(--tile);display:flex;align-items:center;justify-content:center;font:bold min(28px,8vw) Verdana,sans-serif;text-transform:uppercase;box-sizing:border-box}
+.tile.filled{border-color:#565758}
+.tile.green{background:var(--green);border-color:var(--green)}
+.tile.yellow{background:var(--yellow);border-color:var(--yellow)}
+.tile.gray{background:var(--gray);border-color:var(--gray)}
+.row.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+#msg{min-height:22px;font-weight:bold;text-align:center;margin-bottom:6px}
+#kb{width:100%;max-width:500px;padding:0 6px 12px;box-sizing:border-box}
+.krow{display:flex;gap:5px;justify-content:center;margin-bottom:6px}
+.krow button{flex:1;max-width:44px;height:54px;border:0;border-radius:4px;background:var(--key);color:var(--ink);font:bold 13px Verdana;cursor:pointer;text-transform:uppercase;padding:0;touch-action:manipulation}
+.krow button.wide{max-width:66px;flex:1.5;font-size:11px}
+.krow button.green{background:var(--green)}.krow button.yellow{background:var(--yellow)}.krow button.gray{background:#2a2a2c;color:#999}
+#stats{display:none;text-align:center;padding:10px 16px;max-width:500px}
+#stats .nums{display:flex;gap:18px;justify-content:center;margin:8px 0}
+#stats .nums b{display:block;font-size:22px}
+#stats .nums span{font-size:11px;color:var(--dim)}
+#stats button{background:var(--green);color:#fff;border:0;font:bold 14px Verdana;padding:8px 18px;cursor:pointer;border-radius:4px;margin-top:6px}
+.links{font-size:11px;color:var(--dim);margin:6px 0 14px}
+.links a{color:var(--dim)}
+</style>
+</head>
+<body>
+<header>
+<h1>cowdle<small id="num"></small></h1>
+<button id="how">how to play</button>
+</header>
+<div id="grid"></div>
+<div id="msg" role="status"></div>
+<div id="stats">
+<div id="result"></div>
+<div class="nums">
+<div><b id="sPlayed">0</b><span>played</span></div>
+<div><b id="sWin">0</b><span>win %</span></div>
+<div><b id="sStreak">0</b><span>streak</span></div>
+<div><b id="sMax">0</b><span>best streak</span></div>
+</div>
+<div class="dim" id="next" style="color:var(--dim);font-size:12px"></div>
+<button id="share">share</button>
+</div>
+<div id="kb"></div>
+<div class="links">a new cow or minecraft word every day &middot; <a href="/">back to landon.cool</a></div>
+
+<script>
+// cowdle: wordle, but every word is cow, farm or minecraft. everyone gets the
+// same word each day. the word order is shuffled with a fixed seed, so it's
+// the same for everyone and doesn't repeat until the list runs out
+const WORDS = [
+  'steer','horse','sheep','llama','moose','bison','ranch','dairy','cream','udder',
+  'grass','field','barns','chick','goose','mooed','bulls','herds','wheat','straw',
+  'fence','crops','milky','ghast','blaze','slime','golem','steve','pearl','ender',
+  'anvil','armor','arrow','craft','block','stone','torch','chest','lever','magma',
+  'witch','squid','panda','totem','sword','melon','cocoa','flint','glass','brick',
+  'plank','biome','spawn','creep','bread','apple','coral','caves','mined','lapis',
+  'ingot','smelt','forge','birch','vines','beets','sugar','elder','guard','raids',
+  'frogs','hives','honey',
+];
+const START = new Date(2026, 9, 10); // cowdle #1 is oct 10 2026
+
+function shuffled(list, seed) {
+  // mulberry32, so the order is the same in every browser
+  const rand = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const day = Math.max(0, Math.round((today - START) / 86400000));
+const ORDER = shuffled(WORDS, 1337);
+const ANSWER = ORDER[day % ORDER.length];
+const $ = id => document.getElementById(id);
+$('num').textContent = '#' + (day + 1);
+
+function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+let game = load('cowdleGame', null);
+if (!game || game.day !== day) game = { day, guesses: [], done: false, won: false };
+let stats = load('cowdleStats', { played: 0, wins: 0, streak: 0, max: 0, lastWin: -1 });
+let current = '';
+
+// ---------- board + keyboard ----------
+for (let r = 0; r < 6; r++) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  for (let c = 0; c < 5; c++) row.appendChild(Object.assign(document.createElement('div'), { className: 'tile' }));
+  $('grid').appendChild(row);
+}
+const KEYS = ['qwertyuiop', 'asdfghjkl', '+zxcvbnm-'];
+for (const line of KEYS) {
+  const row = document.createElement('div');
+  row.className = 'krow';
+  for (const k of line) {
+    const b = document.createElement('button');
+    b.dataset.k = k === '+' ? 'Enter' : k === '-' ? 'Backspace' : k;
+    b.textContent = k === '+' ? 'enter' : k === '-' ? '⌫' : k;
+    if (k === '+' || k === '-') b.className = 'wide';
+    if (k === '-') b.setAttribute('aria-label', 'backspace');
+    row.appendChild(b);
+  }
+  $('kb').appendChild(row);
+}
+
+// green/yellow/gray for each letter, handling repeated letters like the real one
+function score(guess) {
+  const res = Array(5).fill('gray'), left = {};
+  for (let i = 0; i < 5; i++) {
+    if (guess[i] === ANSWER[i]) res[i] = 'green';
+    else left[ANSWER[i]] = (left[ANSWER[i]] || 0) + 1;
+  }
+  for (let i = 0; i < 5; i++) {
+    if (res[i] !== 'green' && left[guess[i]]) { res[i] = 'yellow'; left[guess[i]]--; }
+  }
+  return res;
+}
+
+function draw() {
+  const rows = $('grid').children, rank = { gray: 1, yellow: 2, green: 3 }, keys = {};
+  for (let r = 0; r < 6; r++) {
+    const g = game.guesses[r], tiles = rows[r].children;
+    const colors = g ? score(g) : null;
+    for (let c = 0; c < 5; c++) {
+      const ch = g ? g[c] : (r === game.guesses.length ? current[c] : '') || '';
+      tiles[c].textContent = ch;
+      tiles[c].className = 'tile' + (colors ? ' ' + colors[c] : ch ? ' filled' : '');
+      if (colors && (rank[colors[c]] > (rank[keys[ch]] || 0))) keys[ch] = colors[c];
+    }
+  }
+  for (const b of $('kb').querySelectorAll('button')) {
+    const k = b.dataset.k;
+    b.classList.remove('green', 'yellow', 'gray');
+    if (keys[k]) b.classList.add(keys[k]);
+  }
+  if (game.done) showStats();
+}
+
+function say(text, ms = 1800) {
+  $('msg').textContent = text;
+  clearTimeout(say.t);
+  if (ms) say.t = setTimeout(() => { $('msg').textContent = ''; }, ms);
+}
+
+function press(k) {
+  if (game.done) return;
+  if (k === 'Enter') {
+    if (current.length < 5) {
+      const row = $('grid').children[game.guesses.length];
+      row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake');
+      return say('not enough letters');
+    }
+    game.guesses.push(current);
+    current = '';
+    const won = game.guesses[game.guesses.length - 1] === ANSWER;
+    if (won || game.guesses.length === 6) finish(won);
+    save('cowdleGame', game);
+  } else if (k === 'Backspace') current = current.slice(0, -1);
+  else if (/^[a-z]$/.test(k) && current.length < 5) current += k;
+  draw();
+}
+
+function finish(won) {
+  game.done = true;
+  game.won = won;
+  stats.played++;
+  if (won) {
+    stats.wins++;
+    stats.streak = stats.lastWin === day - 1 ? stats.streak + 1 : 1;
+    stats.max = Math.max(stats.max, stats.streak);
+    stats.lastWin = day;
+  } else stats.streak = 0;
+  save('cowdleStats', stats);
+  const praise = ['moo-velous!!', 'udderly amazing', 'great', 'nice', 'phew', 'close one'];
+  say(won ? praise[game.guesses.length - 1] : 'the word was ' + ANSWER.toUpperCase(), 0);
+}
+
+function showStats() {
+  $('stats').style.display = 'block';
+  $('result').textContent = game.won ? `got it in ${game.guesses.length}/6` : 'better luck tomorrow';
+  if (!game.won) say('the word was ' + ANSWER.toUpperCase(), 0);
+  $('sPlayed').textContent = stats.played;
+  $('sWin').textContent = stats.played ? Math.round(stats.wins / stats.played * 100) : 0;
+  $('sStreak').textContent = stats.streak;
+  $('sMax').textContent = stats.max;
+  const tick = () => {
+    const ms = new Date(today.getTime() + 86400000) - new Date();
+    const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60;
+    $('next').textContent = ms > 0 ? `next cowdle in ${h}h ${m}m` : 'new cowdle ready, refresh!';
+  };
+  tick();
+  clearInterval(showStats.t);
+  showStats.t = setInterval(tick, 30000);
+}
+
+$('share').addEventListener('click', async () => {
+  const icon = { green: '\u{1F7E9}', yellow: '\u{1F7E8}', gray: '⬛' };
+  const grid = game.guesses.map(g => score(g).map(c => icon[c]).join('')).join('\n');
+  const text = `cowdle #${day + 1} ${game.won ? game.guesses.length : 'X'}/6 \u{1F404}\n${grid}\nlandon.cool/cowdle`;
+  try {
+    if (navigator.share && matchMedia('(pointer:coarse)').matches) await navigator.share({ text });
+    else { await navigator.clipboard.writeText(text); say('copied!'); }
+  } catch (e) {}
+});
+
+$('how').addEventListener('click', () => say('guess the 5 letter word in 6 tries. green = right spot, yellow = wrong spot. every word is cow, farm or minecraft', 7000));
+
+$('kb').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { press(b.dataset.k); b.blur(); } });
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Enter' || e.key === 'Backspace') { e.preventDefault(); press(e.key); }
+  else if (/^[a-zA-Z]$/.test(e.key)) press(e.key.toLowerCase());
+});
+
+draw();
+</script>
+</body>
+</html>
