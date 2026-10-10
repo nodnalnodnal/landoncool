@@ -23,11 +23,14 @@
     }
     if (me) {
       tray.removeAttribute('data-open');
-      tray.title = `cowspace: @${me.username}`;
-      trayName.textContent = me.username;
+      const reqs = (me.requests || []).length;
+      tray.title = `cowspace: @${me.username}` + (reqs ? ` (${reqs} friend request${reqs === 1 ? '' : 's'})` : '');
+      trayName.textContent = me.username + (reqs ? ` (${reqs})` : '');
+      // with requests waiting, the tray opens cowspace to answer them instead of your profile
       img.src = CS.avatarUrl(me.avatar);
       img.hidden = false; icon.style.display = 'none';
-      tray.onclick = () => { location.href = '/@' + me.username; };
+      if (reqs) tray.setAttribute('data-open', 'w-cs');
+      tray.onclick = reqs ? null : () => { location.href = '/@' + me.username; };
     } else {
       tray.setAttribute('data-open', 'w-cs'); // main.js opens windows for anything with data-open
       tray.title = 'cowspace: log in';

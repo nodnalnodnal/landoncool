@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>friends on cowspace</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#e5e5e5;font:13px Verdana,Tahoma,sans-serif;color:#111}
+.top{background:#036;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top .logo{font:bold 22px Verdana,sans-serif;color:#fff;text-decoration:none;letter-spacing:-1px}
+.top .logo span{color:#fc0}
+.top .sp{flex:1}
+.top a.l{color:#cde;font-size:12px}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+.box{background:#fff;border:1px solid #6699cc;margin-bottom:12px}
+.box>h2{margin:0;background:#6699cc;color:#fff;font:bold 13px Verdana;padding:5px 8px}
+.box .in{padding:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.m{display:block;text-align:center;color:#036;text-decoration:none;padding:8px;border:1px solid #ddd;background:#fafafa;word-break:break-all}
+.m:hover{border-color:#6699cc;background:#fff}
+.m img{display:block;width:64px;height:64px;margin:0 auto 6px;image-rendering:pixelated;border:1px solid #ccc;background:#fff}
+.dim{color:#777}
+</style>
+</head>
+<body>
+<div class="top"><a class="logo" href="/cowspace/">cow<span>space</span></a><span class="sp"></span><a class="l" href="/cowspace/members/">members</a><a class="l" href="/">landon.cool</a></div>
+<div class="wrap"><div class="box"><h2 id="title">friends</h2><div class="in"><div class="grid" id="grid"><span class="dim">loading...</span></div></div></div></div>
+<script src="/cowspace/cs.js"></script>
+<script>
+// all of someone's friends: /cowspace/friends/?u=name
+(async () => {
+  const esc = CS.esc, name = (new URLSearchParams(location.search).get('u') || '').toLowerCase();
+  const grid = document.getElementById('grid');
+  try {
+    const j = await CS.api('/friends?u=' + encodeURIComponent(name));
+    document.title = `${j.username}'s friends on cowspace`;
+    document.getElementById('title').innerHTML = `<a href="/@${esc(j.username)}" style="color:#fff">${esc(j.username)}</a>'s friends (${j.friends.length})`;
+    grid.innerHTML = j.friends.map(f => `<a class="m" href="/@${esc(f.username)}"><img src="${CS.avatarUrl(f.avatar)}" alt="">${esc(f.username)}</a>`).join('')
+      || '<span class="dim">no friends yet</span>';
+  } catch (e) { grid.innerHTML = `<span class="dim">${esc(e.message)}</span>`; }
+})();
+</script>
+</body>
+</html>

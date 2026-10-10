@@ -43,6 +43,10 @@ button:disabled{opacity:.5;cursor:default}
 .mobs button.on{border-color:#fc0;background:#ffe}
 .mobs img{width:40px;height:40px;image-rendering:pixelated;display:block;margin:0 auto 2px}
 .av-now{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fr{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dotted #ccc;flex-wrap:wrap}
+.fr a{display:flex;align-items:center;gap:6px;flex:1;min-width:120px;color:#036;text-decoration:none}
+.fr img{width:28px;height:28px;image-rendering:pixelated;border:1px solid #ccc;background:#fff}
+.fr button{padding:2px 8px;font-size:11px}
 .av-now img{width:64px;height:64px;image-rendering:pixelated;border:1px solid #999;background:#fff}
 #preview{width:100%;height:560px;border:1px solid #999;background:#fff}
 #css{font:12px/1.4 ui-monospace,Consolas,monospace;height:220px}
@@ -102,7 +106,7 @@ function authView(tab = 'login') {
     const body = { username: $('aUser').value.trim(), password: $('aPass').value };
     if (tab === 'signup') body.email = $('aEmail').value.trim();
     // claiming the "landon" account: add #claim=<code> to the url once
-    const claim = new URLSearchParams(location.hash.slice(1)).get('claim');
+    const claim = (location.hash.match(/claim=([a-f0-9]+)/) || [])[1];
     if (claim) body.claim = claim;
     try {
       const j = await CS.api(tab === 'login' ? '/login' : '/signup', body);
@@ -113,6 +117,8 @@ function authView(tab = 'login') {
     } catch (err) { say('aMsg', err.message); }
   };
 }
+
+const notify = () => { try { parent !== window && parent.postMessage({ cowspace: 'changed' }, location.origin); } catch (e) {} };
 
 // ---------- logged in: the editor ----------
 const avWhat = av => !av ? 'no avatar yet, you get the default cow'
@@ -153,6 +159,17 @@ function editor(user, hello) {
       <label>profile song <small>plays when people open your profile</small></label>
       <div class="row"><select id="song" style="max-width:260px"><option value="-1">no song</option>${(window.COWAMP_TRACKS || []).map((t, i) => `<option value="${i}"${i === draft.song ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select><button class="sec" id="songTry">&#9654; try</button></div>
     </div></div>
+    <div class="box"><h2>friends</h2><div class="in">
+      <div id="reqs"></div>
+      <label>your top 8 <small>shows on your profile, in this order</small></label>
+      <div id="t8" class="t8"></div>
+      <label>all your friends <small id="fCount"></small></label>
+      <div id="fl" class="fl"></div>
+      <label>who can comment on your wall</label>
+      <select id="wallMode"><option value="anyone">anyone with a cowspace</option><option value="friends">only my friends</option><option value="nobody">nobody (comments off)</option></select>
+      <div style="font-size:11px;color:#777;margin-top:3px">saves when you hit save profile</div>
+      <div class="msg" id="frMsg"></div>
+    </div></div>
    </div>
    <div>
     <div class="box"><h2><span>preview</span><span style="font-weight:normal;font-size:11px">updates as you type</span></h2><div class="in"><iframe id="preview" sandbox title="profile preview"></iframe></div></div>
@@ -161,7 +178,9 @@ function editor(user, hello) {
       <details><summary>what can i style?</summary>
         <p>everything on your profile. the main parts: <code>body</code> <code>.page</code> <code>.header</code> <code>.name</code> <code>.role</code>
         <code>.cols</code> <code>.left</code> <code>.right</code> <code>.box</code> <code>.box h2</code> <code>.box .in</code> <code>.pic</code> <code>.avatar</code>
-        <code>.mood</code> <code>.info</code> <code>.song</code> <code>.about</code> <code>.bio</code></p>
+        <code>.mood</code> <code>.info</code> <code>.views</code> <code>.song</code> <code>.about</code> <code>.bio</code>
+        <code>.contact</code> <code>.friends</code> <code>.top8</code> <code>.friend</code> <code>.wall</code> <code>.comment-form</code>
+        <code>.comment</code> <code>.comment .who</code> <code>.comment .when</code> <code>.comment .msg</code></p>
         <p>fonts: <code>@import url("https://fonts.googleapis.com/css2?family=Comic+Neue");</code> then use the font name.</p>
         <p>images: anything already on landon.cool, like <code>background: url(/hmmmsus.png)</code>. see <a href="/assets.mp3/" target="_blank">every asset</a>. links to other sites are removed so nobody can track your visitors.</p>
       </details>
@@ -190,9 +209,12 @@ function editor(user, hello) {
   const preview = () => { clearTimeout(t); t = setTimeout(() => {
     $('bioCount').textContent = `${$('bio').value.length}/300`;
     $('preview').srcdoc = CS.profileDoc({ ...user, bio: $('bio').value, mood: { e: $('moodE').value, t: $('moodT').value },
-      favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value });
+      favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value,
+      wallMode: $('wallMode').value }, { relation: 'self', canPost: true, site: location.origin,
+      wall: { total: 1, comments: [{ id: 0, t: Date.now(), msg: 'this is what comments on your wall look like', from: { username: 'landon', avatar: null }, canDelete: true }] } });
   }, 250); };
-  for (const id of ['bio', 'moodE', 'moodT', 'fMob', 'fGame', 'fBlock', 'song', 'css']) $(id).addEventListener('input', preview);
+  $('wallMode').value = user.wallMode || 'friends';
+  for (const id of ['bio', 'moodE', 'moodT', 'fMob', 'fGame', 'fBlock', 'song', 'css', 'wallMode']) $(id).addEventListener('input', preview);
   preview();
 
   $('songTry').onclick = () => { if ($('songTry').dataset.on) { CS.stopSong(); delete $('songTry').dataset.on; $('songTry').innerHTML = '&#9654; try'; } else if (+$('song').value >= 0) { CS.playSong(+$('song').value); $('songTry').dataset.on = 1; $('songTry').innerHTML = '&#9632; stop'; } };
@@ -201,7 +223,8 @@ function editor(user, hello) {
     $('save').disabled = true;
     try {
       const j = await CS.api('/profile', { bio: $('bio').value, mood: { e: $('moodE').value, t: $('moodT').value },
-        favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value });
+        favs: { mob: $('fMob').value, game: $('fGame').value, block: $('fBlock').value }, song: +$('song').value, css: $('css').value,
+        wallMode: $('wallMode').value });
       user = j.user; CS.forget();
       // show what the server kept (it filters bad words and removes outside links from css)
       $('bio').value = user.bio; $('css').value = user.css; preview();
@@ -240,6 +263,41 @@ function editor(user, hello) {
   $('padClear').onclick = () => { padPx.fill('0'); paint(); };
   $('padSave').onclick = () => setAv({ src: 'draw', px: padPx.join('') });
   $('skinSave').onclick = () => setAv({ src: 'skin', name: $('skinName').value.trim() });
+
+  // ----- friends: requests, top 8, everyone -----
+  const card = (f, buttons) => `<div class="fr"><a href="/@${esc(f.username)}" target="_blank"><img src="${CS.avatarUrl(f.avatar)}" alt="">${esc(f.username)}</a>${buttons}</div>`;
+  function friendsUI() {
+    const reqs = user.requests || [], friends = user.friends || [], t8 = (user.top8Names || []).filter(n => friends.some(f => f.username === n));
+    $('reqs').innerHTML = reqs.length ? `<label style="margin-top:0">friend requests (${reqs.length})</label>` +
+      reqs.map(r => card(r, `<button data-fr="accept" data-u="${esc(r.username)}">accept</button><button class="sec" data-fr="decline" data-u="${esc(r.username)}">no thanks</button>`)).join('') : '';
+    $('t8').innerHTML = t8.length ? t8.map((n, i) => {
+      const f = friends.find(x => x.username === n);
+      return card(f, `<button class="sec" data-t8="up" data-i="${i}" ${i ? '' : 'disabled'} aria-label="move up">&uarr;</button><button class="sec" data-t8="down" data-i="${i}" ${i < t8.length - 1 ? '' : 'disabled'} aria-label="move down">&darr;</button><button class="sec" data-t8="out" data-i="${i}">remove</button>`);
+    }).join('') : '<div style="font-size:12px;color:#777">add friends from the list below</div>';
+    $('fCount').textContent = `(${friends.length})`;
+    $('fl').innerHTML = friends.length ? friends.map(f => card(f, (t8.includes(f.username) ? '<span style="font-size:11px;color:#777">in top 8</span>'
+      : `<button class="sec" data-t8="in" data-u="${esc(f.username)}" ${t8.length >= 8 ? 'disabled title="your top 8 is full"' : ''}>+ top 8</button>`) +
+      `<button class="sec" data-fr="remove" data-u="${esc(f.username)}">unfriend</button>`)).join('') : '<div style="font-size:12px;color:#777">no friends yet. find some in the <a href="/cowspace/members/" target="_blank">member list</a></div>';
+    return t8;
+  }
+  async function saveTop8(names) {
+    try { user = (await CS.api('/top8', { names })).user; CS.forget(); friendsUI(); preview(); say('frMsg', 'top 8 saved', true); }
+    catch (e) { say('frMsg', e.message); }
+  }
+  $('t8').parentNode.addEventListener('click', async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const t8 = friendsUI(), i = Number(b.dataset.i);
+    if (b.dataset.t8 === 'up') { [t8[i - 1], t8[i]] = [t8[i], t8[i - 1]]; return saveTop8(t8); }
+    if (b.dataset.t8 === 'down') { [t8[i + 1], t8[i]] = [t8[i], t8[i + 1]]; return saveTop8(t8); }
+    if (b.dataset.t8 === 'out') return saveTop8(t8.filter((_, k) => k !== i));
+    if (b.dataset.t8 === 'in') return saveTop8([...t8, b.dataset.u]);
+    if (b.dataset.fr) {
+      if (b.dataset.fr === 'remove' && !confirm(`unfriend ${b.dataset.u}?`)) return;
+      try { user = (await CS.api('/friend/' + b.dataset.fr, { u: b.dataset.u })).user; CS.forget(); friendsUI(); preview(); notify(); }
+      catch (err) { say('frMsg', err.message); }
+    }
+  });
+  friendsUI();
 
   // ----- account -----
   $('emailSave').onclick = async () => { try { await CS.api('/profile', { email: $('email').value.trim() }); say('emailMsg', 'saved', true); } catch (e) { say('emailMsg', e.message); } };
