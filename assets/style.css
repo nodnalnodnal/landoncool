@@ -327,7 +327,7 @@ html.pcur .tbar,html.pcur .tbar .ttl,html.pcur .tbar .grip{cursor:move}
 /* 2000s stuff */
 #tip{position:fixed;z-index:9950;background:#ffffe1;color:#000;border:1px solid #000;font:11px Tahoma,Verdana,sans-serif;padding:2px 6px;pointer-events:none;box-shadow:2px 2px 0 rgba(0,0,0,.35);max-width:260px}
 #tip[hidden]{display:none}
-#ctext{position:fixed;left:0;top:0;z-index:9560;pointer-events:none;font:700 16px "Comic Sans MS","Comic Sans",cursive;color:var(--ink);text-shadow:1px 1px 0 var(--page)}
+#ctext{position:fixed;left:0;top:0;z-index:9560;pointer-events:none;font:700 16px var(--ui);color:var(--ink);text-shadow:1px 1px 0 var(--page)}
 #ctext span{position:fixed;left:0;top:0}
 #ctext[hidden]{display:none}
 .spin3d{animation:spin3d 2s linear infinite}
@@ -337,20 +337,20 @@ html.pcur .tbar,html.pcur .tbar .ttl,html.pcur .tbar .grip{cursor:move}
 .np{margin-top:8px;font:17px var(--term);border-top:1px dashed var(--line);padding-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .np[hidden]{display:none}
 .top8{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.top8 figure{margin:0;text-align:center;font:11px "Comic Sans MS","Comic Sans",cursive;cursor:pointer}
+.top8 figure{margin:0;text-align:center;font:11px var(--ui);cursor:pointer}
 .top8 img,.top8 svg{width:40px;height:40px;image-rendering:pixelated;border:2px solid var(--ink);display:block;margin:0 auto 2px;background:var(--line);transition:transform .15s}
 .top8 figure:hover img,.top8 figure:hover svg{transform:scale(1.15) rotate(-6deg)}
 .top8 .hit img,.top8 .hit svg{animation:hop .35s}
 @keyframes hop{40%{transform:translateY(-8px)}}
 .shake{animation:shake .5s}
 @keyframes shake{20%{transform:translate(-8px,4px)}40%{transform:translate(7px,-6px)}60%{transform:translate(-5px,3px)}80%{transform:translate(4px,-2px)}}
-.shl{height:150px;overflow:auto;background:var(--page);padding:4px 6px;font:12px/1.35 "Comic Sans MS","Comic Sans",cursive}
+.shl{height:150px;overflow:auto;background:var(--page);padding:4px 6px;font:12px/1.35 var(--ui)}
 .shl div{padding:2px 0;border-bottom:1px dotted var(--line);word-break:break-word}
 .shl b{font-weight:700}.shl .t{color:var(--mute);font-size:10px}
 .shout input{flex:1;min-width:0;background:var(--page);color:var(--ink);font:12px var(--ui);padding:3px 5px}
 .lnk{width:100%;background:var(--page);color:var(--ink);font:12px ui-monospace,monospace;padding:4px;resize:none}
 .awards{display:flex;flex-direction:column;gap:6px}
-.award{display:flex;gap:8px;align-items:center;font:12px "Comic Sans MS","Comic Sans",cursive;padding:4px 6px;border:1px dashed var(--ink);background:none;color:var(--ink);text-align:left}
+.award{display:flex;gap:8px;align-items:center;font:12px var(--ui);padding:4px 6px;border:1px dashed var(--ink);background:none;color:var(--ink);text-align:left}
 .award:hover svg{animation:wig .4s infinite}
 @keyframes wig{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
 .blinkies{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:4px 22px 8px}
