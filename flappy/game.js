@@ -91,7 +91,7 @@ function coinX(p) { return p.x + 26 + (PIPE_SPACING - 26) / 2 - 11; }
 
 function flap() {
   if (state === 'menu') { state = 'ready'; reset(); return; }
-  if (state === 'ready') state = 'play';
+  if (state === 'ready') { state = 'play'; startRun(); }
   if (state === 'play') { bird.vy = FLAP; sfx.flap(); }
   else if (state === 'dead' && frame - deadAt > 30) { reset(); state = 'ready'; }
 }
@@ -104,6 +104,7 @@ function die() {
   state = 'dead';
   deadAt = frame;
   sfx.hit();
+  submitRun(score);
   bank += coins;
   try { localStorage.setItem('flappyCoins', bank); } catch (e) {}
   if (score > best) {
@@ -237,7 +238,55 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+// ---------- global leaderboard (api.landon.cool/api/flappy) ----------
+// the server hands out a token when a round starts and only takes scores
+// that were possible in the time since, so you can't just post a big number
+const API = 'https://api.landon.cool/api';
+const nameBox = document.getElementById('name');
+let run = null;
+try { nameBox.value = localStorage.getItem('flappyName') || ''; } catch (e) {}
+nameBox.addEventListener('input', () => {
+  try { localStorage.setItem('flappyName', nameBox.value.trim()); } catch (e) {}
+});
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function showBoard(board, mine) {
+  const top = board.slice(0, 10);
+  document.getElementById('top').innerHTML = top.length
+    ? top.map((e, i) => `<li class="${mine && mine.t === e.t ? 'me' : ''}">${esc(e.name)}<span>${e.score}</span></li>`).join('')
+    : '<li class="dim">nobody yet, be first</li>';
+}
+
+function loadBoard() {
+  fetch(API + '/flappy').then(r => r.json()).then(j => showBoard(j.board || []))
+    .catch(() => { document.getElementById('top').innerHTML = '<li class="dim">couldn\'t load</li>'; });
+}
+
+function startRun() {
+  run = fetch(API + '/flappy/start', { method: 'POST' }).then(r => r.json()).then(j => j.token).catch(() => null);
+}
+
+async function submitRun(s) {
+  const token = run && await run;
+  run = null;
+  if (!token) return;
+  try {
+    const r = await fetch(API + '/flappy/end', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token, score: s, name: nameBox.value.trim() }),
+    });
+    const j = await r.json();
+    if (!j.board) return;
+    showBoard(j.board, j.rank ? j.board[j.rank - 1] : null);
+    document.getElementById('rank').textContent = j.rank ? `you're #${j.rank} with ${j.score}!` : '';
+  } catch (e) {}
+}
+
+loadBoard();
+
 addEventListener('keydown', e => {
+  if (e.target === nameBox) return; // typing your name shouldn't flap
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); if (!e.repeat) flap(); }
   if (e.code === 'KeyM' && !e.repeat) {
     muted = !muted;

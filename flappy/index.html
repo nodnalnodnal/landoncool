@@ -6,15 +6,33 @@
 <title>flappy bird</title>
 <link rel="icon" type="image/png" href="images/bird_frame_1.png">
 <style>
-html,body{margin:0;height:100%}
-body{background:linear-gradient(#123 30%,#667);display:flex;flex-direction:column;align-items:center;justify-content:center;font:13px Verdana,Geneva,sans-serif;color:#ccd}
+html,body{margin:0;min-height:100%}
+body{background:linear-gradient(#123 30%,#667) fixed;display:flex;flex-direction:column;align-items:center;justify-content:center;font:13px Verdana,Geneva,sans-serif;color:#ccd}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer;box-shadow:0 4px 24px #0008;display:block}
+.row{display:flex;gap:16px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:8px}
+.board{width:200px;background:#0006;border:1px solid #fff3;padding:10px 12px;box-sizing:border-box}
+.board h2{font:bold 13px Verdana,sans-serif;margin:0 0 8px;color:#fff}
+.board label{font-size:11px;color:#aab;display:block;margin-bottom:3px}
+.board input{width:100%;box-sizing:border-box;font:13px Verdana;padding:3px 5px;border:1px solid #889;background:#fff;color:#000;margin-bottom:10px}
+.board ol{margin:0;padding-left:22px;font-size:12px;line-height:1.6}
+.board li span{float:right;font-weight:bold;color:#fff}
+.board li.me{color:#ffd76c}
+.board .dim{color:#889;font-size:11px}
 .links{margin:10px;font-size:11px;color:#889}
 .links a{color:#aab}
 </style>
 </head>
 <body>
+<div class="row">
 <canvas id="game" width="144" height="256" aria-label="flappy bird game"></canvas>
+<div class="board">
+<label for="name">your name for the leaderboard</label>
+<input id="name" maxlength="16" placeholder="nobody" autocomplete="off" spellcheck="false">
+<h2>top 10</h2>
+<ol id="top"><li class="dim">loading...</li></ol>
+<div class="dim" id="rank" style="margin-top:8px"></div>
+</div>
+</div>
 <div class="links">space / up / click to flap &middot; grab coins &middot; m to mute &middot; <a href="/">back to landon.cool</a></div>
 <script src="game.js"></script>
 </body>
