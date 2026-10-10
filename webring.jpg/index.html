@@ -24,6 +24,12 @@ section:last-child{border-bottom:0}
 .paths li{break-inside:avoid;padding:3px 0;border-bottom:1px dotted #ddd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .paths a{color:#0033cc}
 .paths .t{color:#777;font-size:11px;margin-left:4px}
+.api{list-style:none;margin:0;padding:0}
+.api li{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:4px 0;border-bottom:1px dotted #ddd}
+.api code{font:12px monospace;min-width:150px}
+.api a{color:#0033cc}
+.api .m{font:10px Verdana;color:#555;border:1px solid #bbb;padding:0 4px;white-space:nowrap}
+.api .t{color:#777;font-size:12px}
 .dim{color:#666}
 .count{float:right;font-weight:normal;color:#777;font-size:12px}
 .links{text-align:center;color:#888;font-size:11px;margin:10px}
@@ -42,6 +48,12 @@ section:last-child{border-bottom:0}
 <section>
 <h2>every page on landon.cool <span class="count" id="pathCount"></span></h2>
 <ul class="paths" id="paths"><li class="dim">loading...</li></ul>
+</section>
+
+<section>
+<h2>api endpoints <span class="count" id="apiCount"></span></h2>
+<p class="dim" style="margin:0 0 10px">everything on api.landon.cool. GET ones you can open to see the data</p>
+<ul class="api" id="api"><li class="dim">loading...</li></ul>
 </section>
 
 <section>
@@ -81,7 +93,14 @@ async function getJSON(path) {
 
 async function load() {
   try {
-    const { sites, paths } = await getJSON('/webring');
+    const { sites, paths, api } = await getJSON('/webring');
+    // GET ones link straight to api.landon.cool so you can see the json
+    $('apiCount').textContent = api.length + ' endpoints';
+    $('api').innerHTML = api.map(e => {
+      const get = !e.methods || e.methods.includes('GET');
+      const p = get ? `<a href="https://api.landon.cool${esc(e.path)}">${esc(e.path)}</a>` : esc(e.path);
+      return `<li><code>${p}</code><span class="m">${esc(e.methods || '?')}</span>${e.note ? `<span class="t">${esc(e.note)}</span>` : ''}</li>`;
+    }).join('');
     // relative links, so on a mirror you stay on the mirror
     $('pathCount').textContent = paths.length + ' pages';
     $('paths').innerHTML = paths.map(p => {
