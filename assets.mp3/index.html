@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>landon.cool assets</title>
+<style>
+body{margin:0;background:#e9e9e9;font:13px Verdana,Geneva,sans-serif;color:#000}
+.wrap{max-width:900px;margin:16px auto;background:#fff;border:1px solid #999}
+h1{font:bold 20px Verdana,sans-serif;margin:0;padding:12px 16px;border-bottom:1px solid #999;background:#d6dde8}
+h1 small{font-weight:normal;font-size:12px;color:#555;display:block;margin-top:2px}
+h2{font:bold 14px Verdana,sans-serif;margin:0 0 10px}
+section{padding:14px 16px;border-bottom:1px solid #ccc}
+section:last-child{border-bottom:0}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid #ccc;background:#f4f4f4;position:sticky;top:0;z-index:1}
+.bar input{flex:1 1 200px;font:13px Verdana;padding:4px 6px;border:1px solid #999}
+.bar button{font:12px Verdana;padding:3px 8px;cursor:pointer;background:#fff;border:1px solid #999}
+.bar button.on{background:#000;color:#fff;border-color:#000}
+.count{float:right;font-weight:normal;color:#777;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.grid a{display:block;border:1px solid #ccc;padding:6px;text-decoration:none;color:#000;background:#fafafa;min-width:0}
+.grid a:hover{border-color:#0033cc}
+.thumb{height:90px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/12px 12px}
+.thumb img{max-width:100%;max-height:90px;image-rendering:pixelated}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:5px 0;border-bottom:1px dotted #ddd}
+.list a{color:#0033cc;word-break:break-all;flex:1 1 220px}
+.list audio{height:28px;flex:0 1 260px;max-width:100%}
+.name{font-size:11px;word-break:break-all;margin-top:4px}
+.size{color:#777;font-size:11px;white-space:nowrap}
+.dim{color:#666}
+.links{text-align:center;color:#888;font-size:11px;margin:10px}
+.links a{color:#666}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>landon.cool assets<small id="sum">every single file on the site that isn't a page</small></h1>
+<div class="bar">
+<input id="q" placeholder="search..." aria-label="search" autocomplete="off" spellcheck="false">
+<span id="kinds"></span>
+</div>
+<div id="out"><section class="dim">loading...</section></div>
+</div>
+<div class="links"><a href="/webring.jpg/">webring</a> &middot; <a href="/">back to landon.cool</a></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const NAMES = { image: 'images', audio: 'sounds', video: 'videos', font: 'fonts', code: 'code', other: 'other' };
+// same as the webring: on landon.cool (github pages) go through api.landon.cool
+const API = /(^|\.)landon\.cool$/.test(location.hostname) || location.protocol === 'file:'
+  ? 'https://api.landon.cool/api' : '/api';
+// links stay relative, so on a mirror you stay on the mirror
+let all = [], base = '', kind = 'all';
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+function url(p) { return base + p.split('/').map(encodeURIComponent).join('/'); }
+
+function render() {
+  const q = $('q').value.trim().toLowerCase();
+  const shown = all.filter(a => (kind === 'all' || a.kind === kind) && (!q || a.path.toLowerCase().includes(q)));
+  let html = '';
+  for (const k of Object.keys(NAMES)) {
+    const items = shown.filter(a => a.kind === k);
+    if (!items.length) continue;
+    const total = items.reduce((s, a) => s + a.size, 0);
+    html += `<section><h2>${NAMES[k]} <span class="count">${items.length} &middot; ${size(total)}</span></h2>`;
+    if (k === 'image') {
+      html += '<div class="grid">' + items.map(a =>
+        `<a href="${esc(url(a.path))}" target="_blank" rel="noopener"><div class="thumb"><img src="${esc(url(a.path))}" alt="" loading="lazy"></div>` +
+        `<div class="name">${esc(a.path)}</div><div class="size">${size(a.size)}</div></a>`).join('') + '</div>';
+    } else {
+      html += '<ul class="list">' + items.map(a =>
+        `<li><a href="${esc(url(a.path))}" target="_blank" rel="noopener">${esc(a.path)}</a>` +
+        (k === 'audio' ? `<audio controls preload="none" src="${esc(url(a.path))}"></audio>` : '') +
+        `<span class="size">${size(a.size)}</span></li>`).join('') + '</ul>';
+    }
+    html += '</section>';
+  }
+  $('out').innerHTML = html || '<section class="dim">nothing matches</section>';
+}
+
+function buttons() {
+  const counts = { all: all.length };
+  for (const a of all) counts[a.kind] = (counts[a.kind] || 0) + 1;
+  $('kinds').innerHTML = ['all', ...Object.keys(NAMES).filter(k => counts[k])].map(k =>
+    `<button data-k="${k}" class="${k === kind ? 'on' : ''}">${k === 'all' ? 'all' : NAMES[k]} (${counts[k]})</button>`).join(' ');
+}
+
+$('kinds').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  kind = b.dataset.k;
+  buttons();
+  render();
+});
+$('q').addEventListener('input', render);
+
+fetch(API + '/assets.mp3').then(r => r.json()).then(j => {
+  all = j.assets;
+  $('sum').textContent = `every single file on the site that isn't a page: ${all.length} files, ${size(all.reduce((s, a) => s + a.size, 0))}`;
+  buttons();
+  render();
+}).catch(() => { $('out').innerHTML = '<section class="dim">couldn\'t load the asset list</section>'; });
+</script>
+</body>
+</html>

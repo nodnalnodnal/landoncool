@@ -60,7 +60,7 @@ ol{margin:0;padding-left:20px;line-height:1.7}
 // on landon.cool itself (github pages) talk to the server through api.landon.cool,
 // on any mirror the server is right here
 const API = /(^|\.)landon\.cool$/.test(location.hostname) || location.protocol === 'file:'
-  ? 'https://api.landon.cool/_mirrors' : '/_mirrors';
+  ? 'https://api.landon.cool/api' : '/api';
 const $ = id => document.getElementById(id);
 
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -74,7 +74,7 @@ function status(d) {
 
 async function load() {
   try {
-    const r = await fetch(API + '/list');
+    const r = await fetch(API + '/mirrors');
     const j = await r.json();
     $('ip').textContent = j.ips[0] || '?';
     const here = location.hostname;
@@ -94,7 +94,9 @@ $('add').addEventListener('submit', async e => {
   $('msg').className = 'dim';
   $('msg').textContent = 'checking ' + domain + '... (first time can take up to a minute)';
   try {
-    const r = await fetch(API + '/add?domain=' + encodeURIComponent(domain), { method: 'POST' });
+    const r = await fetch(API + '/mirrors', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ domain }),
+    });
     const j = await r.json();
     if (j.https_ok) { $('msg').className = 'up'; $('msg').innerHTML = `it works! <a href="https://${esc(j.domain)}/">${esc(j.domain)}</a>`; }
     else { $('msg').className = 'down'; $('msg').textContent = j.error || (j.dns_ok ? 'it points here but https isn\'t working yet, try again in a minute' : 'that domain doesn\'t point here yet'); }

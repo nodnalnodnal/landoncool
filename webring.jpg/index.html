@@ -50,12 +50,12 @@ section:last-child{border-bottom:0}
 <ul class="ring" id="mirrors"><li class="dim">loading...</li></ul>
 </section>
 </div>
-<div class="links">checked by the server every 5 minutes &middot; <a href="/">back to landon.cool</a></div>
+<div class="links">checked by the server every 5 minutes &middot; <a href="/assets.mp3/">every asset</a> &middot; <a href="/">back to landon.cool</a></div>
 
 <script>
 // same as the mirrors page: on landon.cool (github pages) go through api.landon.cool
 const API = /(^|\.)landon\.cool$/.test(location.hostname) || location.protocol === 'file:'
-  ? 'https://api.landon.cool/_mirrors' : '/_mirrors';
+  ? 'https://api.landon.cool/api' : '/api';
 const $ = id => document.getElementById(id);
 
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -81,7 +81,7 @@ async function getJSON(path) {
 
 async function load() {
   try {
-    const { sites, paths } = await getJSON('/sites');
+    const { sites, paths } = await getJSON('/webring');
     // relative links, so on a mirror you stay on the mirror
     $('pathCount').textContent = paths.length + ' pages';
     $('paths').innerHTML = paths.map(p => {
@@ -96,7 +96,7 @@ async function load() {
     $('sites').innerHTML = '<li class="dim">couldn\'t reach the server</li>';
   }
   try {
-    const { domains } = await getJSON('/list');
+    const { domains } = await getJSON('/mirrors');
     $('mirrorCount').textContent = domains.filter(d => d.https_ok).length + ' of ' + domains.length + ' up';
     $('mirrors').innerHTML = domains.length
       ? domains.map(d => card(d.domain, d.https_ok, null, d.ms, d.last_checked)).join('')
