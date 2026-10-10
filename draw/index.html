@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>draw together</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#d6d0c4;font-family:Verdana,sans-serif;touch-action:none}
+body{display:flex;flex-direction:column}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;background:#f4f1ea;border-bottom:2px solid #000;font-size:12px}
+.sw{width:24px;height:24px;border:2px solid #000;border-radius:50%;cursor:pointer;padding:0}
+.sw.on{outline:3px solid #000;outline-offset:2px}
+input[type=color]{width:30px;height:28px;border:2px solid #000;padding:0;background:none;cursor:pointer}
+button.t{font:inherit;border:2px solid #000;background:#fff;padding:4px 10px;cursor:pointer}
+button.t.on{background:#000;color:#fff}
+.sp{flex:1}
+#n{font-weight:bold}
+#st{opacity:.6}
+.wrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#cv,#ov{position:absolute;background:transparent;box-shadow:4px 4px 0 #000;border:2px solid #000}
+#cv{background:#fff}
+#ov{pointer-events:none;box-shadow:none;border-color:transparent}
+a{color:inherit}
+</style></head><body>
+<div class="bar" id="bar">
+  <span id="sws"></span>
+  <input type="color" id="pick" value="#ff6699" aria-label="custom color">
+  <button class="t" id="er">eraser</button>
+  <label>size <input type="range" id="size" min="1" max="40" value="5"></label>
+  <span class="sp"></span>
+  <span><span id="n">0</span> drawing</span>
+  <span id="st">connecting...</span>
+  <button class="t" id="save">save png</button>
+  <a href="/">leave</a>
+</div>
+<div class="wrap" id="wrap"><canvas id="cv"></canvas><canvas id="ov"></canvas></div>
+<script>
+const $=id=>document.getElementById(id),cv=$('cv'),x=cv.getContext('2d'),ov=$('ov'),o=ov.getContext('2d');
+const W=1600,H=1000;cv.width=ov.width=W;cv.height=ov.height=H;x.fillStyle='#fff';x.fillRect(0,0,W,H);
+const PAL=['#000000','#ffffff','#e53935','#ff9800','#ffeb3b','#4caf50','#03a9f4','#3f51b5','#9c27b0','#795548'];
+let color='#000000',eraser=false;
+PAL.forEach((c,i)=>{const b=document.createElement('button');b.className='sw'+(i?'':' on');b.style.background=c;b.ariaLabel=c;
+  b.onclick=()=>{color=c;eraser=false;$('er').classList.remove('on');document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===b))};$('sws').append(b)});
+$('pick').oninput=e=>{color=e.target.value;eraser=false;$('er').classList.remove('on');document.querySelectorAll('.sw').forEach(s=>s.classList.remove('on'))};
+$('er').onclick=()=>{eraser=!eraser;$('er').classList.toggle('on',eraser)};
+$('save').onclick=()=>{const a=document.createElement('a');a.download='landon-draw.png';a.href=cv.toDataURL();a.click()};
+
+function fit(){const r=$('wrap').getBoundingClientRect(),s=Math.min((r.width-20)/W,(r.height-20)/H);
+  for(const c of[cv,ov]){c.style.width=W*s+'px';c.style.height=H*s+'px'}}
+addEventListener('resize',fit);fit();
+
+function line(s){const[x0,y0,x1,y1,c,w]=s;x.strokeStyle=c;x.lineWidth=w;x.lineCap='round';x.beginPath();x.moveTo(x0,y0);x.lineTo(x1,y1);x.stroke()}
+
+// networking
+const WS=new URLSearchParams(location.search).get('ws')||'wss://draw.landon.cool';
+let ws,out=[],cursors={},lastC=0;
+function connect(){
+  ws=new WebSocket(WS);
+  ws.onopen=()=>$('st').textContent='live';
+  ws.onclose=()=>{$('st').textContent='reconnecting...';setTimeout(connect,2000)};
+  ws.onmessage=e=>{const m=JSON.parse(e.data);
+    if(m.t==='hello'){x.fillStyle='#fff';x.fillRect(0,0,W,H);m.strokes.forEach(line)}
+    else if(m.t==='s')m.s.forEach(line);
+    else if(m.t==='n')$('n').textContent=m.n;
+    else if(m.t==='c')cursors[m.id]={x:m.x,y:m.y,c:m.c,at:Date.now()};
+    else if(m.t==='bye')delete cursors[m.id];
+    else if(m.t==='clear'){x.fillStyle='#fff';x.fillRect(0,0,W,H)}};
+}
+connect();
+setInterval(()=>{if(out.length&&ws.readyState===1){ws.send(JSON.stringify({t:'s',s:out}));out=[]}},50);
+
+// drawing
+let down=false,lx=0,ly=0;
+function pos(e){const r=cv.getBoundingClientRect();return[Math.round((e.clientX-r.left)/r.width*W),Math.round((e.clientY-r.top)/r.height*H)]}
+const clamp=(v,m)=>Math.max(0,Math.min(m,v));
+cv.addEventListener('pointerdown',e=>{down=true;cv.setPointerCapture(e.pointerId);[lx,ly]=pos(e);draw(lx,ly)});
+cv.addEventListener('pointermove',e=>{const[px,py]=pos(e);
+  if(Date.now()-lastC>60&&ws&&ws.readyState===1){ws.send(JSON.stringify({t:'c',x:px,y:py,c:eraser?'#999999':color}));lastC=Date.now()}
+  if(down)draw(px,py)});
+addEventListener('pointerup',()=>down=false);
+function draw(px,py){
+  px=clamp(px,W);py=clamp(py,H);
+  // split long moves so the server accepts them
+  const d=Math.hypot(px-lx,py-ly),steps=Math.max(1,Math.ceil(d/250));
+  for(let i=1;i<=steps;i++){const nx=Math.round(lx+(px-lx)*i/steps),ny=Math.round(ly+(py-ly)*i/steps),
+    s=[Math.round(lx+(px-lx)*(i-1)/steps),Math.round(ly+(py-ly)*(i-1)/steps),nx,ny,eraser?'#ffffff':color,Math.min(60,+$('size').value*(eraser?3:1))];
+    line(s);out.push(s)}
+  lx=px;ly=py;
+}
+// other people's cursors
+(function loop(){o.clearRect(0,0,W,H);const now=Date.now();
+  for(const k in cursors){const c=cursors[k];if(now-c.at>5000)continue;o.fillStyle=c.c;o.strokeStyle='#000';o.lineWidth=2;o.beginPath();o.arc(c.x,c.y,8,0,7);o.fill();o.stroke()}
+  requestAnimationFrame(loop)})();
+</script>
+<script src="/konami.js"></script>
+</body></html>

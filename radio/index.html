@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cow fm</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:#2a1f2d;color:#f3e3d0;font-family:Verdana,sans-serif;display:flex;align-items:center;justify-content:center}
+#rain{position:fixed;inset:0;z-index:0}
+.room{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 30px 22px;background:#3b2c3fcc;border:3px solid #120b13;box-shadow:6px 6px 0 #120b13;max-width:92vw;text-align:center}
+h1{margin:0;font-size:15px;letter-spacing:4px;opacity:.75}
+.cowbox{position:relative;width:210px;height:150px}
+#cow{width:200px;image-rendering:pixelated;position:absolute;left:5px;bottom:0;transform-origin:70% 100%}
+.hp{position:absolute;left:138px;top:6px;width:62px;height:36px;border:7px solid #111;border-bottom:none;border-radius:40px 40px 0 0;transform-origin:70% 100%}
+.hp:before,.hp:after{content:"";position:absolute;bottom:-14px;width:14px;height:20px;background:#e5577e;border:3px solid #111;border-radius:5px}
+.hp:before{left:-14px}.hp:after{right:-14px}
+.notes{position:absolute;inset:0;pointer-events:none}
+.notes span{position:absolute;font-size:20px;opacity:0;animation:float 3s ease-out forwards}
+@keyframes float{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}100%{opacity:0;transform:translate(30px,-90px) rotate(20deg)}}
+#title{font-size:18px;font-weight:bold;min-height:1.3em}
+#artist{font-size:13px;opacity:.7;min-height:1.2em;margin-top:-8px}
+.prog{width:260px;height:6px;background:#120b13;border:2px solid #120b13}
+#bar{height:100%;width:0;background:#e5577e}
+.ctl{display:flex;align-items:center;gap:12px;font-size:12px}
+#play{font:inherit;font-size:15px;padding:8px 22px;border:3px solid #120b13;background:#e5577e;color:#120b13;cursor:pointer;box-shadow:3px 3px 0 #120b13;font-weight:bold}
+#play:active{transform:translate(3px,3px);box-shadow:none}
+input[type=range]{accent-color:#e5577e;width:90px}
+#msg{font-size:11px;opacity:.6;max-width:300px}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e5577e;margin-right:6px;animation:bl 1.4s infinite}
+@keyframes bl{50%{opacity:.2}}
+a{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:inherit;opacity:.6;z-index:2}
+</style></head><body>
+<canvas id="rain"></canvas>
+<div class="room">
+  <h1><span class="live"></span>cow fm</h1>
+  <div class="cowbox" id="cowbox"><img id="cow" src="/sprites/cow.png" alt="a cow with headphones"><div class="hp" id="hp"></div><div class="notes" id="notes"></div></div>
+  <div id="title">beats to moo to</div>
+  <div id="artist">press play. everyone hears the same thing.</div>
+  <div class="prog"><div id="bar"></div></div>
+  <div class="ctl"><button id="play">play</button><label>vol <input id="vol" type="range" min="0" max="1" step=".01" value=".7"></label></div>
+  <div id="msg"></div>
+</div>
+<a href="/">leave</a>
+<script>
+const $=id=>document.getElementById(id);
+const BASE=(new URLSearchParams(location.search).get('src')||'https://radio.landon.cool').replace(/\/$/,'');
+let list=[],total=0,playing=false,ctx,an,data,idx=-1;
+const au=new Audio();au.crossOrigin='anonymous';au.preload='auto';au.volume=.7;
+$('vol').oninput=e=>au.volume=+e.target.value;
+
+// stable shuffle so every listener gets the same order
+function shuffle(a){let s=0;for(const t of a)for(const ch of t.f)s=(s*31+ch.charCodeAt(0))|0;
+  const r=()=>(s=(s*1103515245+12345)|0,((s>>>16)&0x7fff)/0x7fff);
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function now(){const t=(Date.now()/1000)%total;let acc=0;for(let i=0;i<list.length;i++){if(t<acc+list[i].d)return[i,t-acc];acc+=list[i].d}return[0,0]}
+function tune(){
+  const[i,off]=now();idx=i;const tr=list[i];
+  $('title').textContent=tr.title.toLowerCase();$('artist').textContent=(tr.artist||'unknown cow').toLowerCase();
+  au.src=BASE+'/'+encodeURIComponent(tr.f);
+  au.addEventListener('loadedmetadata',()=>{au.currentTime=Math.min(off,(au.duration||off+1)-.5);if(playing)au.play().catch(()=>{})},{once:true});
+}
+au.onended=tune;
+au.onerror=()=>{$('msg').textContent='that song broke. skipping';setTimeout(tune,1500)};
+setInterval(()=>{if(idx>=0&&list[idx])$('bar').style.width=(au.currentTime/list[idx].d*100)+'%'},250);
+
+$('play').onclick=()=>{
+  if(!list.length)return;
+  if(!ctx){ctx=new AudioContext();const src=ctx.createMediaElementSource(au);an=ctx.createAnalyser();an.fftSize=256;data=new Uint8Array(an.frequencyBinCount);src.connect(an);an.connect(ctx.destination)}
+  ctx.resume();playing=!playing;
+  if(playing){tune();$('play').textContent='pause'}else{au.pause();$('play').textContent='play'}
+};
+
+// cow vibes: bob to the bass
+let lastNote=0;
+(function bob(){
+  let lvl=0;
+  if(an&&playing){an.getByteFrequencyData(data);for(let i=1;i<8;i++)lvl+=data[i];lvl=lvl/7/255}
+  const t=performance.now()/1000,beat=playing?Math.max(lvl*lvl*1.6,.15*Math.abs(Math.sin(t*3.6))):0;
+  const tf=`rotate(${-beat*10}deg) translateY(${-beat*10}px)`;$('cow').style.transform=tf;$('hp').style.transform=tf;
+  if(playing&&lvl>.55&&t-lastNote>.5){lastNote=t;const n=document.createElement('span');n.textContent=['♪','♫','♬'][Math.random()*3|0];n.style.left=150+Math.random()*40+'px';n.style.top='10px';$('notes').append(n);setTimeout(()=>n.remove(),3000)}
+  requestAnimationFrame(bob)})();
+
+// rain on the window
+const rc=$('rain'),rx=rc.getContext('2d');let drops=[];
+function size(){rc.width=innerWidth;rc.height=innerHeight;drops=Array.from({length:Math.round(innerWidth/6)},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,v:4+Math.random()*6,l:8+Math.random()*14}))}
+addEventListener('resize',size);size();
+(function rain(){rx.clearRect(0,0,rc.width,rc.height);rx.strokeStyle='#8fa0c844';rx.lineWidth=1;rx.beginPath();
+  for(const d of drops){rx.moveTo(d.x,d.y);rx.lineTo(d.x-2,d.y+d.l);d.y+=d.v;d.x-=.4;if(d.y>rc.height){d.y=-20;d.x=Math.random()*rc.width}}
+  rx.stroke();requestAnimationFrame(rain)})();
+
+fetch(BASE+'/playlist.json',{cache:'no-store'}).then(r=>r.json()).then(j=>{
+  list=shuffle(j.filter(t=>t.d>0));total=list.reduce((s,t)=>s+t.d,0);
+  if(!list.length)throw 0;$('msg').textContent=list.length+' tracks in rotation';
+}).catch(()=>{$('msg').textContent='the radio is off right now. the cow is napping.';$('play').disabled=true});
+</script>
+<script src="/konami.js"></script>
+</body></html>
