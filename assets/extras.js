@@ -38,42 +38,7 @@ const SOUNDS={
 function xp(){if(!mods.sound.on)return;L.play('achieve',{vol:.5})}
 
 /* ========== achievements ========== */
-const ACH=[
- ['moo','moo','moo for the first time'],
- ['moo50','cow whisperer','moo 50 times'],
- ['theme','fashion','change the theme'],
- ['allthemes','drip check','try all 7 themes'],
- ['cmd','hacker','run a command in the terminal'],
- ['cmd10','power user','use 10 different terminal commands'],
- ['bsod','you broke it','crash the computer',1],
- ['konami','up up down down','you know what you did',1],
- ['sweep','cowsweeper','win a game of cowsweeper'],
- ['boom','kaboom','lose a game of cowsweeper'],
- ['feed','good cow','feed the cow'],
- ['pet20','best friends','pet the cow 20 times'],
- ['bin','taking out the trash','empty the recycle bin'],
- ['skin','skin inspector','load somebody elses skin'],
- ['roll','do a barrel roll','do a barrel roll'],
- ['saver','afk','let the screensaver turn on'],
- ['gb','signed','sign the guestbook'],
- ['vote','democracy','vote in the poll'],
- ['night','night owl','be on here between midnight and 5am',1],
- ['sus','emergency meeting','max out the sus meter',1],
- ['dj','dj','play every sound on the soundboard'],
- ['clippy','go away','close the moo-ssistant 3 times'],
- ['bye','its now safe','turn off the computer'],
- ['music','now playing','play a song on cowamp'],
- ['bff','top 8','click everyone in the top 8'],
- ['creeper','aw man','click the creeper',1],
- ['prize','winner winner','claim your prize'],
- ['scan','antivirus','scan your computer for moo'],
- ['shout','loud','post in the shoutbox'],
- ['link','spread the word','copy the link to me code'],
- ['explorer','explorer','visit 5 pages from my computer'],
- ['nope','persistence','close the browser anyway',1],
- ['wave','the wave','you know what you typed',1],
- ['all','completionist','get every other achievement'],
-];
+const ACH=window.LC_ACHIEVEMENTS; // the list lives in achievements.js
 let got=store.get('ach',{});
 function toast(name){const t=document.createElement('div');t.className='toast';t.append(svg('trophy',28));const d=document.createElement('div');d.innerHTML='<b>achievement get!</b>';d.append(name);t.append(d);$('#toasts').append(t);
   setTimeout(()=>{t.classList.add('bye');setTimeout(()=>t.remove(),400)},4200)}

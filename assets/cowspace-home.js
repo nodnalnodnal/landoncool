@@ -31,6 +31,7 @@
       img.hidden = false; icon.style.display = 'none';
       if (reqs) tray.setAttribute('data-open', 'w-cs');
       tray.onclick = reqs ? null : () => { location.href = '/@' + me.username; };
+      syncAch();
     } else {
       tray.setAttribute('data-open', 'w-cs'); // main.js opens windows for anything with data-open
       tray.title = 'cowspace: log in';
@@ -39,6 +40,18 @@
       tray.onclick = null;
     }
   }
+
+  // homepage achievements (saved in lc_ach by extras.js) get copied to your profile
+  let synced = '';
+  async function syncAch() {
+    if (!CS.token()) return;
+    let got = {};
+    try { got = JSON.parse(localStorage.getItem('lc_ach') || '{}'); } catch (e) {}
+    const ids = Object.keys(got).sort(), key = ids.join(',');
+    if (!ids.length || key === synced) return;
+    try { await CS.api('/ach', { ids }); synced = key; } catch (e) {}
+  }
+  setInterval(syncAch, 20000);
 
   // the window tells us when you log in or out inside it
   addEventListener('message', e => {

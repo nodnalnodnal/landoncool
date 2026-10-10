@@ -98,7 +98,14 @@ a{color:#036}
 .comment .msg{white-space:pre-wrap;word-wrap:break-word}
 .comment .del{float:right;background:none!important;border:0!important;color:#c00!important;font-size:11px!important;padding:0!important;text-decoration:underline}
 .closed{font-size:12px;color:#777;margin-bottom:10px}
-.more{display:block;margin:10px auto 0}`;
+.more{display:block;margin:10px auto 0}
+.badges .in{display:flex;flex-wrap:wrap;gap:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;font:bold 11px Verdana;padding:3px 8px;border:1px solid #036;background:#eef4ff;color:#036}
+.badge .ic{font-size:13px}
+.badge.staff{background:#fc0;border-color:#a80;color:#000}
+.stats .in div{padding:2px 0}.stats b{color:#036}
+.achievements .in{display:flex;flex-wrap:wrap;gap:4px}
+.ach{font-size:11px;padding:2px 6px;background:#f3f3f3;border:1px solid #ccc}`;
 
   // the profile page. opts.live = the real interactive profile (friend buttons,
   // posting comments). without it, it's a static picture, used by the editor preview.
@@ -123,6 +130,14 @@ a{color:#036}
     }[rel] || '';
     const top8 = (u.top8 || []).map(f => `<a class="friend" href="${at(f.username)}" target="_top"><img src="${avatarUrl(f.avatar)}" alt="">${esc(f.username)}</a>`).join('');
     const wall = opts.wall || { comments: [], total: u.wallCount || 0 };
+    // badges, stats and homepage achievements (names come from assets/achievements.js)
+    const badges = (u.badges || []).map(b => `<span class="badge ${esc(b.id)}${b.custom ? ' custom' : ''}" title="${esc(b.desc)}"${b.color && /^#[0-9a-f]{3,6}$/i.test(b.color) ? ` style="background:${b.color}"` : ''}><span class="ic">${esc(b.icon)}</span>${esc(b.name)}</span>`).join('');
+    const st = u.stats || { flappyBest: 0, chat: 0, cowdle: {} }, cd = st.cowdle || {};
+    const allAch = window.LC_ACHIEVEMENTS || [], achList = allAch.filter(a => (u.ach || []).includes(a[0]));
+    const statRows = [['flappy bird best', st.flappyBest], ['cowdle wins', cd.played ? `${cd.wins || 0} of ${cd.played}` : 0],
+      ['cowdle streak', cd.played ? `${cd.streak || 0} (best ${cd.max || 0})` : 0], ['chat messages', st.chat], ['achievements', allAch.length ? `${achList.length}/${allAch.length}` : 0]]
+      .map(([k, v]) => `<div><b>${k}:</b> ${esc(v || 0)}</div>`).join('');
+    const achs = achList.map(a => `<span class="ach" title="${esc(a[2])}">${esc(a[1])}</span>`).join('');
     const comments = wall.comments.map(c => `<div class="comment" data-id="${c.id}">
       <a class="who" href="${at(c.from.username)}" target="_top"><img src="${avatarUrl(c.from.avatar)}" alt="">${esc(c.from.username)}</a>
       <div class="body">${c.canDelete ? `<button class="del" data-act="del" data-id="${c.id}">delete</button>` : ''}<div class="when">${new Date(c.t).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div><div class="msg">${esc(c.msg)}</div></div>
@@ -148,17 +163,20 @@ a{color:#036}
       <div><b>joined:</b> ${fmtDate(u.joined)}</div>${favRows}
       <div><b>profile views:</b> <span class="views">${String(u.views || 0).padStart(6, '0')}</span></div>
     </div></div>
+    <div class="box stats"><h2>stats</h2><div class="in">${statRows}</div></div>
     ${u.song >= 0 && songName(u.song) ? `<div class="box song"><h2>profile song</h2><div class="in"><b>&#9835;</b> ${esc(songName(u.song))}</div></div>` : ''}
   </div>
   <div class="right">
     <div class="box about"><h2>about me</h2><div class="in">
       ${u.bio ? `<p class="bio">${esc(u.bio)}</p>` : '<p class="bio empty">nothing here yet</p>'}
     </div></div>
+    ${badges ? `<div class="box badges"><h2>badges</h2><div class="in">${badges}</div></div>` : ''}
     <div class="box friends"><h2>${name}'s friend space</h2><div class="in">
       <div class="count">${name} has <b>${u.friendCount || 0}</b> friend${u.friendCount === 1 ? '' : 's'}.</div>
       ${top8 ? `<div class="top8">${top8}</div>` : '<div class="empty">no top 8 yet</div>'}
       <a class="all" href="${site}/cowspace/friends/?u=${encodeURIComponent(u.username)}" target="_top">view all of ${name}'s friends</a>
     </div></div>
+    ${achs ? `<div class="box achievements"><h2>achievements (${achList.length}/${allAch.length})</h2><div class="in">${achs}</div></div>` : ''}
     <div class="box wall"><h2>${name}'s friends comments</h2><div class="in">
       <div class="total">displaying <b>${wall.comments.length}</b> of <b>${wall.total}</b> comments</div>
       ${form}

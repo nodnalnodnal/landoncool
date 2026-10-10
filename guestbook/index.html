@@ -38,6 +38,9 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 .small{font-size:12px}
 .e canvas{float:left;width:64px;height:64px;image-rendering:pixelated;background:#fff;border:2px ridge #ccc;margin:0 10px 4px 0}
 .e:after{content:"";display:block;clear:both}
+.e .av{width:20px;height:20px;image-rendering:pixelated;vertical-align:-4px;margin-right:4px;background:#fff;border:1px solid #ccc}
+.e a.nm{text-decoration:none}.e a.nm:hover{text-decoration:underline}
+.e .ok{color:#6cf;font-size:12px}
 </style>
 </head>
 <body>
@@ -47,7 +50,7 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 <hr>
 <div class="hits">you are visitor number<br><span id="hits"></span></div>
 <div class="uc"><span>always under construction</span></div>
-<table class="f"><tr><td>name:</td><td><input id="name" maxlength="40"></td></tr>
+<table class="f"><tr><td>name:</td><td><input id="name" maxlength="40"><label id="asMeRow" class="small" hidden style="display:block;margin-top:3px"><input type="checkbox" id="asMe" checked style="width:auto"> sign as <span id="meName"></span></label></td></tr>
 <tr><td>where u from:</td><td><input id="from" maxlength="60"></td></tr>
 <tr><td valign="top">message:</td><td><textarea id="msg" maxlength="500"></textarea></td></tr>
 <tr><td valign="top">doodle:<br><span class="small">(optional)</span></td><td><canvas id="pad" width="16" height="16" aria-label="draw a doodle"></canvas><div class="pal" id="pal"></div><button type="button" id="clr" class="small" style="margin-top:4px;font-size:12px;padding:1px 8px">clear</button></td></tr>
@@ -56,6 +59,7 @@ a{color:#00ffff}a:visited{color:#ff66ff}
 <div id="list"><p style="text-align:center">loading entries...</p></div>
 <div class="ft"><span class="blink">new!</span> best viewed in netscape navigator 4.0 at 800x600<br><a href="/">back to landon.cool</a></div>
 </div>
+<script src="/cowspace/cs.js"></script>
 <script>
 const L=document.getElementById('list'),E=document.getElementById('err');
 function el(t,c,txt){const e=document.createElement(t);if(c)e.className=c;if(txt!=null)e.textContent=txt;return e}
@@ -63,7 +67,7 @@ function show(j,hit){
   if(hit){const h=document.getElementById('hits');h.innerHTML='';String(j.hits).padStart(6,'0').split('').forEach(d=>h.appendChild(el('span','dig',d)))}
   L.innerHTML='';
   if(!j.entries.length){L.appendChild(el('p',null,'nobody has signed yet. be the first!!!'));return}
-  j.entries.forEach(x=>{const d=el('div','e');if(x.d)d.appendChild(doodle(x.d));d.appendChild(el('span','dt',new Date(x.t).toLocaleDateString()));d.appendChild(el('span','nm',x.name));if(x.from)d.appendChild(el('span','fr',' from '+x.from));d.appendChild(el('div','ms',x.msg));L.appendChild(d)});
+  j.entries.forEach(x=>{const d=el('div','e');if(x.d)d.appendChild(doodle(x.d));d.appendChild(el('span','dt',new Date(x.t).toLocaleDateString()));if(x.u){const a=el('a','nm');a.href='/@'+encodeURIComponent(x.u);const im=document.createElement('img');im.className='av';im.alt='';im.src=CS.avatarUrl(x.avatar);a.append(im,x.name);d.appendChild(a);d.appendChild(el('span','ok',' \u2713'))}else d.appendChild(el('span','nm',x.name));if(x.from)d.appendChild(el('span','fr',' from '+x.from));d.appendChild(el('div','ms',x.msg));L.appendChild(d)});
 }
 // doodles: 16x16 pixels, each one a hex digit picking a color from PAL. 0 is blank
 const PAL=['','#000','#fff','#e00','#f80','#ff0','#6f3','#070','#0ff','#03f','#90f','#f6c','#842','#888','#ccc','#fc9'];
@@ -83,11 +87,16 @@ document.getElementById('sign').onclick=async()=>{
   const b={name:document.getElementById('name').value,from:document.getElementById('from').value,msg:document.getElementById('msg').value,doodle:px.join('')};
   const drew=/[1-9a-f]/.test(b.doodle);if(!drew)delete b.doodle;
   if(!b.name.trim()||(!b.msg.trim()&&!drew)){E.textContent='you need a name and a message (or a doodle)';return}
-  try{const r=await fetch('https://api.landon.cool/api/guestbook',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const j=await r.json();
+  const me=asMe();
+  try{const r=await fetch('https://api.landon.cool/api/guestbook',{method:'POST',headers:{'content-type':'application/json',...(me?{authorization:'Bearer '+CS.token()}:{})},body:JSON.stringify(b)});const j=await r.json();
     if(!r.ok){E.textContent=j.error||'that didnt work';return}
     document.getElementById('msg').value='';px.fill('0');paint();E.textContent='thx!!!';load(false);
   }catch(e){E.textContent='cant reach the server, try again later'}
 };
+// cowspace: logged in, you sign as yourself (with your avatar). untick the box to sign as a guest
+const asMe=()=>CS.token()&&!document.getElementById('asMeRow').hidden&&document.getElementById('asMe').checked;
+CS.me().then(me=>{if(!me)return;const n=document.getElementById('name');document.getElementById('meName').textContent='@'+me.username;document.getElementById('asMeRow').hidden=false;
+  const sync=()=>{const on=document.getElementById('asMe').checked;n.readOnly=on;n.value=on?me.username:'';};document.getElementById('asMe').onchange=sync;sync()});
 load(true);
 </script>
 <script src="/konami.js"></script>

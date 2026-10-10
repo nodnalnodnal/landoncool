@@ -53,10 +53,13 @@ header button{background:none;border:1px solid var(--tile);color:var(--ink);font
 </div>
 <div class="dim" id="next" style="color:var(--dim);font-size:12px"></div>
 <button id="share">share</button>
+<div id="today" style="margin-top:14px;text-align:left;max-width:300px;margin-left:auto;margin-right:auto"></div>
+<div id="sync" style="font-size:11px;color:var(--dim);margin-top:8px"></div>
 </div>
 <div id="kb"></div>
 <div class="links">a new cow or minecraft word every day &middot; <a href="/">back to landon.cool</a></div>
 
+<script src="/cowspace/cs.js"></script>
 <script>
 // cowdle: wordle, but every word is cow, farm or minecraft. everyone gets the
 // same word each day. the word order is shuffled with a fixed seed, so it's
@@ -186,11 +189,12 @@ function finish(won) {
     stats.lastWin = day;
   } else stats.streak = 0;
   save('cowdleStats', stats);
+  syncResult();
   const praise = ['moo-velous!!', 'udderly amazing', 'great', 'nice', 'phew', 'close one'];
   say(won ? praise[game.guesses.length - 1] : 'the word was ' + ANSWER.toUpperCase(), 0);
 }
 
-function showStats() {
+let showStats = function () {
   $('stats').style.display = 'block';
   $('result').textContent = game.won ? `got it in ${game.guesses.length}/6` : 'better luck tomorrow';
   if (!game.won) say('the word was ' + ANSWER.toUpperCase(), 0);
@@ -227,7 +231,51 @@ addEventListener('keydown', e => {
   else if (/^[a-zA-Z]$/.test(e.key)) press(e.key.toLowerCase());
 });
 
+// ---------- cowspace: stats follow your account across devices ----------
+const loggedIn = () => window.CS && CS.token();
+function useServer(j) {
+  // the server's numbers win, they're checked against the real word
+  stats = { ...stats, ...j.stats, lastWin: j.lastWin ?? stats.lastWin };
+  save('cowdleStats', stats);
+}
+async function syncResult() {
+  if (!loggedIn() || !game.done) return;
+  try { useServer(await CS.api('/cowdle', { day, guesses: game.guesses })); } catch (e) {}
+  if (game.done) showStats();
+}
+async function loadToday() {
+  try {
+    const j = await CS.api('/cowdle/today?day=' + day);
+    $('today').innerHTML = j.solvers.length ? `<b style="font-size:12px">today's cowdle</b>` + j.solvers.slice(0, 10).map((p, i) =>
+      `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0"><span style="width:16px;color:var(--dim)">${i + 1}.</span>
+       <img src="${CS.avatarUrl(p.avatar)}" alt="" style="width:16px;height:16px;image-rendering:pixelated;background:#fff">
+       <a href="/@${CS.esc(p.username)}" style="color:var(--ink);flex:1">${CS.esc(p.username)}</a><span>${p.n}/6</span></div>`).join('') : '';
+  } catch (e) {}
+}
+async function syncAll() {
+  if (!loggedIn()) { $('sync').innerHTML = '<a href="/cowspace/" style="color:var(--dim)">log in to cowspace</a> to keep your streak on every device'; return; }
+  try {
+    let j = await CS.api('/cowdle?day=' + day);
+    // first time logged in here: bring your old stats along
+    if (!j.stats.played && stats.played) { await CS.api('/cowdle/import', stats); j = await CS.api('/cowdle?day=' + day); }
+    if (j.today && !game.done) {
+      // you already played today on another device
+      game = { day, guesses: j.today.guesses, done: true, won: j.today.won };
+      save('cowdleGame', game);
+    } else if (game.done && !j.today) {
+      j = await CS.api('/cowdle', { day, guesses: game.guesses });
+    }
+    useServer(j);
+    const me = await CS.me();
+    $('sync').textContent = me ? `synced to @${me.username}` : '';
+    draw();
+  } catch (e) {}
+}
+const showStatsLocal = showStats;
+showStats = function () { showStatsLocal(); loadToday(); };
+
 draw();
+syncAll();
 </script>
 </body>
 </html>

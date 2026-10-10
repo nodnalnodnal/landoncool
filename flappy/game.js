@@ -251,10 +251,24 @@ nameBox.addEventListener('input', () => {
 
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+// cowspace: logged in, your scores go under your account and the name box goes away
+const acct = window.CS && CS.token();
+if (acct) CS.me().then(me => {
+  if (!me) return;
+  nameBox.hidden = true;
+  nameBox.previousElementSibling.hidden = true; // its label
+  const who = document.getElementById('who');
+  who.hidden = false;
+  who.innerHTML = `playing as <a href="/@${esc(me.username)}" style="color:#ffd76c">@${esc(me.username)}</a> &#10003;`;
+});
+
 function showBoard(board, mine) {
   const top = board.slice(0, 10);
+  const who = e => e.u
+    ? `<a href="/@${esc(e.u)}"><img src="${CS.avatarUrl(e.avatar)}" alt="">${esc(e.name)}<span class="ok" title="cowspace account">&#10003;</span></a>`
+    : esc(e.name);
   document.getElementById('top').innerHTML = top.length
-    ? top.map((e, i) => `<li class="${mine && mine.t === e.t ? 'me' : ''}">${esc(e.name)}<span>${e.score}</span></li>`).join('')
+    ? top.map((e, i) => `<li class="${mine && mine.t === e.t ? 'me' : ''}">${who(e)}<span>${e.score}</span></li>`).join('')
     : '<li class="dim">nobody yet, be first</li>';
 }
 
@@ -273,10 +287,11 @@ async function submitRun(s) {
   if (!token) return;
   try {
     const r = await fetch(API + '/flappy/end', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST', headers: { 'content-type': 'application/json', ...(window.CS && CS.token() ? { authorization: 'Bearer ' + CS.token() } : {}) },
       body: JSON.stringify({ token, score: s, name: nameBox.value.trim() }),
     });
     const j = await r.json();
+    if (j.error) { document.getElementById('rank').textContent = j.error; return; }
     if (!j.board) return;
     showBoard(j.board, j.rank ? j.board[j.rank - 1] : null);
     document.getElementById('rank').textContent = j.rank ? `you're #${j.rank} with ${j.score}!` : '';

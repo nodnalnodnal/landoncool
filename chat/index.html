@@ -16,6 +16,9 @@ body{display:flex;align-items:center;justify-content:center;padding:12px;box-siz
 #log .n{font-weight:bold}
 #log .t{color:#888;font-size:10px;margin-right:4px}
 #log .sys{color:#666;font-style:italic}
+#log a.n{text-decoration:none}
+#log a.n:hover{text-decoration:underline}
+#log .ok{color:#06c;font-size:10px}
 form{display:flex;gap:6px;padding:8px;flex-wrap:wrap}
 input{font:13px Tahoma,sans-serif;padding:3px 5px;border:2px solid;border-color:#404040 #fff #fff #404040;min-width:0}
 #name{width:90px}
@@ -38,6 +41,7 @@ button:active{border-color:#404040 #fff #fff #404040}
 <div id="err"></div>
 </div>
 
+<script src="/cowspace/cs.js"></script>
 <script>
 // real chat for everyone on landon.cool. api.landon.cool/api/chat keeps the
 // last 200 messages, this polls every 2s for anything newer than what we have
@@ -62,11 +66,15 @@ function add(m) {
   const t = document.createElement('span');
   t.className = 't';
   t.textContent = new Date(m.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const n = document.createElement('span');
+  // cowspace accounts get a checkmark and a link to their profile
+  const n = document.createElement(m.u ? 'a' : 'span');
   n.className = 'n';
   n.style.color = color(m.name);
-  n.textContent = m.name + ': ';
-  d.append(t, n, document.createTextNode(m.msg));
+  n.textContent = m.name;
+  if (m.u) { n.href = '/@' + encodeURIComponent(m.u); n.target = '_blank'; n.title = 'cowspace account'; }
+  const ok = document.createElement('span');
+  if (m.u) { ok.className = 'ok'; ok.textContent = ' \u2713'; }
+  d.append(t, n, ok, document.createTextNode(': ' + m.msg));
   log.appendChild(d);
 }
 
@@ -109,7 +117,7 @@ $('f').addEventListener('submit', async e => {
   $('err').textContent = '';
   try {
     const r = await fetch(`${API}/chat`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
+      method: 'POST', headers: { 'content-type': 'application/json', ...(CS.token() ? { authorization: 'Bearer ' + CS.token() } : {}) },
       body: JSON.stringify({ name: $('name').value.trim(), msg }),
     });
     const j = await r.json();
@@ -119,6 +127,8 @@ $('f').addEventListener('submit', async e => {
   } catch (e) { $('err').textContent = 'cant reach the server'; }
 });
 
+// logged in to cowspace? you chat as yourself
+CS.me().then(me => { if (me) { $('name').value = me.username; $('name').readOnly = true; $('name').title = 'your cowspace name'; } });
 poll(); here();
 setInterval(poll, 2000);
 setInterval(here, 3000);
