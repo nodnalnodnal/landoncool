@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>seed map</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#1b1b1b;color:#eee;font-family:Verdana,sans-serif;font-size:12px}
+body{display:flex;flex-direction:column}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#2b2b2b;border-bottom:2px solid #000}
+input,select,button{font:inherit;background:#1b1b1b;color:inherit;border:1px solid #555;padding:5px 8px}
+#seed{width:200px}
+button{cursor:pointer}button:hover{border-color:#aaa}
+.chips{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;background:#242424;border-bottom:1px solid #000}
+.chip{display:flex;align-items:center;gap:5px;border:1px solid #444;padding:3px 7px;border-radius:12px;cursor:pointer;user-select:none;opacity:.45}
+.chip.on{opacity:1;border-color:#888}
+.chip i{width:10px;height:10px;border-radius:50%;border:1px solid #000}
+.wrap{flex:1;position:relative;overflow:hidden;cursor:grab;touch-action:none}
+.wrap:active{cursor:grabbing}
+canvas{position:absolute;inset:0}
+#hud{position:absolute;left:8px;bottom:8px;background:#000b;padding:5px 8px;border-radius:4px;pointer-events:none;white-space:nowrap}
+#note{position:absolute;right:8px;bottom:8px;background:#000b;padding:5px 8px;border-radius:4px;pointer-events:none;opacity:.8}
+#tip{position:absolute;background:#000d;padding:4px 7px;border-radius:4px;pointer-events:none;display:none;white-space:nowrap}
+a{color:inherit;opacity:.6}
+.sp{flex:1}
+</style></head><body>
+<div class="bar">
+  <input id="seed" placeholder="seed (number or text)" spellcheck="false" autocomplete="off" aria-label="seed">
+  <select id="ver" aria-label="version">
+    <option value="0">1.21.4+</option><option value="1">1.20</option><option value="2">1.19</option><option value="3">1.18</option>
+    <option value="4">1.17</option><option value="5">1.16</option><option value="6">1.12</option><option value="7">1.7</option>
+  </select>
+  <label><input type="checkbox" id="large"> large biomes</label>
+  <button id="go">go</button>
+  <button id="rand">random</button>
+  <span class="sp"></span>
+  <input id="jump" placeholder="go to x z" style="width:110px" aria-label="go to coordinates">
+  <button id="home">spawn</button>
+  <button id="share">copy link</button>
+  <a href="/">leave</a>
+</div>
+<div class="chips" id="chips"></div>
+<div class="wrap" id="wrap"><canvas id="cv"></canvas><div id="hud">loading...</div><div id="note"></div><div id="tip"></div></div>
+<script>
+const $=id=>document.getElementById(id),cv=$('cv'),x=cv.getContext('2d'),wrap=$('wrap');
+// structure types match stype() in seedmap.c
+const ST=[['village','#f5c542','V'],['outpost','#9b9b9b','O'],['mansion','#7a4a1d','M'],['monument','#2fd3d3','M'],['desert temple','#e8d38a','T'],
+  ['jungle temple','#3c8f3c','T'],['witch hut','#7c3fa3','W'],['igloo','#ffffff','I'],['ancient city','#264d73','A'],['trial chambers','#d9822b','C'],['ruined portal','#b03dd6','P'],['shipwreck','#8a6a3b','S']];
+let on=new Set([0,3,8,9]);
+ST.forEach(([n,c],i)=>{const d=document.createElement('div');d.className='chip'+(on.has(i)?' on':'');d.innerHTML=`<i style="background:${c}"></i>${n}`;
+  d.onclick=()=>{on.has(i)?on.delete(i):on.add(i);d.classList.toggle('on');structs()};$('chips').append(d)});
+const SH=document.createElement('div');SH.className='chip on';SH.innerHTML='<i style="background:#7fffd4"></i>strongholds';let showSH=true;SH.onclick=()=>{showSH=!showSH;SH.classList.toggle('on');draw()};$('chips').append(SH);
+
+const W=new Worker('worker.js');
+let names=[],gen=0,world=null,tiles=new Map(),inflight=0,queue=[],found={},structReq=0;
+let cx=0,cz=0,bpp=4; // view center in blocks, blocks per screen pixel
+const SCALES=[4,16,64,256],N=64;
+const scaleFor=b=>SCALES.find(s=>s>=b)||256;
+
+// java String.hashCode for text seeds, same as the game does
+function parseSeed(s){
+  s=s.trim();if(!s)return BigInt.asIntN(64,BigInt(Math.floor(Math.random()*2**32))<<32n|BigInt(Math.floor(Math.random()*2**32)));
+  if(/^-?\d+$/.test(s)){try{const v=BigInt(s);if(v>=-(2n**63n)&&v<2n**63n)return v}catch(e){}}
+  let h=0;for(const ch of s)h=(Math.imul(31,h)+ch.charCodeAt(0))|0;return BigInt(h);
+}
+function start(){
+  const s=parseSeed($('seed').value),u=BigInt.asUintN(64,s);
+  if(!$('seed').value.trim())$('seed').value=s.toString();
+  gen++;tiles.clear();queue=[];found={};world=null;
+  W.postMessage({t:'init',gen,ver:+$('ver').value,lo:Number(u&0xffffffffn),hi:Number(u>>32n),large:$('large').checked});
+  $('note').textContent='generating...';
+  try{history.replaceState(null,'',`?seed=${encodeURIComponent($('seed').value)}&v=${$('ver').value}${$('large').checked?'&large=1':''}`)}catch(e){}
+}
+W.onmessage=({data:m})=>{
+  if(m.t==='ready'){names=m.names;start();return}
+  if(m.gen!==gen)return;
+  if(m.t==='world'){names=m.names;world=m;$('note').textContent=`spawn ${m.spawn[0]}, ${m.spawn[1]}`;if(!moved){cx=m.spawn[0];cz=m.spawn[1]}view()}
+  else if(m.t==='tile'){inflight--;const t=tiles.get(m.key);if(t){t.ids=m.ids;const c=document.createElement('canvas');c.width=c.height=N;c.getContext('2d').putImageData(new ImageData(m.rgba,N,N),0,0);t.img=c;t.busy=false}pump();draw()}
+  else if(m.t==='structs'&&m.req===structReq){found=m.res;draw()}
+};
+
+function size(){cv.width=wrap.clientWidth*devicePixelRatio;cv.height=wrap.clientHeight*devicePixelRatio;cv.style.width=wrap.clientWidth+'px';cv.style.height=wrap.clientHeight+'px';view()}
+addEventListener('resize',size);
+const vw=()=>wrap.clientWidth,vh=()=>wrap.clientHeight;
+const toScreen=(bx,bz)=>[(bx-cx)/bpp+vw()/2,(bz-cz)/bpp+vh()/2];
+const toBlock=(sx,sy)=>[cx+(sx-vw()/2)*bpp,cz+(sy-vh()/2)*bpp];
+
+function view(){
+  if(!world)return draw();
+  const s=scaleFor(bpp),span=N*s,[bx0,bz0]=toBlock(0,0),[bx1,bz1]=toBlock(vw(),vh());
+  const want=[];
+  for(let tz=Math.floor(bz0/span);tz<=Math.floor(bz1/span);tz++)for(let tx=Math.floor(bx0/span);tx<=Math.floor(bx1/span);tx++){
+    const key=s+':'+tx+':'+tz;if(!tiles.has(key)){tiles.set(key,{s,tx,tz,busy:false,queued:true});want.push(key)}}
+  const mid=(k)=>{const t=tiles.get(k);return Math.hypot((t.tx+.5)*span-cx,(t.tz+.5)*span-cz)};
+  // drop tiles that scrolled away before they were made
+  queue=queue.filter(k=>{const t=tiles.get(k);const[sx,sy]=toScreen(t.tx*t.s*N,t.tz*t.s*N),sz=t.s*N/bpp;const keep=t.s===s&&sx+sz>0&&sy+sz>0&&sx<vw()&&sy<vh();if(!keep)tiles.delete(k);return keep});
+  queue.push(...want);queue.sort((a,b)=>mid(a)-mid(b));
+  if(tiles.size>3000)for(const[k,t]of tiles){if(t.s!==s&&!t.busy)tiles.delete(k);if(tiles.size<1500)break}
+  pump();draw();clearTimeout(view.st);view.st=setTimeout(structs,250);
+}
+function pump(){while(inflight<2&&queue.length){const k=queue.shift(),t=tiles.get(k);if(!t)continue;t.busy=true;inflight++;W.postMessage({t:'tile',gen,key:k,s:t.s,tx:t.tx,tz:t.tz})}}
+function structs(){
+  if(!world)return;const[x0,z0]=toBlock(0,0),[x1,z1]=toBlock(vw(),vh());structReq++;
+  W.postMessage({t:'structs',gen,req:structReq,types:[...on],x0:Math.floor(x0),z0:Math.floor(z0),x1:Math.ceil(x1),z1:Math.ceil(z1)});
+}
+
+function draw(){
+  const d=devicePixelRatio;x.setTransform(d,0,0,d,0,0);x.fillStyle='#1b1b1b';x.fillRect(0,0,vw(),vh());x.imageSmoothingEnabled=false;
+  const s=scaleFor(bpp);
+  // coarser tiles first as a placeholder, then the right scale on top
+  for(const pass of [...SCALES].reverse()){if(pass<s)continue;
+    for(const t of tiles.values()){if(t.s!==pass||!t.img)continue;const[sx,sy]=toScreen(t.tx*t.s*N,t.tz*t.s*N),sz=t.s*N/bpp;
+      if(sx+sz<0||sy+sz<0||sx>vw()||sy>vh())continue;x.drawImage(t.img,sx,sy,sz+.5,sz+.5)}}
+  if(!world)return;
+  // grid lines every 1000 blocks when zoomed out, else every chunk region
+  const step=bpp>8?5000:bpp>2?1000:512;x.strokeStyle='#0002';x.lineWidth=1;x.beginPath();
+  const[gx0,gz0]=toBlock(0,0),[gx1,gz1]=toBlock(vw(),vh());
+  for(let g=Math.ceil(gx0/step)*step;g<gx1;g+=step){const[sx]=toScreen(g,0);x.moveTo(sx,0);x.lineTo(sx,vh())}
+  for(let g=Math.ceil(gz0/step)*step;g<gz1;g+=step){const[,sy]=toScreen(0,g);x.moveTo(0,sy);x.lineTo(vw(),sy)}x.stroke();
+  const dot=(bx,bz,c,l,r=7)=>{const[sx,sy]=toScreen(bx,bz);if(sx<-10||sy<-10||sx>vw()+10||sy>vh()+10)return;x.fillStyle=c;x.strokeStyle='#000';x.lineWidth=2;x.beginPath();x.arc(sx,sy,r,0,7);x.fill();x.stroke();
+    if(l){x.fillStyle='#000';x.font='bold 9px Verdana';x.textAlign='center';x.textBaseline='middle';x.fillText(l,sx,sy+.5)}};
+  let hidden=0;
+  for(const i of on){const p=found[i];if(p===null){hidden++;continue}if(!p)continue;for(let k=0;k<p.length;k+=2)dot(p[k],p[k+1],ST[i][1],ST[i][2])}
+  if(showSH)for(let k=0;k<world.strongholds.length;k+=2)dot(world.strongholds[k],world.strongholds[k+1],'#7fffd4','E');
+  const[sx,sy]=toScreen(world.spawn[0],world.spawn[1]);x.fillStyle='#ff3b3b';x.strokeStyle='#000';x.lineWidth=2;x.beginPath();
+  for(let k=0;k<10;k++){const a=k*Math.PI/5-Math.PI/2,r=k%2?4:10;x.lineTo(sx+Math.cos(a)*r,sy+Math.sin(a)*r)}x.closePath();x.fill();x.stroke();
+  $('note').textContent=hidden?'zoom in to see some structures':`spawn ${world.spawn[0]}, ${world.spawn[1]}`;
+}
+
+function biomeAt(bx,bz){const s=scaleFor(bpp),qx=Math.floor(bx/s),qz=Math.floor(bz/s),tx=Math.floor(qx/N),tz=Math.floor(qz/N),t=tiles.get(s+':'+tx+':'+tz);
+  if(!t||!t.ids)return'';return(names[t.ids[(qz-tz*N)*N+(qx-tx*N)]]||'').replace(/_/g,' ')}
+function hud(sx,sy){const[bx,bz]=toBlock(sx,sy);$('hud').textContent=`x ${Math.floor(bx)}  z ${Math.floor(bz)}  ${biomeAt(bx,bz)}  ·  1px = ${bpp<1?bpp.toFixed(2):Math.round(bpp)} blocks`;
+  // tooltip when hovering a structure
+  let best=null;for(const i of on){const p=found[i];if(!p)continue;for(let k=0;k<p.length;k+=2){const[px,py]=toScreen(p[k],p[k+1]);if(Math.hypot(px-sx,py-sy)<9)best=`${ST[i][0]} at ${p[k]}, ${p[k+1]}`}}
+  if(world&&showSH)for(let k=0;k<world.strongholds.length;k+=2){const[px,py]=toScreen(world.strongholds[k],world.strongholds[k+1]);if(Math.hypot(px-sx,py-sy)<9)best=`stronghold at ${world.strongholds[k]}, ${world.strongholds[k+1]}`}
+  const tip=$('tip');if(best){tip.textContent=best;tip.style.display='block';tip.style.left=sx+12+'px';tip.style.top=sy+12+'px'}else tip.style.display='none'}
+
+// pan + zoom (mouse, touch, pinch)
+let moved=false,ptrs=new Map(),last=null,pinch=0;
+wrap.addEventListener('pointerdown',e=>{wrap.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);last=[e.offsetX,e.offsetY];pinch=0});
+wrap.addEventListener('pointermove',e=>{hud(e.offsetX,e.offsetY);if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,[e.offsetX,e.offsetY]);
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()],dist=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)zoomAt((a[0]+b[0])/2,(a[1]+b[1])/2,pinch/dist);pinch=dist;return}
+  cx-=(e.offsetX-last[0])*bpp;cz-=(e.offsetY-last[1])*bpp;last=[e.offsetX,e.offsetY];moved=true;view()});
+const up=e=>{ptrs.delete(e.pointerId);pinch=0;if(ptrs.size===1)last=[...ptrs.values()][0]};
+wrap.addEventListener('pointerup',up);wrap.addEventListener('pointercancel',up);
+function zoomAt(sx,sy,f){const[bx,bz]=toBlock(sx,sy);bpp=Math.min(64,Math.max(.25,bpp*f));cx=bx-(sx-vw()/2)*bpp;cz=bz-(sy-vh()/2)*bpp;moved=true;view()}
+wrap.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,Math.exp(e.deltaY*.0015))},{passive:false});
+
+$('go').onclick=()=>{moved=false;start()};
+$('seed').onkeydown=e=>{if(e.key==='Enter'){moved=false;start()}};
+$('ver').onchange=$('large').onchange=()=>start();
+$('rand').onclick=()=>{$('seed').value='';moved=false;start()};
+$('home').onclick=()=>{if(world){cx=world.spawn[0];cz=world.spawn[1];view()}};
+$('jump').onkeydown=e=>{if(e.key!=='Enter')return;const n=e.target.value.match(/-?\d+/g);if(n&&n.length>=2){cx=+n[0];cz=+n[n.length-1];bpp=Math.min(bpp,2);moved=true;view()}};
+$('share').onclick=()=>navigator.clipboard.writeText(location.href).then(()=>$('note').textContent='link copied');
+
+const q=new URLSearchParams(location.search);
+$('seed').value=q.get('seed')||'mrcowlord';if(q.get('v'))$('ver').value=q.get('v');if(q.get('large'))$('large').checked=true;
+size();
+</script>
+<script src="/konami.js"></script>
+</body></html>
