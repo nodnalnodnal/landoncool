@@ -1,0 +1,16 @@
+{
+  "scopeName": "source.plain",
+  "name": "plain",
+  "patterns": [
+    { "name": "comment.line.number-sign.plain", "match": "#.*$" },
+    { "name": "string.quoted.double.plain", "begin": "\"", "end": "\"" },
+    { "name": "constant.numeric.plain", "match": "\\b-?\\d+(\\.\\d+)?\\b" },
+    { "match": "^\\s*(to)\\s+([a-z_][a-z0-9_]*)", "captures": { "1": { "name": "keyword.control.plain" }, "2": { "name": "entity.name.function.plain" } } },
+    { "match": "\\b(result of)\\s+([a-z_][a-z0-9_]*)", "captures": { "1": { "name": "keyword.other.plain" }, "2": { "name": "entity.name.function.plain" } } },
+    { "name": "keyword.control.plain", "match": "\\b(if|then|otherwise|else|end|repeat|times|repeating|while|for each|in|give back|stop|quit|do|to|with)\\b" },
+    { "name": "support.function.plain", "match": "\\b(say|says|ask|into|set|add|remove|read|file|lines|letters|letter|uppercase|lowercase|rounded|length|kind|keys|arguments|subtract)\\b" },
+    { "name": "keyword.operator.plain", "match": "\\b(plus|minus|times|divided by|modulo|is|equals|not|and|or|less than|greater than|more than|smaller than|at least|at most|has|starts with|ends with|empty)\\b" },
+    { "name": "storage.type.plain", "match": "\\b(a new list|a new table|list|table|entry|item|of|the end of|word|text|number|nothing|tagged)\\b" },
+    { "name": "constant.language.plain", "match": "\\b(nothing|newline|tab|space|quote)\\b" }
+  ]
+}
