@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>cowspace admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#e5e5e5;font:13px Verdana,Tahoma,sans-serif;color:#111}
+a{color:#036}
+.top{background:#600;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top .logo{font:bold 22px Verdana,sans-serif;color:#fff;text-decoration:none;letter-spacing:-1px}
+.top .logo span{color:#fc0}
+.top .sp{flex:1}
+.top a.l{color:#fcc;font-size:12px}
+.wrap{max-width:1100px;margin:0 auto;padding:12px}
+.box{background:#fff;border:1px solid #966;margin-bottom:12px}
+.box>h2{margin:0;background:#966;color:#fff;font:bold 13px Verdana;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.box .in{padding:10px}
+button{font:bold 12px Verdana;background:#fc0;border:1px solid #a80;padding:4px 10px;cursor:pointer;color:#000}
+button.sec{background:#eee;border-color:#999}
+button.bad{background:#c33;border-color:#900;color:#fff}
+button:disabled{opacity:.5;cursor:default}
+input,select{font:13px Verdana,sans-serif;padding:4px 6px;border:1px solid #999}
+.lock{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lock b.on{color:#070}.lock b.off{color:#c00}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;color:#555;border-bottom:1px solid #ccc;padding:4px}
+td{padding:6px 4px;border-bottom:1px solid #eee;vertical-align:top}
+td.who{white-space:nowrap}
+td.who img{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;margin-right:6px;border:1px solid #ccc;background:#fff}
+.tag{display:inline-block;font:bold 9px Verdana;padding:1px 4px;margin-left:4px;text-transform:uppercase}
+.tag.staff{background:#fc0}.tag.mod{background:#9cf}.tag.ban{background:#c33;color:#fff}.tag.del{background:#999;color:#fff}
+.acts{display:flex;flex-wrap:wrap;gap:4px}
+.acts button,.acts select{font-size:11px;padding:2px 6px}
+.msg{min-height:16px;font-size:12px;margin-top:6px}.msg.err{color:#c00}.msg.ok{color:#070}
+.log div{font-size:12px;padding:3px 0;border-bottom:1px dotted #ddd}
+.log .when{color:#888;margin-right:6px}
+.badges .b{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dotted #ddd;flex-wrap:wrap}
+.badge{display:inline-flex;gap:4px;font:bold 11px Verdana;padding:3px 8px;border:1px solid #036;background:#eef4ff;color:#036}
+.dim{color:#777}
+#gate{max-width:520px;margin:30px auto}
+</style>
+</head>
+<body>
+<div class="top"><a class="logo" href="/cowspace/">cow<span>space</span></a><span>admin</span><span class="sp"></span><a class="l" href="/cowspace/members/">members</a><a class="l" href="/chat/">chat</a><a class="l" href="/">landon.cool</a></div>
+<div class="wrap" id="app"><p>loading...</p></div>
+
+<script src="/cowspace/cs.js"></script>
+<script>
+// cowspace admin. the api checks everything again, this page just shows the buttons.
+// powers only work after unlocking over tailscale (see cowspace.js on the server)
+const $ = id => document.getElementById(id), esc = CS.esc, app = $('app');
+const say = (id, text, ok) => { const m = $(id); if (m) { m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); } };
+const when = t => new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+let me = null, status = null, badgeDefs = [];
+
+async function unlockFlow() {
+  try {
+    const j = await CS.api('/admin/unlock-code', {});
+    window.open(j.url, '_blank');
+    say('lockMsg', "finish unlocking in the tab that opened. if it won't load, your ssh tunnel isn't running (see below). waiting...", true);
+    const started = Date.now();
+    const iv = setInterval(async () => {
+      try { status = await CS.api('/admin/status'); } catch (e) {}
+      if (status && status.elevated > Date.now()) { clearInterval(iv); render(); }
+      else if (Date.now() - started > 300000) { clearInterval(iv); say('lockMsg', 'the code ran out. hit unlock again'); }
+    }, 2500);
+  } catch (e) { say('lockMsg', e.message); }
+}
+
+function lockBox() {
+  const on = status.elevated > Date.now();
+  return `<div class="box"><h2>your powers</h2><div class="in"><div class="lock">
+    <span>you are <b>${esc(me.username)}</b> (${esc(status.role)}). admin is ${on ? `<b class="on">unlocked</b> until ${when(status.elevated)}` : '<b class="off">locked</b>'}</span>
+    <button id="unlock">${on ? 'unlock again (4 more hours)' : 'unlock admin over tailscale'}</button></div>
+    <div class="msg" id="lockMsg"></div>
+    ${on ? '' : `<div class="dim" style="font-size:12px;line-height:1.5">unlocking opens <b>localhost:3071</b> in a new tab, which only works with an ssh tunnel to the server running on the same device.
+      so a stolen password can't do anything here. start the tunnel first (termux, or any terminal):
+      <pre style="background:#f3f3f3;padding:6px;white-space:pre-wrap;user-select:all">ssh -N -L 3071:127.0.0.1:3071 -L 3000:127.0.0.1:3080 landon@100.99.12.104</pre>
+      use the server's ip from your tailscale app (it's shared to you, so it can differ from the server's own), or landon@192.168.1.35 on home wifi.
+      while it runs, the minecraft console is at <b>localhost:3000</b> too.</div>`}
+  </div></div>`;
+}
+
+async function render() {
+  status = await CS.api('/admin/status');
+  const on = status.elevated > Date.now(), staff = status.role === 'staff';
+  app.innerHTML = lockBox() + (on ? `
+    <div class="box"><h2><span>users</span><input id="q" placeholder="search" style="font-size:12px;max-width:200px" autocomplete="off" spellcheck="false" autocapitalize="off"></h2>
+      <div class="in"><div class="msg" id="uMsg"></div><div style="overflow-x:auto"><table><thead><tr><th>user</th><th>joined</th><th>friends</th>${staff ? '<th>email</th>' : ''}<th>do stuff</th></tr></thead><tbody id="users"></tbody></table></div></div></div>
+    ${staff ? `<div class="box badges"><h2>custom badges</h2><div class="in">
+      <div id="badgeList"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        <input id="bIcon" placeholder="&#9733;" maxlength="4" style="width:46px"><input id="bName" placeholder="badge name" maxlength="30">
+        <input id="bDesc" placeholder="what it's for" maxlength="100" style="flex:1;min-width:160px"><input id="bColor" type="color" value="#ffcc00" title="color">
+        <button id="bMake">make badge</button></div><div class="msg" id="bMsg"></div>
+    </div></div>` : ''}
+    <div class="box log"><h2>log</h2><div class="in" id="log">loading...</div></div>` : '');
+  $('unlock').onclick = unlockFlow;
+  if (!on) return;
+  let t = null;
+  $('q').oninput = () => { clearTimeout(t); t = setTimeout(loadUsers, 250); };
+  if (staff) { $('bMake').onclick = makeBadge; await loadBadges(); }
+  await loadUsers();
+  loadLog();
+}
+
+async function loadUsers() {
+  const staff = status.role === 'staff';
+  const j = await CS.api('/admin/users?q=' + encodeURIComponent($('q').value.trim()));
+  $('users').innerHTML = j.users.map(u => {
+    const touchable = u.role !== 'staff' && (staff || u.role !== 'mod');
+    const acts = !touchable ? '<span class="dim">-</span>' : `<div class="acts">
+      ${u.banned ? `<button class="sec" data-a="unban">unban</button>` : `<button class="bad" data-a="ban">ban</button>`}
+      <select data-a="clear"><option value="">clear...</option><option>bio</option><option>avatar</option><option>css</option><option>mood</option><option>wall</option><option value="all">everything</option></select>
+      <button class="sec" data-a="rename">rename</button>
+      ${staff ? `<button class="sec" data-a="reset">reset password</button>
+      <button class="sec" data-a="role">${u.role === 'mod' ? 'remove mod' : 'make mod'}</button>` : ''}
+    </div>`;
+    const badges = staff && badgeDefs.length ? `<div class="acts" style="margin-top:4px">${badgeDefs.map(b => {
+      const has = u.badgeIds.includes(b.id);
+      return `<button class="sec" data-a="${has ? 'take' : 'give'}" data-b="${b.id}" title="${has ? 'take away' : 'give'} ${esc(b.name)}">${has ? '&minus;' : '+'} ${esc(b.icon)} ${esc(b.name)}</button>`;
+    }).join('')}</div>` : '';
+    return `<tr data-u="${esc(u.username)}"><td class="who"><a href="/@${esc(u.username)}" target="_blank"><img src="${CS.avatarUrl(u.avatar)}" alt="">${esc(u.username)}</a>
+      ${u.role !== 'user' ? `<span class="tag ${esc(u.role)}">${esc(u.role)}</span>` : ''}${u.banned ? `<span class="tag ban" title="${esc(u.banned.reason || '')} (by ${esc(u.banned.by)})">banned</span>` : ''}${u.deleting ? '<span class="tag del">deleting</span>' : ''}</td>
+      <td>${new Date(u.joined).toLocaleDateString()}</td><td>${u.friendCount}</td>${staff ? `<td>${esc(u.email || '')}</td>` : ''}<td>${acts}${badges}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="dim">nobody</td></tr>';
+}
+
+async function act(name, a, el) {
+  const done = (text) => { say('uMsg', text, true); loadUsers(); loadLog(); };
+  try {
+    if (a === 'ban') {
+      const reason = prompt(`ban ${name}? why (they won't see this)`);
+      if (reason === null) return;
+      const ip = confirm('also stop new accounts from their ip addresses?\n\nok = yes, cancel = just the account');
+      await CS.api('/admin/ban', { u: name, reason, ip }); done(`${name} is banned`);
+    } else if (a === 'unban') { await CS.api('/admin/unban', { u: name }); done(`${name} is unbanned`); }
+    else if (a === 'clear') {
+      const what = el.value; el.value = '';
+      if (!what || !confirm(`clear ${name}'s ${what === 'all' ? 'bio, avatar, css, mood and wall' : what}?`)) return;
+      await CS.api('/admin/clear', { u: name, what }); done(`cleared ${name}'s ${what}`);
+    } else if (a === 'rename') {
+      const to = prompt(`rename ${name} to?`);
+      if (!to) return;
+      await CS.api('/admin/rename', { u: name, to }); done(`${name} is now ${to.toLowerCase()}`);
+    } else if (a === 'reset') {
+      if (!confirm(`reset ${name}'s password? they get logged out everywhere`)) return;
+      const j = await CS.api('/admin/reset-password', { u: name });
+      prompt(`give ${name} this temporary password. they should change it after logging in:`, j.temp);
+      done(`reset ${name}'s password`);
+    } else if (a === 'role') {
+      const mod = el.textContent.includes('make');
+      if (!confirm(mod ? `make ${name} a mod?\n\nmods unlock their powers over tailscale like you do, so they also need to be on your tailscale network to use them.` : `remove ${name}'s mod powers?`)) return;
+      await CS.api('/admin/role', { u: name, role: mod ? 'mod' : 'user' }); done(mod ? `${name} is a mod` : `${name} isn't a mod anymore`);
+    } else if (a === 'give' || a === 'take') {
+      await CS.api('/admin/badge/' + a, { u: name, id: Number(el.dataset.b) }); await loadBadges(); done(a === 'give' ? 'badge given' : 'badge taken');
+    }
+  } catch (e) { say('uMsg', e.message); }
+}
+document.addEventListener('click', e => { const b = e.target.closest('#users [data-a]'); if (b && b.tagName === 'BUTTON') act(b.closest('tr').dataset.u, b.dataset.a, b); });
+document.addEventListener('change', e => { const s = e.target.closest('#users select[data-a]'); if (s) act(s.closest('tr').dataset.u, 'clear', s); });
+
+async function loadBadges() {
+  badgeDefs = (await CS.api('/admin/badges')).badges;
+  $('badgeList').innerHTML = badgeDefs.map(b => `<div class="b"><span class="badge" style="${b.color ? 'background:' + esc(b.color) : ''}">${esc(b.icon)} ${esc(b.name)}</span>
+    <span class="dim" style="flex:1">${esc(b.desc)} &middot; ${b.holders.length ? 'has it: ' + b.holders.map(esc).join(', ') : 'nobody has it yet'}</span>
+    <button class="sec" data-del="${b.id}">delete</button></div>`).join('') || '<span class="dim">no custom badges yet. make one below, then give it to people from the user list</span>';
+  $('badgeList').querySelectorAll('[data-del]').forEach(x => x.onclick = async () => {
+    if (!confirm('delete this badge? everyone loses it')) return;
+    try { await CS.api('/admin/badge/delete', { id: Number(x.dataset.del) }); await loadBadges(); loadUsers(); loadLog(); } catch (e) { say('bMsg', e.message); }
+  });
+}
+async function makeBadge() {
+  try {
+    await CS.api('/admin/badge/create', { name: $('bName').value.trim(), icon: $('bIcon').value.trim(), desc: $('bDesc').value.trim(), color: $('bColor').value });
+    $('bName').value = $('bDesc').value = $('bIcon').value = '';
+    say('bMsg', 'badge made! give it to people from the user list', true); await loadBadges(); loadUsers(); loadLog();
+  } catch (e) { say('bMsg', e.message); }
+}
+async function loadLog() {
+  try {
+    const j = await CS.api('/admin/log');
+    $('log').innerHTML = j.log.map(e => `<div><span class="when">${when(e.t)}</span><b>${esc(e.by)}</b> ${esc(e.act)} ${e.target ? `<a href="/@${esc(e.target)}" target="_blank">${esc(e.target)}</a>` : ''} <span class="dim">${esc(e.detail)}</span></div>`).join('') || '<span class="dim">nothing yet</span>';
+  } catch (e) {}
+}
+
+(async () => {
+  me = await CS.me();
+  if (!me) { app.innerHTML = '<div class="box" id="gate"><h2>admin</h2><div class="in"><a href="/cowspace/">log in</a> first.</div></div>'; return; }
+  if (!['staff', 'mod'].includes(me.role)) { app.innerHTML = '<div class="box" id="gate"><h2>admin</h2><div class="in">this page is for landon and mods. nothing to see here, cow.</div></div>'; return; }
+  try { await render(); } catch (e) { app.innerHTML = `<div class="box" id="gate"><h2>admin</h2><div class="in">${esc(e.message)}</div></div>`; }
+})();
+</script>
+</body>
+</html>

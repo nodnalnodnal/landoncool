@@ -89,8 +89,40 @@ const csProfile = async () => {
   }
 
   const me = await CS.me();
+  adminBar(me);
   document.getElementById('csMe').innerHTML = me
     ? (me.username === st.user.username ? '<a class="l" href="/cowspace/">edit my profile</a>' : `<a class="l" href="/@${esc(me.username)}">my profile</a>`)
     : '<a class="l" href="/cowspace/">log in</a> &middot; <a class="l" href="/cowspace/#signup">sign up</a>';
+
+  // landon and mods get quick admin buttons on profiles. the api checks everything again
+  async function adminBar(me) {
+    if (!me || !['staff', 'mod'].includes(me.role) || me.username === st.user.username) return;
+    if (st.user.role === 'staff' || (me.role === 'mod' && st.user.role === 'mod')) return;
+    let status; try { status = await CS.api('/admin/status'); } catch (e) { return; }
+    const bar = document.createElement('div');
+    bar.style.cssText = 'background:#600;color:#fff;padding:5px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px';
+    const btn = 'font:bold 11px Verdana;border:1px solid #300;padding:2px 8px;cursor:pointer';
+    bar.innerHTML = status.elevated > Date.now()
+      ? `<b>admin:</b><button data-x="ban" style="${btn};background:#c33;color:#fff">ban</button>
+         <select data-x="clear" style="font-size:11px"><option value="">clear...</option><option>bio</option><option>avatar</option><option>css</option><option>mood</option><option>wall</option><option value="all">everything</option></select>
+         <a href="/cowspace/admin/" style="color:#fcc">more in the admin page</a><span id="admMsg"></span>`
+      : `<b>admin is locked.</b> <a href="/cowspace/admin/" style="color:#fcc">unlock it on the admin page</a> to get buttons here`;
+    document.querySelector('.csbar').after(bar);
+    const say = t => { const m = document.getElementById('admMsg'); if (m) m.textContent = ' ' + t; };
+    const reload = async () => { await Promise.all([loadUser(false), loadWall()]); render(0); };
+    bar.addEventListener('click', async e => {
+      if (e.target.dataset.x !== 'ban') return;
+      const reason = prompt(`ban ${name}? why (they won't see this)`);
+      if (reason === null) return;
+      const ip = confirm('also stop new accounts from their ip addresses?\n\nok = yes, cancel = just the account');
+      try { await CS.api('/admin/ban', { u: name, reason, ip }); location.reload(); } catch (err) { say(err.message); }
+    });
+    bar.addEventListener('change', async e => {
+      if (e.target.dataset.x !== 'clear' || !e.target.value) return;
+      const what = e.target.value; e.target.value = '';
+      if (!confirm(`clear ${name}'s ${what === 'all' ? 'bio, avatar, css, mood and wall' : what}?`)) return;
+      try { await CS.api('/admin/clear', { u: name, what }); await reload(); say('cleared ' + what); } catch (err) { say(err.message); }
+    });
+  }
 };
 document.readyState === 'loading' ? addEventListener('DOMContentLoaded', csProfile) : csProfile();

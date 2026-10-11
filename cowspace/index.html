@@ -136,7 +136,7 @@ function editor(user, hello) {
   }
   app.innerHTML = `
   ${user.deleting ? `<div class="banner">your account will be deleted on ${new Date(user.deleting).toLocaleDateString()}. log out and log back in to cancel.</div>` : ''}
-  <div class="box"><h2><span>hi ${esc(user.username)}!</span><span class="row"><button class="sec" id="viewMe">view my profile</button><button class="sec" id="logout">log out</button></span></h2>
+  <div class="box"><h2><span>hi ${esc(user.username)}!</span><span class="row">${['staff', 'mod'].includes(user.role) ? '<a href="/cowspace/admin/" target="_top" style="color:#fff;font-size:12px;margin-right:6px">admin</a>' : ''}<button class="sec" id="viewMe">view my profile</button><button class="sec" id="logout">log out</button></span></h2>
     <div class="in" style="font-size:12px">your profile lives at <a href="/@${esc(user.username)}">landon.cool/@${esc(user.username)}</a>. <span class="msg ok" id="hello">${esc(hello || '')}</span></div></div>
   <div class="grid">
    <div>

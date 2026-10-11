@@ -75,6 +75,13 @@ function add(m) {
   const ok = document.createElement('span');
   if (m.u) { ok.className = 'ok'; ok.textContent = ' \u2713'; }
   d.append(t, n, ok, document.createTextNode(': ' + m.msg));
+  if (modOn) {
+    const x = document.createElement('button');
+    x.textContent = '\u2715'; x.title = 'delete (mod)';
+    x.style.cssText = 'border:0;background:none;color:#c00;cursor:pointer;font-size:11px;padding:0 4px';
+    x.onclick = async () => { if (!confirm('delete this message?')) return; try { await CS.api('/admin/chat-delete', { id: m.id }); d.remove(); } catch (e) { $('err').textContent = e.message; } };
+    d.appendChild(x);
+  }
   log.appendChild(d);
 }
 
@@ -127,8 +134,15 @@ $('f').addEventListener('submit', async e => {
   } catch (e) { $('err').textContent = 'cant reach the server'; }
 });
 
-// logged in to cowspace? you chat as yourself
-CS.me().then(me => { if (me) { $('name').value = me.username; $('name').readOnly = true; $('name').title = 'your cowspace name'; } });
+// logged in to cowspace? you chat as yourself. unlocked mods also get delete buttons
+let modOn = false;
+CS.me().then(async me => {
+  if (!me) return;
+  $('name').value = me.username; $('name').readOnly = true; $('name').title = 'your cowspace name';
+  if (['staff', 'mod'].includes(me.role)) {
+    try { const s = await CS.api('/admin/status'); if (s.elevated > Date.now()) { modOn = true; last = 0; first = true; poll(); } } catch (e) {}
+  }
+});
 poll(); here();
 setInterval(poll, 2000);
 setInterval(here, 3000);
