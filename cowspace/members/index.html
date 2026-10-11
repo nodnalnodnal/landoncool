@@ -53,7 +53,7 @@ async function load(append) {
     $('total').textContent = `(${j.total} member${j.total === 1 ? '' : 's'})`;
     const html = j.members.map(m => `<a class="m" href="/@${esc(m.username)}"><img src="${CS.avatarUrl(m.avatar)}" alt=""><b>${esc(m.username)}</b>
       ${m.role !== 'user' ? `<span class="role">${esc(m.role)}</span>` : ''}
-      <div class="s">${m.friendCount} friend${m.friendCount === 1 ? '' : 's'}</div>
+      <div class="s">${m.friendCount} friend${m.friendCount === 1 ? '' : 's'}${m.npc ? ' &middot; npc' : ''}</div>
       ${m.mood && m.mood.t ? `<div class="s">${esc(m.mood.e || '')} ${esc(m.mood.t)}</div>` : ''}</a>`).join('');
     if (append) $('grid').insertAdjacentHTML('beforeend', html);
     else $('grid').innerHTML = html || '<span class="dim">no cows found</span>';

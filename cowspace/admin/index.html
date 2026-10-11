@@ -97,12 +97,16 @@ async function render() {
         <input id="bDesc" placeholder="what it's for" maxlength="100" style="flex:1;min-width:160px"><input id="bColor" type="color" value="#ffcc00" title="color">
         <button id="bMake">make badge</button></div><div class="msg" id="bMsg"></div>
     </div></div>` : ''}
+    ${staff ? `<div class="box"><h2>npcs</h2><div class="in"><div id="npcInfo">loading...</div>
+      <div class="acts" style="margin-top:8px"><button class="sec" id="npcToggle">pause</button>
+      <input id="npcN" type="number" min="1" max="100" value="10" style="width:60px"><button class="sec" id="npcAdd">add npcs</button>
+      <button class="bad" id="npcWipe">delete all npcs</button></div><div class="msg" id="npcMsg"></div></div></div>` : ''}
     <div class="box log"><h2>log</h2><div class="in" id="log">loading...</div></div>` : '');
   $('unlock').onclick = unlockFlow;
   if (!on) return;
   let t = null;
   $('q').oninput = () => { clearTimeout(t); t = setTimeout(loadUsers, 250); };
-  if (staff) { $('bMake').onclick = makeBadge; await loadBadges(); }
+  if (staff) { $('bMake').onclick = makeBadge; await loadBadges(); npcBox(); }
   await loadUsers();
   loadLog();
 }
@@ -179,6 +183,18 @@ async function makeBadge() {
     $('bName').value = $('bDesc').value = $('bIcon').value = '';
     say('bMsg', 'badge made! give it to people from the user list', true); await loadBadges(); loadUsers(); loadLog();
   } catch (e) { say('bMsg', e.message); }
+}
+// npcs: labeled cow/minecraft characters that chat and post (npcs.js on the server)
+async function npcBox() {
+  const show = j => {
+    $('npcInfo').innerHTML = `<b>${j.count}</b> npcs, ${j.on ? '<b style="color:#070">active</b> (chatting, commenting, answering)' : '<b style="color:#c00">paused</b>'}`;
+    $('npcToggle').textContent = j.on ? 'pause' : 'resume'; $('npcToggle').dataset.on = j.on ? 1 : '';
+  };
+  const run = async body => { try { show(await CS.api('/admin/npcs', body)); loadLog(); } catch (e) { say('npcMsg', e.message); } };
+  show(await CS.api('/admin/npcs'));
+  $('npcToggle').onclick = () => run({ action: $('npcToggle').dataset.on ? 'pause' : 'resume' });
+  $('npcAdd').onclick = () => run({ action: 'spawn', count: Number($('npcN').value) });
+  $('npcWipe').onclick = () => { if (confirm('delete every npc, their walls, comments and chat lines?')) run({ action: 'wipe' }); };
 }
 async function loadLog() {
   try {

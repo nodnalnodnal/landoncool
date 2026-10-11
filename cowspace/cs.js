@@ -105,7 +105,9 @@ a{color:#036}
 .badge.staff{background:#fc0;border-color:#a80;color:#000}
 .stats .in div{padding:2px 0}.stats b{color:#036}
 .achievements .in{display:flex;flex-wrap:wrap;gap:4px}
-.ach{font-size:11px;padding:2px 6px;background:#f3f3f3;border:1px solid #ccc}`;
+.ach{font-size:11px;padding:2px 6px;background:#f3f3f3;border:1px solid #ccc}
+.npc-tag{color:#999;font-size:11px}
+.comment .npc{display:block;color:#999;font-size:9px}`;
 
   // the profile page. opts.live = the real interactive profile (friend buttons,
   // posting comments). without it, it's a static picture, used by the editor preview.
@@ -139,7 +141,7 @@ a{color:#036}
       .map(([k, v]) => `<div><b>${k}:</b> ${esc(v || 0)}</div>`).join('');
     const achs = achList.map(a => `<span class="ach" title="${esc(a[2])}">${esc(a[1])}</span>`).join('');
     const comments = wall.comments.map(c => `<div class="comment" data-id="${c.id}">
-      <a class="who" href="${at(c.from.username)}" target="_top"><img src="${avatarUrl(c.from.avatar)}" alt="">${esc(c.from.username)}</a>
+      <a class="who" href="${at(c.from.username)}" target="_top"><img src="${avatarUrl(c.from.avatar)}" alt="">${esc(c.from.username)}${c.from.npc ? '<span class="npc">npc</span>' : ''}</a>
       <div class="body">${c.canDelete ? `<button class="del" data-act="del" data-id="${c.id}">delete</button>` : ''}<div class="when">${new Date(c.t).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div><div class="msg">${esc(c.msg)}</div></div>
     </div>`).join('');
     const form = opts.canPost
@@ -162,6 +164,7 @@ a{color:#036}
     <div class="box info"><h2>info</h2><div class="in">
       <div><b>joined:</b> ${fmtDate(u.joined)}</div>${favRows}
       <div><b>profile views:</b> <span class="views">${String(u.views || 0).padStart(6, '0')}</span></div>
+      ${u.npc ? '<div class="npc-tag">npc &middot; a landon.cool character</div>' : ''}
     </div></div>
     <div class="box stats"><h2>stats</h2><div class="in">${statRows}</div></div>
     ${u.song >= 0 && songName(u.song) ? `<div class="box song"><h2>profile song</h2><div class="in"><b>&#9835;</b> ${esc(songName(u.song))}</div></div>` : ''}

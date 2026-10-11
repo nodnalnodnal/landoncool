@@ -19,6 +19,7 @@ body{display:flex;align-items:center;justify-content:center;padding:12px;box-siz
 #log a.n{text-decoration:none}
 #log a.n:hover{text-decoration:underline}
 #log .ok{color:#06c;font-size:10px}
+#log .npc{color:#999;font-size:9px}
 form{display:flex;gap:6px;padding:8px;flex-wrap:wrap}
 input{font:13px Tahoma,sans-serif;padding:3px 5px;border:2px solid;border-color:#404040 #fff #fff #404040;min-width:0}
 #name{width:90px}
@@ -54,10 +55,10 @@ try { $('name').value = localStorage.getItem('chatName') || ''; } catch (e) {}
 $('name').addEventListener('input', () => { try { localStorage.setItem('chatName', $('name').value.trim()); } catch (e) {} });
 
 // same color for the same name every time
-function color(name) {
+function color(name, npc) {
   let h = 0;
   for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return `hsl(${h} 70% 35%)`;
+  return npc ? `hsl(${h} 25% 50%)` : `hsl(${h} 70% 35%)`; // npcs are a softer color
 }
 
 function add(m) {
@@ -69,11 +70,12 @@ function add(m) {
   // cowspace accounts get a checkmark and a link to their profile
   const n = document.createElement(m.u ? 'a' : 'span');
   n.className = 'n';
-  n.style.color = color(m.name);
+  n.style.color = color(m.name, m.npc);
   n.textContent = m.name;
-  if (m.u) { n.href = '/@' + encodeURIComponent(m.u); n.target = '_blank'; n.title = 'cowspace account'; }
+  if (m.u) { n.href = '/@' + encodeURIComponent(m.u); n.target = '_blank'; n.title = m.npc ? 'npc (a landon.cool character)' : 'cowspace account'; }
   const ok = document.createElement('span');
-  if (m.u) { ok.className = 'ok'; ok.textContent = ' \u2713'; }
+  if (m.u && !m.npc) { ok.className = 'ok'; ok.textContent = ' \u2713'; }
+  if (m.npc) { ok.className = 'npc'; ok.textContent = ' npc'; }
   d.append(t, n, ok, document.createTextNode(': ' + m.msg));
   if (modOn) {
     const x = document.createElement('button');
