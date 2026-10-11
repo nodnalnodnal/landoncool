@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>cow world</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#efefef;font:13px Tahoma,Verdana,sans-serif}
+a{color:#efefef}
+canvas{display:block;width:100vw;height:100vh;touch-action:none;image-rendering:pixelated}
+.top{position:fixed;left:0;right:0;top:0;display:flex;gap:10px;align-items:center;padding:6px 10px;background:rgba(21,21,21,.92);border-bottom:2px solid #333;flex-wrap:wrap}
+.top b{font:700 16px Tahoma,sans-serif}.top .sp{flex:1}.top .small{color:#8a8a8a;font-size:11px}
+form{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:6px;width:min(480px,calc(100vw - 24px))}
+input{flex:1;font:13px Tahoma,sans-serif;padding:6px 8px;background:#0a0a0a;color:#efefef;border:2px solid;border-color:#000 #6a6a6a #6a6a6a #000}
+button{font:12px Tahoma,sans-serif;color:#000;background:#efefef;border:2px solid;border-color:#fff #6a6a6a #6a6a6a #fff;padding:4px 12px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div class="top"><a href="/" style="text-decoration:none"><b>cow world</b></a><span class="small" id="count"></span><span class="sp"></span>
+  <span class="small" id="me"></span><span class="small">arrows / wasd / tap to walk &middot; enter to talk</span></div>
+<canvas id="c"></canvas>
+<form id="f" autocomplete="off"><input id="msg" maxlength="80" placeholder="say something..." aria-label="say something"><button>say</button></form>
+
+<script src="/cowspace/cs.js"></script>
+<script>
+// cow world: walk around a little field as a cow with everyone else who's online.
+// positions go to the server (world.js) a few times a second, everyone else comes back.
+// npcs (the name tag says npc) wander around and answer if you talk near them
+const API = 'https://api.landon.cool/api/world', $ = id => document.getElementById(id);
+const T = 16; // pixels per tile
+const cv = $('c'), g = cv.getContext('2d');
+let MAP = [], MW = 0, MH = 0, ground = null;
+let me = { x: 24.5, y: 15.5, dir: 1, moving: false }, target = null, keys = {};
+const others = new Map(); // id -> {name, u, npc, x, y, tx, ty, dir, m, c, say, sayT, avatar}
+const avatars = new Map(); // id -> image of their avatar face
+const id = (() => { try { let v = sessionStorage.getItem('worldId'); if (!v) { v = Math.random().toString(36).slice(2, 12).padEnd(10, '0'); sessionStorage.setItem('worldId', v); } return v; } catch (e) { return Math.random().toString(36).slice(2, 12).padEnd(10, '0'); } })();
+const WALK = new Set(['.', ',', ':', 'D']);
+const walkable = (x, y) => { const r = MAP[Math.floor(y)]; return !!r && WALK.has(r[Math.floor(x)]); };
+const free = (x, y) => walkable(x - 0.3, y - 0.15) && walkable(x + 0.3, y - 0.15) && walkable(x - 0.3, y + 0.25) && walkable(x + 0.3, y + 0.25);
+
+// ---------- drawing the field once (pixel art made in code) ----------
+function noise(x, y) { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+function drawGround() {
+  ground = document.createElement('canvas'); ground.width = MW * T; ground.height = MH * T;
+  const c = ground.getContext('2d');
+  const px = (x, y, col) => { c.fillStyle = col; c.fillRect(x, y, 1, 1); };
+  for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
+    const ch = MAP[ty][tx], X = tx * T, Y = ty * T;
+    // everything sits on grass
+    c.fillStyle = '#5fae3f'; c.fillRect(X, Y, T, T);
+    for (let i = 0; i < 10; i++) px(X + Math.floor(noise(tx * 9 + i, ty) * T), Y + Math.floor(noise(tx, ty * 7 + i) * T), noise(i, tx + ty) > 0.5 ? '#4f9a33' : '#6fc04c');
+    if (ch === ',') for (let i = 0; i < 3; i++) { const fx = X + 2 + Math.floor(noise(tx + i, ty * 3) * 11), fy = Y + 2 + Math.floor(noise(tx * 3, ty + i) * 11); c.fillStyle = ['#ff6b9e', '#ffe14d', '#ffffff', '#9fb8ff'][(tx + ty + i) % 4]; c.fillRect(fx, fy, 2, 2); px(fx, fy + 2, '#3c7a2b'); }
+    if (ch === ':' || ch === 'D') { c.fillStyle = '#b08850'; c.fillRect(X, Y, T, T); for (let i = 0; i < 8; i++) px(X + Math.floor(noise(tx * 5 + i, ty) * T), Y + Math.floor(noise(tx, ty * 5 + i) * T), '#9a7442'); }
+    if (ch === '~') { c.fillStyle = '#3f7fd6'; c.fillRect(X, Y, T, T); for (let i = 0; i < 4; i++) { c.fillStyle = '#6fa3ee'; c.fillRect(X + Math.floor(noise(tx + i, ty) * 12), Y + Math.floor(noise(tx, ty + i) * 14), 3, 1); } }
+    if (ch === 'B') { c.fillStyle = '#b8352d'; c.fillRect(X, Y, T, T); c.fillStyle = '#9a2a24'; for (let i = 0; i < T; i += 4) c.fillRect(X + i, Y, 1, T); }
+    if (ch === 'R') { c.fillStyle = '#6b2420'; c.fillRect(X, Y, T, T); c.fillStyle = '#82302a'; for (let i = 0; i < T; i += 3) c.fillRect(X, Y + i, T, 1); }
+    if (ch === 'D') { c.fillStyle = '#5a3a1e'; c.fillRect(X + 1, Y, T - 2, T); c.fillStyle = '#7a5230'; c.fillRect(X + 3, Y + 2, T - 6, T - 2); }
+    if (ch === '=') { c.fillStyle = '#8a5a2e'; c.fillRect(X, Y + 5, T, 2); c.fillRect(X, Y + 10, T, 2); c.fillStyle = '#6e4622'; c.fillRect(X + 1, Y + 2, 3, 13); c.fillRect(X + 12, Y + 2, 3, 13); }
+    if (ch === 'h') { c.fillStyle = '#e8c547'; c.fillRect(X + 1, Y + 3, T - 2, T - 4); c.fillStyle = '#c9a52e'; c.fillRect(X + 1, Y + 7, T - 2, 1); c.fillRect(X + 1, Y + 11, T - 2, 1); }
+    if (ch === '#') { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(X + 3, Y + 12, 11, 3); c.fillStyle = '#6b4423'; c.fillRect(X + 6, Y + 9, 4, 6); c.fillStyle = '#2f7a2a'; c.beginPath(); c.arc(X + 8, Y + 7, 6.5, 0, 7); c.fill(); c.fillStyle = '#3f9a36'; c.beginPath(); c.arc(X + 6, Y + 5, 3, 0, 7); c.fill(); }
+  }
+}
+
+// ---------- cows ----------
+function avatarImg(key, av) {
+  if (!av || avatars.has(key)) return;
+  const i = new Image(); i.src = CS.avatarUrl(av); avatars.set(key, i);
+}
+function drawCow(o, sx, sy, s, t) {
+  const f = o.dir < 0 ? -1 : 1, base = o.npc ? '#f4f4f4' : '#' + (o.c || 'f4f4f4'), spot = '#2a2a2a';
+  const step = o.m ? Math.floor(t / 150) % 2 : 0;
+  g.save(); g.translate(sx, sy); g.scale(s * f, s);
+  // shadow, legs, body, spots, head
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(-7, 4, 14, 2);
+  g.fillStyle = '#3a2a20'; for (const [lx, up] of [[-5, step], [-2, !step], [2, step], [5, !step]]) g.fillRect(lx, 1 - (up ? 1 : 0), 2, 4);
+  g.fillStyle = base; g.fillRect(-7, -6, 13, 8);
+  g.fillStyle = spot; g.fillRect(-5, -5, 3, 2); g.fillRect(0, -3, 3, 3); g.fillRect(-6, -1, 2, 2);
+  const img = avatars.get(o.key);
+  if (img && img.complete && img.naturalWidth) g.drawImage(img, 3, -11, 8, 8);
+  else { g.fillStyle = base; g.fillRect(3, -11, 8, 8); g.fillStyle = '#f2b8b8'; g.fillRect(3, -6, 8, 3); g.fillStyle = '#111'; g.fillRect(5, -9, 1, 1); g.fillRect(9, -9, 1, 1); }
+  g.restore();
+}
+function label(text, x, y, color) {
+  g.font = 'bold 12px Tahoma, sans-serif'; g.textAlign = 'center';
+  g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(text, x, y); g.fillStyle = color; g.fillText(text, x, y);
+}
+function bubble(text, x, y) {
+  g.font = '12px Tahoma, sans-serif'; const w = Math.min(220, g.measureText(text).width + 14);
+  g.fillStyle = '#fff'; g.fillRect(x - w / 2, y - 22, w, 20); g.fillRect(x - 3, y - 2, 6, 4);
+  g.strokeStyle = '#000'; g.lineWidth = 2; g.strokeRect(x - w / 2, y - 22, w, 20);
+  g.fillStyle = '#000'; g.textAlign = 'center'; g.fillText(text.length > 34 ? text.slice(0, 33) + '…' : text, x, y - 8);
+}
+
+// ---------- the loop ----------
+let S = 3, last = performance.now(), mySay = null, mySayT = 0, meName = 'guest';
+function resize() { const dpr = devicePixelRatio || 1; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.imageSmoothingEnabled = false; S = innerWidth < 600 ? 2.5 : 3; }
+addEventListener('resize', resize);
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  if (ground) {
+    // move: keys first, otherwise walk toward where you tapped
+    let vx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0), vy = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
+    if (vx || vy) target = null;
+    else if (target) { const dx = target.x - me.x, dy = target.y - me.y, d = Math.hypot(dx, dy); if (d < 0.15) target = null; else { vx = dx / d; vy = dy / d; } }
+    const len = Math.hypot(vx, vy) || 1, sp = 3.2 * dt;
+    me.moving = !!(vx || vy);
+    if (vx) { const nx = me.x + vx / len * sp; if (free(nx, me.y)) me.x = nx; else target = null; me.dir = vx < 0 ? -1 : 1; }
+    if (vy) { const ny = me.y + vy / len * sp; if (free(me.x, ny)) me.y = ny; else target = null; }
+    // others glide toward their latest spot
+    for (const o of others.values()) { o.x += (o.tx - o.x) * Math.min(1, dt * 8); o.y += (o.ty - o.y) * Math.min(1, dt * 8); }
+
+    const vw = innerWidth / S, vh = innerHeight / S;
+    const cx = Math.max(0, Math.min(MW * T - vw, me.x * T - vw / 2)), cy = Math.max(0, Math.min(MH * T - vh, me.y * T - vh / 2));
+    g.fillStyle = '#000'; g.fillRect(0, 0, innerWidth, innerHeight);
+    g.drawImage(ground, cx, cy, vw, vh, 0, 0, vw * S, vh * S);
+    // a little shimmer on the pond
+    g.fillStyle = 'rgba(255,255,255,.18)';
+    for (let i = 0; i < 12; i++) { const wx = 31 + ((i * 7 + t / 900) % 11), wy = 19 + (i * 5 % 7); if (MAP[Math.floor(wy)] && MAP[Math.floor(wy)][Math.floor(wx)] === '~') g.fillRect((wx * T - cx) * S, (wy * T - cy) * S, 3 * S, S); }
+    // everyone, back to front
+    const all = [...others.values(), { ...me, key: 'me', name: meName, me: true, avatar: null, say: mySay && t - mySayT < 6000 ? mySay : null, c: me.c }];
+    all.sort((a, b) => a.y - b.y);
+    for (const o of all) {
+      const sx = (o.x * T - cx) * S, sy = (o.y * T - cy) * S;
+      if (sx < -60 || sy < -60 || sx > innerWidth + 60 || sy > innerHeight + 60) continue;
+      drawCow(o, sx, sy, S, t);
+      label(o.name + (o.npc ? ' (npc)' : o.u && !o.me ? ' ✓' : ''), sx, sy - 13 * S, o.me ? '#ffe14d' : o.npc ? '#c9c9c9' : '#ffffff');
+      if (o.say) bubble(o.say, sx, sy - 17 * S);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- input ----------
+addEventListener('keydown', e => { if (document.activeElement === $('msg')) { if (e.key === 'Escape') $('msg').blur(); return; } if (e.key === 'Enter') { e.preventDefault(); $('msg').focus(); return; } keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = true; if (e.key.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup', e => { keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false; });
+addEventListener('blur', () => { keys = {}; });
+cv.addEventListener('pointerdown', e => {
+  const vw = innerWidth / S, vh = innerHeight / S;
+  const cx = Math.max(0, Math.min(MW * T - vw, me.x * T - vw / 2)), cy = Math.max(0, Math.min(MH * T - vh, me.y * T - vh / 2));
+  target = { x: (e.clientX / S + cx) / T, y: (e.clientY / S + cy) / T };
+  $('msg').blur();
+});
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  const msg = $('msg').value.trim(); if (!msg) return;
+  $('msg').value = ''; $('msg').blur();
+  mySay = msg; mySayT = performance.now();
+  try { await post('/say', { id, msg }); } catch (err) {}
+};
+
+// ---------- talking to the server ----------
+async function post(path, body) {
+  const t = CS.token();
+  const r = await fetch(API + path, { method: 'POST', headers: { 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) }, body: JSON.stringify(body) });
+  return r.json();
+}
+let tick = 0, lastSent = 0;
+async function sync() {
+  const now = performance.now();
+  if (document.hidden || (!me.moving && now - lastSent < 700)) return setTimeout(sync, 150);
+  lastSent = now;
+  try {
+    const j = await post('/move', { id, x: +me.x.toFixed(2), y: +me.y.toFixed(2), dir: me.dir, full: tick++ % 10 === 0 ? 1 : 0 });
+    if (j.you && Math.hypot(j.you.x - me.x, j.you.y - me.y) > 1.5) { me.x = j.you.x; me.y = j.you.y; target = null; }
+    if (j.players) {
+      const seen = new Set();
+      for (const p of j.players) {
+        if (p.id === id) { me.c = p.c; continue; }
+        seen.add(p.id);
+        let o = others.get(p.id);
+        if (!o) { o = { key: p.id, x: p.x, y: p.y }; others.set(p.id, o); }
+        Object.assign(o, { name: p.name, u: p.u, npc: p.npc, tx: p.x, ty: p.y, dir: p.dir, m: p.m, c: p.c, say: p.say || null });
+        if (p.avatar !== undefined) avatarImg(p.id, p.avatar);
+      }
+      for (const k of [...others.keys()]) if (!seen.has(k)) others.delete(k);
+      const people = j.players.filter(p => !p.npc).length, npcs = j.players.length - people;
+      $('count').textContent = `${people} cow${people === 1 ? '' : 's'} here` + (npcs ? ` + ${npcs} npcs` : '');
+    }
+  } catch (e) {}
+  setTimeout(sync, 150);
+}
+
+(async () => {
+  resize();
+  const m = await (await fetch(API + '/map')).json();
+  MAP = m.map; MW = m.w; MH = m.h; me.x = m.spawn.x + (Math.random() - 0.5) * 2; me.y = m.spawn.y;
+  if (!free(me.x, me.y)) { me.x = m.spawn.x; me.y = m.spawn.y; }
+  drawGround();
+  requestAnimationFrame(frame);
+  sync();
+  CS.me().then(u => { if (u) { meName = u.username; avatarImg('me', u.avatar); $('me').textContent = '@' + u.username; } });
+})();
+</script>
+</body>
+</html>
