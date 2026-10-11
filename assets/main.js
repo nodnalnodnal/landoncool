@@ -466,10 +466,15 @@ setInterval(renderStats,1000);
 function cd(now){const end=new Date(2027,0,1);let s=Math.floor((end-now)/1000);if(s<=0){$('#cd').textContent="it's 2027. happy new year.";return}
   const dd=Math.floor(s/86400);s%=86400;const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60);s%=60;$('#cd').innerHTML=`${dd} days<br>${h} hours<br>${m} minutes<br>${s} seconds`}
 const POLL=['cow','creeper','enderman','the warden'];
-function renderPoll(){const p=$('#poll'),v=store.get('vote',null);
-  if(v===null){p.innerHTML=POLL.map((o,i)=>`<label><input type="radio" name="pv" value="${i}">${o}</label>`).join('')+'<button class="btn" id="pvote" style="margin-top:6px">vote!</button>';
-    $('#pvote').onclick=()=>{const c=$('input[name=pv]:checked');if(!c){status('pick one first');return}store.set('vote',+c.value);beep(1400,.06);emit('vote');renderPoll()};return}
-  p.innerHTML=POLL.map((o,i)=>`<div>${o}${i===v?' (you)':''}</div><div class="bar"><i style="width:${i===0?100:i===v?6:1}%"></i></div>`).join('')+`<div class="small">results are rigged. cow always wins.</div>`}
+// the poll is real now: api.landon.cool/api/poll, one vote per person. cow still wins (spiritually)
+function renderPoll(votes,mine){const p=$('#poll');
+  if(!votes){p.textContent='counting votes...';fetch('https://api.landon.cool/api/poll').then(r=>r.json()).then(j=>renderPoll(j.votes,j.mine)).catch(()=>{p.textContent='the poll server is napping'});return}
+  if(mine===null||mine===undefined){p.innerHTML=POLL.map((o,i)=>`<label><input type="radio" name="pv" value="${i}">${o}</label>`).join('')+'<button class="btn" id="pvote" style="margin-top:6px">vote!</button>';
+    $('#pvote').onclick=async()=>{const c=$('input[name=pv]:checked');if(!c){status('pick one first');return}
+      try{const r=await fetch('https://api.landon.cool/api/poll',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({i:+c.value})});const j=await r.json();store.set('vote',j.mine);beep(1400,.06);emit('vote');renderPoll(j.votes,j.mine)}catch(e){status('vote didnt go through')}};return}
+  const total=votes.reduce((a,b)=>a+b,0)||1,top=Math.max(...votes);
+  p.innerHTML=POLL.map((o,i)=>`<div>${o}${i===mine?' (you)':''} <span class="small">${votes[i]}</span></div><div class="bar"><i style="width:${Math.max(1,votes[i]/total*100)}%"></i></div>`).join('')+
+    `<div class="small">${votes[0]===top?'results are real now. cow is winning, as it should':'results are real now. cow is winning in our hearts'}</div>`}
 renderPoll();
 function gb(){return store.get('gb',[{n:'landon',m:'first. sign it.'}])}
 function renderGb(){const l=$('#gblist');l.innerHTML='';gb().slice().reverse().forEach(e=>{const d=document.createElement('div');d.textContent=e.n+': '+e.m;l.append(d)})}

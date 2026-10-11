@@ -137,7 +137,8 @@ function editor(user, hello) {
   app.innerHTML = `
   ${user.deleting ? `<div class="banner">your account will be deleted on ${new Date(user.deleting).toLocaleDateString()}. log out and log back in to cancel.</div>` : ''}
   <div class="box"><h2><span>hi ${esc(user.username)}!</span><span class="row">${['staff', 'mod'].includes(user.role) ? '<a href="/cowspace/admin/" target="_top" style="color:#fff;font-size:12px;margin-right:6px">admin</a>' : ''}<button class="sec" id="viewMe">view my profile</button><button class="sec" id="logout">log out</button></span></h2>
-    <div class="in" style="font-size:12px">your profile lives at <a href="/@${esc(user.username)}">landon.cool/@${esc(user.username)}</a>. <span class="msg ok" id="hello">${esc(hello || '')}</span></div></div>
+    <div class="in" style="font-size:12px">your profile lives at <a href="/@${esc(user.username)}">landon.cool/@${esc(user.username)}</a>. <span class="msg ok" id="hello">${esc(hello || '')}</span>
+      <div id="notes" style="margin-top:8px"></div></div></div>
   <div class="grid">
    <div>
     <div class="box"><h2>profile picture</h2><div class="in">
@@ -201,6 +202,13 @@ function editor(user, hello) {
     <div class="row"><input id="delPw" type="password" placeholder="your password" autocomplete="current-password" style="max-width:200px"><button class="bad" id="del">delete my account</button></div><div class="msg" id="delMsg"></div>
   </div></div>`;
 
+  // notifications: newest few, then mark them read
+  CS.api('/notes').then(j => {
+    if (!j.notes.length) return;
+    $('notes').innerHTML = `<b>notifications${j.unread ? ` (${j.unread} new)` : ''}</b>` + j.notes.slice(0, 8).map(n =>
+      `<div style="padding:3px 0;${n.read ? 'color:#888' : ''}"><a href="${esc(n.link || '#')}" target="_top">${esc(n.text)}</a> <span style="color:#999;font-size:11px">${new Date(n.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span></div>`).join('');
+    if (j.unread) CS.api('/notes/read', {}).then(notify).catch(() => {});
+  }).catch(() => {});
   $('moodE').value = draft.mood.e || ''; $('moodT').value = draft.mood.t || '';
   $('bio').value = draft.bio || ''; $('css').value = draft.css || '';
   $('viewMe').onclick = () => openProfile(user.username);

@@ -137,16 +137,24 @@ ui();
 })();
 
 /* ================= shoutbox ================= */
-(()=>{const l=$('#shl');let list=store.get('shout',[{n:'landon',m:'first',t:'4:20'},{n:'bessie',m:'moo',t:'4:21'},{n:'moo-ssistant',m:'did you know you can type help in the terminal',t:'4:22'}]);
-  const now=()=>new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).toLowerCase().replace(/\s?[ap]m/,'');
-  function draw(){l.innerHTML='';list.slice(-40).forEach(e=>{const d=document.createElement('div');const t=document.createElement('span');t.className='t';t.textContent='['+e.t+'] ';const b=document.createElement('b');b.textContent=e.n+': ';d.append(t,b,document.createTextNode(e.m));l.append(d)});l.scrollTop=l.scrollHeight}
-  function add(n,m){list.push({n,m,t:now()});list=list.slice(-40);store.set('shout',list);draw()}
-  function reply(m){const t=m.toLowerCase();let r;
-    if(t.includes('moo'))r=['bessie','moo'];else if(/\b(hi|hey|hello|sup|yo)\b/.test(t))r=['landon','hi'];else if(t.includes('cool'))r=['landon','thanks'];else if(t.includes('?'))r=['moo-ssistant','idk ask the cow'];
-    else r=rnd([['bessie','moo'],['landon','real'],['landon','lol'],['moo-ssistant','have you tried turning it off and on again'],['the poll','cow is winning btw'],['creeper','sssss'],['landon','make sure to come back so i get money']]);
-    setTimeout(()=>{add(r[0],r[1]);SFX.pop()},1200+Math.random()*1800)}
-  $('#shf').onsubmit=e=>{e.preventDefault();const v=$('#shi').value.trim();if(!v){SFX.error();return}add(store.get('shName','you'),v);$('#shi').value='';unlock('shout');reply(v)};
-  L.shout=(m)=>{add(store.get('shName','you'),m);unlock('shout');reply(m)};draw()})();
+// this is the real cow chat now (landon.cool/chat). shouting posts there, as your cowspace
+// account if you're logged in. the npcs (labeled) are the ones who talk back
+(()=>{const l=$('#shl'),API='https://api.landon.cool/api/chat';let last=0;
+  const tok=()=>{try{return localStorage.getItem('csToken')||''}catch(e){return ''}};
+  function line(m){const d=document.createElement('div');const t=document.createElement('span');t.className='t';
+    t.textContent='['+new Date(m.t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).toLowerCase().replace(/\s?[ap]m/,'')+'] ';
+    const b=document.createElement('b');b.textContent=m.name+(m.u&&!m.npc?' \u2713':'')+': ';if(m.npc){b.style.opacity='.6';b.title='npc'}
+    d.append(t,b,document.createTextNode(m.msg));return d}
+  async function poll(){if(document.hidden)return;try{const j=await (await fetch(API+'?after='+last)).json();
+    if(!j.messages.length){if(!last&&!l.children.length)l.textContent='nobody has said anything yet. be first';return}
+    if(!last)l.innerHTML='';j.messages.forEach(m=>l.append(line(m)));last=j.messages[j.messages.length-1].id;
+    while(l.children.length>40)l.firstChild.remove();l.scrollTop=l.scrollHeight}catch(e){}}
+  async function add(m){const t=tok();try{const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json',...(t?{authorization:'Bearer '+t}:{})},body:JSON.stringify({name:store.get('shName','')||'anon',msg:m})});
+    const j=await r.json();if(!r.ok){L.status(j.error||'that didnt send');SFX.error();return}SFX.pop();poll()}catch(e){L.status('cant reach the chat')}}
+  $('#shf').onsubmit=e=>{e.preventDefault();const v=$('#shi').value.trim();if(!v){SFX.error();return}add(v);$('#shi').value='';unlock('shout')};
+  L.shout=(m)=>{add(m);unlock('shout')};
+  poll();setInterval(poll,5000)})();
+
 
 /* ================= link to me / awards / blinkies ================= */
 $('#lnk').value='<a href="https://landon.cool">landon.cool - the best website in my house</a>';
