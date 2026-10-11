@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>cow/place</title>
+<style>
+html,body{margin:0;height:100%;background:#000;color:#efefef;font:13px Tahoma,Verdana,sans-serif;overflow:hidden}
+a{color:#efefef}
+.top{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:6px 10px;background:#151515;border-bottom:2px solid #333;z-index:3;flex-wrap:wrap}
+.top b{font:700 16px Tahoma,sans-serif}
+.top .sp{flex:1}
+.top .small{color:#8a8a8a;font-size:11px}
+#stage{position:fixed;inset:0;touch-action:none;cursor:crosshair;background:repeating-conic-gradient(#0d0d0d 0 25%,#000 0 50%) 0 0/16px 16px}
+#wrap{position:absolute;left:0;top:0;transform-origin:0 0}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 0 0 1px #333}
+#sel{position:absolute;width:1px;height:1px;box-shadow:0 0 0 .15px #fff,0 0 0 .3px #000;pointer-events:none;display:none}
+.bar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:#151515;border:2px solid;border-color:#6a6a6a #000 #000 #6a6a6a;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:8px 10px;z-index:3;width:min(560px,calc(100vw - 24px));box-sizing:border-box}
+.pal{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:8px}
+.pal button{width:26px;height:26px;padding:0;border:2px solid #333;cursor:pointer}
+.pal button.on{border-color:#fff;outline:2px solid #000;transform:translateY(-2px)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.btn{font:12px Tahoma,sans-serif;color:#efefef;background:#151515;border:2px solid;border-color:#6a6a6a #000 #000 #6a6a6a;padding:4px 12px;cursor:pointer}
+.btn:active{border-color:#000 #6a6a6a #6a6a6a #000}
+.btn.go{background:#efefef;color:#000;font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+#info{font-size:12px;color:#8a8a8a;min-height:16px}
+#tl{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:5;display:none;place-items:center}
+#tl canvas{width:min(80vmin,512px);height:min(80vmin,512px)}
+#tl .close{position:fixed;top:12px;right:12px}
+</style>
+</head>
+<body>
+<div class="top"><a href="/" style="text-decoration:none"><b>cow/place</b></a><span class="small" id="online"></span><span class="sp"></span>
+  <span class="small" id="who"></span><button class="btn" id="tlBtn">timelapse</button><a class="small" href="/cowspace/">cowspace</a></div>
+<div id="stage"><div id="wrap"><canvas id="c" width="128" height="128"></canvas><div id="sel"></div></div></div>
+<div class="bar">
+  <div class="pal" id="pal"></div>
+  <div class="row"><span id="info">tap a pixel to pick it</span><button class="btn go" id="place" disabled>place</button></div>
+</div>
+<div id="tl"><button class="btn close" id="tlClose">close</button><canvas id="tlc" width="128" height="128"></canvas></div>
+
+<script src="/cowspace/cs.js"></script>
+<script>
+// cow/place: everyone shares one 128x128 canvas. the server (place.js) keeps the board,
+// enforces the cooldown (10s with a cowspace account, 30s as a guest) and logs every
+// pixel, which is what the live updates and the timelapse are made from
+const API = 'https://api.landon.cool/api/place', $ = id => document.getElementById(id);
+const W = 128, H = 128, c = $('c'), g = c.getContext('2d'), img = g.createImageData(W, H);
+let PAL = [], board = null, seq = 0, color = 1, pick = null, readyAt = 0, me = null;
+
+const hex = h => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+const b64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+function setPx(i, col) { board[i] = col; const [r, gg, b] = hex(PAL[col] || 'ffffff'), o = i * 4; img.data[o] = r; img.data[o + 1] = gg; img.data[o + 2] = b; img.data[o + 3] = 255; }
+function paintAll() { for (let i = 0; i < W * H; i++) setPx(i, board[i]); g.putImageData(img, 0, 0); }
+function apply(bytes) { for (let k = 0; k + 2 < bytes.length; k += 3) setPx((bytes[k] << 8) | bytes[k + 1], bytes[k + 2]); g.putImageData(img, 0, 0); }
+
+async function load() {
+  const j = await (await fetch(API)).json();
+  PAL = j.pal; board = b64(j.board); seq = j.seq; paintAll();
+  if (!$('pal').children.length) PAL.forEach((h, i) => {
+    if (!i) return; // 0 isn't a real color
+    const b = document.createElement('button');
+    b.style.background = '#' + h; b.title = '#' + h; b.setAttribute('aria-label', 'color #' + h);
+    if (i === color) b.className = 'on';
+    b.onclick = () => { color = i; $('pal').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+    $('pal').appendChild(b);
+  });
+}
+async function poll() {
+  if (document.hidden || !board) return;
+  try {
+    const j = await (await fetch(`${API}/changes?since=${seq}`)).json();
+    if (j.reset) return load();
+    if (j.changes) apply(b64(j.changes));
+    seq = j.seq;
+  } catch (e) {}
+}
+
+// ---------- zoom + pan (mouse wheel, drag, pinch) ----------
+const wrap = $('wrap'), stage = $('stage');
+let z = Math.max(2, Math.floor(Math.min(innerWidth, innerHeight - 160) / W)), ox = (innerWidth - W * z) / 2, oy = 50 + (innerHeight - 200 - H * z) / 2;
+const view = () => { wrap.style.transform = `translate(${ox}px,${oy}px) scale(${z})`; };
+function zoomAt(px, py, f) { const nz = Math.min(64, Math.max(1, z * f)); ox = px - (px - ox) * nz / z; oy = py - (py - oy) * nz / z; z = nz; view(); }
+stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+const ptrs = new Map(); let moved = 0, pinch = 0;
+stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; });
+stage.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()], d0 = Math.hypot(a.x - b.x, a.y - b.y);
+    p.x = e.clientX; p.y = e.clientY;
+    const [a2, b2] = [...ptrs.values()], d1 = Math.hypot(a2.x - b2.x, a2.y - b2.y);
+    if (d0) zoomAt((a2.x + b2.x) / 2, (a2.y + b2.y) / 2, d1 / d0);
+    moved = 99; pinch = 1; return;
+  }
+  ox += e.clientX - p.x; oy += e.clientY - p.y; moved += Math.abs(e.clientX - p.x) + Math.abs(e.clientY - p.y);
+  p.x = e.clientX; p.y = e.clientY; view();
+});
+stage.addEventListener('pointerup', e => {
+  ptrs.delete(e.pointerId);
+  if (pinch) { if (!ptrs.size) pinch = 0; return; }
+  if (moved < 6) select(Math.floor((e.clientX - ox) / z), Math.floor((e.clientY - oy) / z));
+});
+addEventListener('resize', view);
+
+// ---------- picking + placing ----------
+async function select(x, y) {
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  pick = { x, y };
+  Object.assign($('sel').style, { display: 'block', left: x + 'px', top: y + 'px' });
+  $('place').disabled = Date.now() < readyAt;
+  info();
+  $('who').textContent = '';
+  try {
+    const j = await (await fetch(`${API}/who?x=${x}&y=${y}`)).json();
+    if (pick && pick.x === x && pick.y === y) $('who').textContent = j.who ? `(${x}, ${y}) placed by ${j.who.n}${j.who.npc ? ' (npc)' : ''}` : `(${x}, ${y}) untouched`;
+  } catch (e) {}
+}
+function info() {
+  const wait = Math.ceil((readyAt - Date.now()) / 1000);
+  $('info').textContent = wait > 0 ? `next pixel in ${wait}s` : pick ? `place at (${pick.x}, ${pick.y})` + (me ? ` as @${me.username}` : ' as a guest') : (me ? `tap a pixel, @${me.username}` : 'tap a pixel. log in to cowspace to place 3x faster');
+  $('place').disabled = !pick || wait > 0;
+}
+setInterval(info, 500);
+$('place').onclick = async () => {
+  if (!pick) return;
+  const t = CS.token();
+  try {
+    const r = await fetch(API, { method: 'POST', headers: { 'content-type': 'application/json', ...(t ? { authorization: 'Bearer ' + t } : {}) }, body: JSON.stringify({ x: pick.x, y: pick.y, c: color }) });
+    const j = await r.json();
+    if (j.wait) readyAt = Date.now() + j.wait;
+    if (r.ok) { setPx(pick.y * W + pick.x, color); g.putImageData(img, 0, 0); poll(); $('who').textContent = `(${pick.x}, ${pick.y}) placed by you`; }
+    else $('info').textContent = j.error === 'cooling down' ? 'still cooling down' : j.error || 'that didnt work';
+  } catch (e) { $('info').textContent = 'cant reach the server'; }
+  info();
+};
+
+// ---------- timelapse: replay every pixel ever placed ----------
+let tlStop = false;
+$('tlBtn').onclick = async () => {
+  $('tl').style.display = 'grid'; tlStop = false;
+  const tc = $('tlc').getContext('2d'), ti = tc.createImageData(W, H);
+  for (let i = 0; i < ti.data.length; i += 4) ti.data.fill(255, i, i + 4);
+  tc.putImageData(ti, 0, 0);
+  let all = [], from = 0;
+  for (;;) { const j = await (await fetch(`${API}/log?from=${from}`)).json(); all.push(b64(j.changes)); from = j.to; if (!j.more) break; }
+  const bytes = new Uint8Array(all.reduce((n, a) => n + a.length, 0)); let o = 0; for (const a of all) { bytes.set(a, o); o += a.length; }
+  const total = bytes.length / 3, per = Math.max(1, Math.ceil(total / 900)); // about 15 seconds
+  let k = 0;
+  (function step() {
+    if (tlStop) return;
+    for (let n = 0; n < per && k < total; n++, k++) { const i = (bytes[k * 3] << 8) | bytes[k * 3 + 1], [r, gg, b] = hex(PAL[bytes[k * 3 + 2]]); ti.data.set([r, gg, b, 255], i * 4); }
+    tc.putImageData(ti, 0, 0);
+    if (k < total) requestAnimationFrame(step);
+  })();
+};
+$('tlClose').onclick = () => { tlStop = true; $('tl').style.display = 'none'; };
+
+// who else is here (same live visitors api as the homepage)
+const hereId = Math.random().toString(36).slice(2, 12).padEnd(10, '0');
+async function here() {
+  if (document.hidden) return;
+  try {
+    const r = await fetch('https://api.landon.cool/api/here', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hereId, page: '/place/', x: null, y: null }) });
+    const j = await r.json();
+    if (j.here) $('online').textContent = `${j.here} placing right now`;
+  } catch (e) {}
+}
+
+view();
+load().then(() => { setInterval(poll, 1500); });
+here(); setInterval(here, 4000);
+CS.me().then(u => { me = u; info(); });
+</script>
+</body>
+</html>
