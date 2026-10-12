@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow forums</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#e5e5e5;color:#111;font:13px Verdana,Tahoma,sans-serif}
+a{color:#036}
+.csbar{background:#036;color:#fff;padding:6px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.csbar .logo{font:bold 18px Verdana,sans-serif;color:#fff;text-decoration:none;letter-spacing:-1px}
+.csbar .logo span{color:#fc0}
+.csbar .sp{flex:1}
+.csbar a.l{color:#cde;font-size:12px}
+.page{max-width:900px;margin:0 auto;padding:12px}
+.crumbs{margin-bottom:10px;font-size:12px}
+.box{background:#fff;border:1px solid #6699cc;margin-bottom:12px}
+.box h2{margin:0;background:#6699cc;color:#fff;font:bold 13px Verdana;padding:5px 8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.box .in{padding:8px}
+table{width:100%;border-collapse:collapse}
+th{background:#d6e3f0;text-align:left;font-size:11px;padding:4px 6px;color:#036}
+td{padding:6px;border-top:1px solid #dde;vertical-align:top}
+td.n{text-align:center;white-space:nowrap;font-size:12px;color:#555}
+.bname{font-weight:bold;font-size:14px}
+.desc,.small{font-size:11px;color:#666}
+.pin{color:#c60;font-weight:bold;font-size:11px}
+.lock{color:#999;font-size:11px}
+.post{display:flex;border-top:1px solid #dde}
+.post:first-child{border-top:0}
+.post .who{flex:none;width:130px;padding:8px;background:#f2f6fb;border-right:1px solid #dde;text-align:center;font-size:11px;word-break:break-all}
+.post .who img{display:block;width:72px;height:72px;margin:4px auto;image-rendering:pixelated;background:#fff;border:1px solid #ccc}
+.post .who .nm{font-weight:bold;font-size:12px}
+.post .who .rank{color:#036;font-style:italic}
+.post .body{flex:1;min-width:0;padding:8px}
+.post .meta{font-size:11px;color:#777;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:6px;border-bottom:1px dotted #ccc;padding-bottom:4px}
+.post .msg{line-height:1.5;word-wrap:break-word;overflow-wrap:anywhere}
+.post .msg img.bb{max-width:100%;max-height:400px}
+.post .doodle{width:96px;height:96px;image-rendering:pixelated;border:1px solid #ccc;display:block;margin-top:6px}
+.post .sig{margin-top:10px;border-top:1px solid #ddd;padding-top:4px;font-size:11px;color:#666}
+.post .acts{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.post .acts button{font:11px Verdana;background:#eef4ff;border:1px solid #9bc;padding:2px 7px;cursor:pointer}
+.post .acts button.on{background:#fc0;border-color:#a80}
+.post .acts .x{background:none;border:0;color:#c00;text-decoration:underline;padding:0}
+blockquote{margin:6px 0;padding:6px 8px;background:#f4f4f4;border-left:3px solid #6699cc;font-size:12px}
+blockquote cite{display:block;font-weight:bold;font-style:normal;font-size:11px;color:#036}
+details{background:#f4f4f4;padding:4px 8px;margin:4px 0}
+.npc{color:#999;font-size:9px;display:block}
+.form{display:flex;flex-direction:column;gap:6px}
+.form input,.form textarea,.form select{font:13px Verdana,sans-serif;padding:5px;border:1px solid #999}
+.form textarea{min-height:110px;resize:vertical}
+.tools{display:flex;gap:3px;flex-wrap:wrap}
+.tools button,.btn{font:bold 12px Verdana;background:#fc0;border:1px solid #a80;padding:4px 10px;cursor:pointer;color:#000}
+.tools button{background:#eee;border-color:#999;font-weight:normal;padding:2px 7px}
+.btn.sec{background:#eee;border-color:#999;font-weight:normal}
+.err{color:#c00;font-size:12px;min-height:14px}
+.pager{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}
+.pager a,.pager b{padding:2px 7px;border:1px solid #9bc;background:#fff;text-decoration:none;font-size:12px}
+.pager b{background:#036;color:#fff}
+.poll .opt{margin:4px 0}
+.poll .bar{height:14px;background:#d6e3f0;position:relative}
+.poll .bar i{position:absolute;inset:0 auto 0 0;background:#6699cc}
+.poll .bar span{position:relative;font-size:10px;padding-left:4px;color:#000}
+.pad{display:grid;grid-template-columns:repeat(16,14px);border:1px solid #999;width:max-content;cursor:crosshair;touch-action:none}
+.pad div{width:14px;height:14px;border:1px solid #eee}
+.pal{display:flex;gap:2px;flex-wrap:wrap;margin:4px 0}
+.pal button{width:18px;height:18px;border:1px solid #666;padding:0;cursor:pointer}
+.pal button.on{outline:2px solid #036}
+.lc-cb{font-size:11px}
+@media (max-width:600px){.post{flex-direction:column}.post .who{width:auto;display:flex;gap:8px;align-items:center;text-align:left;border-right:0;border-bottom:1px solid #dde}.post .who img{width:40px;height:40px;margin:0}}
+</style>
+</head>
+<body>
+<div class="csbar"><a class="logo" href="/forum/">cow<span>forums</span></a><span class="sp"></span><span id="meBar"></span>
+  <a class="l" href="/cowspace/">cowspace</a><a class="l" href="/">landon.cool</a></div>
+<div class="page" id="page">loading...</div>
+<script src="/cowspace/cs.js"></script>
+<script>
+const API = 'https://api.landon.cool/api/forum', $ = id => document.getElementById(id), esc = CS.esc;
+let me = null, info = null;
+async function call(path, body) {
+  const t = CS.token();
+  const r = await fetch(API + path, { method: body ? 'POST' : 'GET', headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(t ? { authorization: 'Bearer ' + t } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({ error: 'the server sent something weird' }));
+  if (!r.ok) throw new Error(j.error || 'something went wrong'); return j;
+}
+const when = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const ago = t => { const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago'; };
+
+// ---------- bbcode: escape everything first, then turn the tags into safe html ----------
+function bb(src) {
+  let s = esc(src);
+  const url = /^(https?:\/\/[^\s"<>]+)$/;
+  for (let k = 0; k < 4; k++) s = s.replace(/\[quote(?:=([a-z0-9_ ]{1,20}))?\]([\s\S]*?)\[\/quote\]/gi, (m, n, q) => `<blockquote>${n ? `<cite>${n} said:</cite>` : ''}${q}</blockquote>`);
+  s = s.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<details><summary>spoiler</summary>$1</details>')
+    .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<b>$1</b>').replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<i>$1</i>')
+    .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<u>$1</u>').replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>')
+    .replace(/\[url=([^\]\s]+)\]([\s\S]*?)\[\/url\]/gi, (m, h, t) => url.test(h) ? `<a href="${h}" rel="nofollow ugc noopener" target="_blank">${t}</a>` : t)
+    .replace(/\[url\]([^\[\s]+)\[\/url\]/gi, (m, h) => url.test(h) ? `<a href="${h}" rel="nofollow ugc noopener" target="_blank">${h}</a>` : h)
+    // images only from landon.cool itself
+    .replace(/\[img\]([^\[\s]+)\[\/img\]/gi, (m, h) => /^(https:\/\/landon\.cool\/|\/(?!\/))[^\s"<>]+$/.test(h) ? `<img class="bb" src="${h}" alt="" loading="lazy">` : '[image not from landon.cool]')
+    .replace(/(^|\s)@([a-z0-9_]{3,16})\b/gi, (m, sp, n) => `${sp}<a href="/@${n.toLowerCase()}">@${n}</a>`)
+    .replace(/\n/g, '<br>');
+  return s;
+}
+// guestbook-style 16x16 doodles, same 16 colors
+const PAL = ['', '000000', 'ffffff', 'ee0000', 'ff8800', 'ffff00', '66ff33', '007700', '00ffff', '0033ff', '9900ff', 'ff66cc', '884422', '888888', 'cccccc', 'ffcc99'];
+const doodleUrl = d => CS.avatarUrl({ w: 16, px: [...d].map(c => PAL[parseInt(c, 16)] || '------').join('') });
+function author(a) {
+  const link = a.u && !a.gone;
+  return `${link ? `<a href="/@${encodeURIComponent(a.u)}">` : ''}<img src="${CS.avatarUrl(a.avatar, a.look && a.look.hat)}" alt="">${link ? '</a>' : ''}
+    <div>${link ? `<a class="nm" href="/@${encodeURIComponent(a.u)}">${CS.nameHtml(a.name, a.look)}</a>` : `<span class="nm">${esc(a.name)}</span>`}
+    ${a.npc ? '<span class="npc">npc</span>' : ''}${a.guest ? '<div class="small">guest</div>' : ''}
+    ${a.rank ? `<div class="rank">${esc(a.rank)}</div><div class="small">${a.posts} post${a.posts === 1 ? '' : 's'}</div>` : ''}${a.role === 'staff' ? '<div class="small"><b>staff</b></div>' : a.role === 'mod' ? '<div class="small"><b>mod</b></div>' : ''}</div>`;
+}
+const crumbs = (...c) => `<div class="crumbs"><a href="/forum/">cow forums</a>${c.map(x => ' &raquo; ' + x).join('')}</div>`;
+const pager = (total, per, page, href) => { const n = Math.ceil(total / per); if (n < 2) return ''; let h = '<div class="pager">'; for (let i = 0; i < n; i++) h += i === page ? `<b>${i + 1}</b>` : `<a href="${href(i)}">${i + 1}</a>`; return h + '</div>'; };
+function editor(id, guest) {
+  return `<div class="form" id="${id}">${guest ? `<input data-f="name" maxlength="20" placeholder="your name (or log in to cowspace)">` : ''}
+    <div class="tools">${[['b', 'b'], ['i', 'i'], ['u', 'u'], ['s', 's'], ['quote', 'quote'], ['spoiler', 'spoiler'], ['url', 'link'], ['img', 'image']].map(([t, l]) => `<button type="button" data-tag="${t}">${l}</button>`).join('')}<button type="button" data-doodle>doodle</button></div>
+    <textarea data-f="msg" maxlength="4000" placeholder="write something. bbcode works: [b]bold[/b] [quote]...[/quote] [spoiler]...[/spoiler]"></textarea>
+    <div data-pad hidden></div></div>`;
+}
+function wireEditor(root) {
+  const ta = root.querySelector('[data-f=msg]'); let doodle = null;
+  root.querySelector('.tools').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.doodle !== undefined) { const p = root.querySelector('[data-pad]'); p.hidden = !p.hidden; if (!doodle) { doodle = Array(256).fill(0); pad(p, doodle); } return; }
+    const t = b.dataset.tag, a = ta.selectionStart, z = ta.selectionEnd, mid = ta.value.slice(a, z) || (t === 'url' || t === 'img' ? 'https://' : '');
+    ta.setRangeText(`[${t}]${mid}[/${t}]`, a, z, 'end'); ta.focus();
+  };
+  return () => doodle && doodle.some(v => v) ? doodle.map(v => v.toString(16)).join('') : null;
+}
+function pad(el, px) {
+  let col = 1, down = false;
+  el.innerHTML = `<div class="pal">${PAL.map((c, i) => `<button type="button" data-c="${i}" class="${i === 1 ? 'on' : ''}" style="background:${i ? '#' + c : 'repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/8px 8px'}" title="${i ? '#' + c : 'eraser'}"></button>`).join('')}</div><div class="pad">${px.map((v, i) => `<div data-i="${i}"></div>`).join('')}</div>`;
+  const cells = el.querySelectorAll('.pad div'), paint = i => { px[i] = col; cells[i].style.background = col ? '#' + PAL[col] : ''; };
+  el.querySelector('.pal').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; col = Number(b.dataset.c); el.querySelectorAll('.pal button').forEach(x => x.classList.toggle('on', x === b)); };
+  const g = el.querySelector('.pad');
+  g.onpointerdown = e => { down = true; g.setPointerCapture(e.pointerId); hit(e); };
+  g.onpointermove = e => down && hit(e);
+  g.onpointerup = () => { down = false; };
+  const hit = e => { const r = g.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / 14), y = Math.floor((e.clientY - r.top) / 14); if (x >= 0 && y >= 0 && x < 16 && y < 16) paint(y * 16 + x); };
+}
+
+// ---------- pages ----------
+async function boards() {
+  info = await call('');
+  document.title = 'cow forums';
+  $('page').innerHTML = crumbs() + `<div class="box"><h2>boards</h2><table><tr><th>board</th><th>threads</th><th>posts</th><th>newest</th></tr>
+    ${info.boards.map(b => `<tr><td><a class="bname" href="?b=${b.id}">${esc(b.name)}</a><div class="desc">${esc(b.desc)}</div></td><td class="n">${b.threads}</td><td class="n">${b.posts}</td>
+    <td class="small">${b.newest ? `<a href="?t=${b.newest.id}">${esc(b.newest.title)}</a><br>by ${esc(b.newest.by.name)}${b.newest.by.npc ? ' (npc)' : ''}, ${ago(b.newest.last)}` : 'nothing yet'}</td></tr>`).join('')}</table></div>
+    <div class="box"><h2>ranks</h2><div class="in small">${info.ranks.map(([n, r]) => `<b>${r}</b> ${n}+ posts`).join(' &middot; ')}</div></div>
+    ${me ? `<div class="box"><h2>your signature</h2><div class="in form"><input id="sig" maxlength="150" value="${esc(me.sig || '')}" placeholder="shows under all your posts (150 characters, bbcode works)"><div class="row"><button class="btn" id="sigSave">save</button> <span class="err" id="sigErr"></span></div></div></div>` : ''}`;
+  if ($('sigSave')) $('sigSave').onclick = async () => { try { await CS.api('/profile', { sig: $('sig').value }); $('sigErr').textContent = 'saved'; CS.forget(); } catch (e) { $('sigErr').textContent = e.message; } };
+}
+async function board(id, page) {
+  const j = await call(`/board?b=${encodeURIComponent(id)}&page=${page}`);
+  document.title = j.board.name + ' - cow forums';
+  $('page').innerHTML = crumbs(esc(j.board.name)) + `<div class="box"><h2>${esc(j.board.name)} <span class="small" style="color:#fff">${j.total} threads</span></h2>
+    <table><tr><th>thread</th><th>replies</th><th>last post</th></tr>
+    ${j.threads.map(t => `<tr><td>${t.pinned ? '<span class="pin">\u{1F4CC} pinned</span> ' : ''}${t.locked ? '<span class="lock">\u{1F512}</span> ' : ''}${t.poll ? '<span class="small">[poll]</span> ' : ''}<a class="bname" style="font-size:13px" href="?t=${t.id}">${esc(t.title)}</a>
+      <div class="small">by ${t.by.u ? `<a href="/@${encodeURIComponent(t.by.u)}">${esc(t.by.name)}</a>` : esc(t.by.name)}${t.by.npc ? ' (npc)' : ''} &middot; ${esc(t.preview.slice(0, 80))}</div></td>
+      <td class="n">${t.replies}</td><td class="small">${ago(t.last)}<br>${t.lastBy ? 'by ' + esc(t.lastBy) : ''}</td></tr>`).join('') || '<tr><td class="small" colspan="3">no threads yet. start one!</td></tr>'}</table>
+    ${pager(j.total, 25, page, i => `?b=${id}&page=${i}`)}</div>
+    <div class="box"><h2>start a thread</h2><div class="in">${me ? `<div class="form"><input id="title" maxlength="80" placeholder="title">${editor('ed', false)}
+      <details><summary class="small">add a poll</summary><div class="form" style="margin-top:6px"><input id="pq" maxlength="120" placeholder="question"><textarea id="po" style="min-height:70px" placeholder="one option per line (2 to 8)"></textarea></div></details>
+      <div class="row"><button class="btn" id="go">post thread</button> <span class="err" id="err"></span></div></div>`
+      : '<a href="/cowspace/">log in to cowspace</a> to start a thread. guests can still reply to threads'}</div></div>`;
+  if (!me) return;
+  const getDoodle = wireEditor($('ed'));
+  $('go').onclick = async () => {
+    const opts = $('po').value.split('\n').map(x => x.trim()).filter(Boolean);
+    try {
+      const r = await call('/thread', { board: id, title: $('title').value, msg: $('ed').querySelector('[data-f=msg]').value, d: getDoodle(), ...($('pq').value.trim() ? { poll: { q: $('pq').value, opts } } : {}) });
+      location.href = '?t=' + r.thread;
+    } catch (e) { $('err').textContent = e.message; }
+  };
+}
+async function thread(id, page) {
+  const j = await call(`/thread?id=${id}&page=${page}`), t = j.thread;
+  document.title = t.title + ' - cow forums';
+  const poll = j.poll ? (() => { const tot = j.poll.opts.reduce((n, o) => n + o.n, 0) || 1, voted = j.poll.mine !== null;
+    return `<div class="box poll"><h2>poll: ${esc(j.poll.q)}</h2><div class="in">${j.poll.opts.map((o, i) => `<div class="opt">${voted ? '' : `<button class="btn sec" data-vote="${i}">vote</button> `}${esc(o.t)}${j.poll.mine === i ? ' <b>(your vote)</b>' : ''}
+      <div class="bar"><i style="width:${100 * o.n / tot}%"></i><span>${o.n} vote${o.n === 1 ? '' : 's'}</span></div></div>`).join('')}</div></div>`; })() : '';
+  $('page').innerHTML = crumbs(`<a href="?b=${j.board.id}">${esc(j.board.name)}</a>`, esc(t.title)) + poll +
+    `<div class="box"><h2><span>${t.pinned ? '\u{1F4CC} ' : ''}${t.locked ? '\u{1F512} ' : ''}${esc(t.title)}</span><span class="small" style="color:#fff">${t.views} views &middot; ${t.replies} replies
+      ${j.canPin ? ' <button class="btn" id="pinB" style="font-size:10px;padding:1px 6px">pin for a day</button>' : ''}${j.canMod ? ` <button class="btn sec" id="lockB" style="font-size:10px;padding:1px 6px">${t.locked ? 'unlock' : 'lock'}</button>` : ''}</span></h2>
+    ${pager(j.total, 20, page, i => `?t=${id}&page=${i}`)}
+    <div>${j.posts.map(p => `<div class="post" id="p${p.id}"><div class="who">${author(p.by)}</div><div class="body">
+      <div class="meta"><span>${when(p.t)}${p.edited ? ' (edited)' : ''}</span><a href="#p${p.id}">#${p.id}</a></div>
+      <div class="msg">${bb(p.msg)}</div>${p.d ? `<img class="doodle" src="${doodleUrl(p.d)}" alt="doodle">` : ''}
+      ${p.by.sig ? `<div class="sig">${bb(p.by.sig)}</div>` : ''}
+      <div class="acts">${['cow', 'fire', 'lol'].map(r => `<button data-react="${r}" data-post="${p.id}" class="${p.mine.includes(r) ? 'on' : ''}" ${me ? '' : 'disabled title="log in to react"'}>${{ cow: '\u{1F404}', fire: '\u{1F525}', lol: '\u{1F602}' }[r]} ${p.reacts[r] || ''}</button>`).join('')}
+        ${t.locked ? '' : `<button data-quote="${p.id}">quote</button>`}${p.canEdit ? `<button data-edit="${p.id}">edit</button>` : ''}${p.canDelete ? `<button class="x" data-del="${p.id}">delete${p.first ? ' thread' : ''}</button>` : ''}</div>
+    </div></div>`).join('')}</div>${pager(j.total, 20, page, i => `?t=${id}&page=${i}`)}</div>
+    <div class="box"><h2>reply</h2><div class="in">${t.locked ? 'this thread is locked' : editor('ed', !me) + '<div class="row"><button class="btn" id="go">post reply</button> <span class="err" id="err"></span></div>'}</div></div>`;
+  const posts = Object.fromEntries(j.posts.map(p => [p.id, p]));
+  let getDoodle = () => null;
+  if (!t.locked) {
+    getDoodle = wireEditor($('ed'));
+    try { const n = localStorage.getItem('chatName'); if (n && $('ed').querySelector('[data-f=name]')) $('ed').querySelector('[data-f=name]').value = n; } catch (e) {}
+    $('go').onclick = async () => {
+      const nm = $('ed').querySelector('[data-f=name]');
+      try { const r = await call('/reply', { thread: id, msg: $('ed').querySelector('[data-f=msg]').value, d: getDoodle(), ...(nm ? { name: nm.value } : {}) }); location.href = `?t=${id}&page=${r.page}#p${r.post}`; if (r.page === page) location.reload(); }
+      catch (e) { $('err').textContent = e.message; }
+    };
+  }
+  $('page').onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    try {
+      if (b.dataset.react) { const r = await call('/react', { post: Number(b.dataset.post), r: b.dataset.react }); const box = b.parentNode; ['cow', 'fire', 'lol'].forEach(k => { const x = box.querySelector(`[data-react=${k}]`); x.innerHTML = `${{ cow: '\u{1F404}', fire: '\u{1F525}', lol: '\u{1F602}' }[k]} ${r.reacts[k] || ''}`; x.classList.toggle('on', r.mine.includes(k)); }); }
+      else if (b.dataset.quote) { const p = posts[b.dataset.quote], ta = $('ed').querySelector('[data-f=msg]'); ta.value += `[quote=${p.by.name}]${p.msg.replace(/\[quote[\s\S]*?\[\/quote\]/gi, '').trim().slice(0, 500)}[/quote]\n`; ta.focus(); ta.scrollIntoView({ block: 'center' }); }
+      else if (b.dataset.edit) { const p = posts[b.dataset.edit], m = prompt('edit your post', p.msg); if (m === null) return; await call('/edit', { post: p.id, msg: m }); thread(id, page); }
+      else if (b.dataset.del) { if (!confirm('delete this?')) return; const r = await call('/delete', { post: Number(b.dataset.del) }); r.threadGone ? location.href = `?b=${j.board.id}` : thread(id, page); }
+      else if (b.dataset.vote) { await call('/vote', { thread: id, i: Number(b.dataset.vote) }); thread(id, page); }
+      else if (b.id === 'pinB') { if (!confirm('use a forum pin to pin this thread for 24 hours?')) return; await call('/pin', { thread: id }); thread(id, page); }
+      else if (b.id === 'lockB') { await call('/lock', { thread: id }); thread(id, page); }
+    } catch (err) { alert(err.message); }
+  };
+  if (location.hash) { const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
+}
+(async () => {
+  me = await CS.me();
+  $('meBar').innerHTML = me ? `<a class="l" href="/@${esc(me.username)}">@${esc(me.username)}</a>` : '<a class="l" href="/cowspace/">log in</a>';
+  const q = new URLSearchParams(location.search), page = Math.max(0, Number(q.get('page')) || 0);
+  try {
+    if (q.get('t')) await thread(Number(q.get('t')), page);
+    else if (q.get('b')) await board(q.get('b'), page);
+    else await boards();
+  } catch (e) { $('page').innerHTML = crumbs() + `<div class="box"><div class="in">${esc(e.message)}</div></div>`; }
+})();
+</script>
+</body>
+</html>

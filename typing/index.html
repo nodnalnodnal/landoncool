@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow typing race</title>
+<link rel="stylesheet" href="/assets/arcade.css">
+<style>
+.track{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.lane{position:relative;height:38px;background:repeating-linear-gradient(90deg,#2f7a2a 0 22px,#358a2f 22px 44px);border:2px solid #000;overflow:hidden}
+.lane::after{content:"";position:absolute;right:30px;top:0;bottom:0;width:6px;background:repeating-linear-gradient(#fff 0 6px,#000 6px 12px)}
+.lane .cow{position:absolute;top:3px;left:0;transition:left .5s linear;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.lane .cow img{width:28px;height:28px;image-rendering:pixelated;background:#fff;border:1px solid #000}
+.lane .cow span{font-size:11px;font-weight:700;text-shadow:0 1px 2px #000}
+.lane.me{outline:2px solid #f2c230}
+.lane .res{position:absolute;right:42px;top:9px;font-weight:700;font-size:12px;color:#fff;text-shadow:0 1px 2px #000}
+.text{font:20px/1.6 "Courier New",monospace;background:#0a0a0a;border:2px solid #333;padding:12px 14px;user-select:none;-webkit-user-select:none;min-height:90px;word-wrap:break-word}
+.text .ok{color:#7ddc7d}.text .bad{background:#a33;color:#fff}.text .cur{border-left:2px solid #f2c230;margin-left:-2px;animation:blink 1s steps(1) infinite}
+.text .rest{color:#8a8a8a}
+@keyframes blink{50%{border-color:transparent}}
+#inp{width:100%;font:18px "Courier New",monospace;margin-top:8px}
+.big{font:700 22px Tahoma,sans-serif;text-align:center;margin:8px 0;min-height:30px}
+.cols{display:grid;grid-template-columns:3fr 1fr;gap:14px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="cols">
+  <div>
+    <div class="win"><div class="tb"><span>typing race</span><span class="small" id="from"></span></div><div class="in">
+      <div id="join">
+        <p>race up to 4 other cows. a 10 second countdown starts when 2 people are in, or npc ghosts join you after a few seconds so you're never waiting long.</p>
+        <div class="row"><input id="name" maxlength="16" placeholder="your name"><button class="btn go" id="go">join a race</button></div>
+        <div class="err" id="err"></div>
+      </div>
+      <div id="race" hidden>
+        <div class="big" id="big"></div>
+        <div class="track" id="track"></div>
+        <div class="text" id="text"></div>
+        <input id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type here when it says go" disabled>
+        <div class="row" style="margin-top:10px;justify-content:space-between"><span class="small" id="stats"></span><button class="btn" id="again" hidden>race again</button></div>
+      </div>
+    </div></div>
+  </div>
+  <div class="win"><div class="tb"><span>fastest cows</span></div><div class="in"><table class="lb" id="top"></table></div></div>
+</div></div>
+<script src="/cowspace/cs.js"></script>
+<script src="/assets/arcade.js"></script>
+<script>
+const $ = id => document.getElementById(id), esc = CS.esc, GID = ARC.gid();
+let me = null, room = null, R = null, typed = '', errors = 0, poller = null, sentN = 0, startedAt = 0;
+
+async function join() {
+  $('err').textContent = '';
+  try {
+    const name = $('name').value.trim();
+    try { localStorage.setItem('chatName', name); } catch (e) {}
+    const j = await ARC.call('/typing/join', { gid: GID, ...(me ? {} : name ? { name } : {}) });
+    room = j.room; typed = ''; errors = 0; sentN = 0; R = null; startedAt = 0;
+    $('join').hidden = true; $('race').hidden = false; $('again').hidden = true;
+    $('inp').value = ''; $('inp').disabled = true;
+    clearInterval(poller); poller = setInterval(tick, 500); tick();
+  } catch (e) { $('err').textContent = e.message; }
+}
+$('go').onclick = join; $('again').onclick = join;
+$('name').onkeydown = e => { if (e.key === 'Enter') join(); };
+
+async function tick() {
+  try { const j = await ARC.call(`/typing/room?id=${room}&gid=${GID}`); R = j.room; draw(); }
+  catch (e) { clearInterval(poller); $('big').textContent = 'that race ended'; $('again').hidden = false; }
+}
+function draw() {
+  const you = R.players[R.you];
+  if (R.status === 'waiting') $('big').textContent = `waiting for cows... (${R.players.length}/5)`;
+  else if (R.status === 'countdown') $('big').textContent = `starting in ${Math.max(0, Math.ceil(R.startIn / 1000))}...`;
+  else if (R.status === 'racing') {
+    if ($('inp').disabled && !(you && you.place)) { $('inp').disabled = false; $('inp').focus(); startedAt = startedAt || Date.now(); $('big').textContent = 'GO!'; }
+  }
+  if (R.status === 'done' || (you && you.place)) {
+    $('inp').disabled = true;
+    const ord = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || 'th');
+    $('big').textContent = you && you.place ? `you got ${ord(you.place)}! ${you.wpm} wpm${you.best ? ' (new best!)' : ''}${you.coins ? ` +${you.coins} moo coins` : ''}` : 'time\'s up';
+    $('again').hidden = false;
+    if (R.status === 'done') { clearInterval(poller); loadTop(); ARC.refreshCoins(); }
+  }
+  $('from').textContent = R.from ? 'text: ' + R.from : '';
+  $('track').innerHTML = R.players.map((p, i) => `<div class="lane${i === R.you ? ' me' : ''}"><div class="cow" style="left:calc(${p.prog} * (100% - 120px))">
+    <img src="${CS.avatarUrl(p.avatar, p.look && p.look.hat)}" alt=""><span>${CS.nameHtml(p.name, p.look)}${p.npc ? ' <span class="npc">npc</span>' : ''}${i === R.you ? ' (you)' : ''}</span></div>
+    ${p.place ? `<span class="res">${p.place}. ${p.wpm} wpm</span>` : R.status === 'racing' && p.wpm ? `<span class="res" style="opacity:.6">${p.wpm} wpm</span>` : ''}</div>`).join('');
+  drawText();
+}
+function drawText() {
+  if (!R || !R.text) { $('text').innerHTML = '<span class="rest">the text shows up when the countdown starts</span>'; return; }
+  const t = R.text; let ok = 0; while (ok < typed.length && typed[ok] === t[ok]) ok++;
+  const bad = typed.length - ok;
+  $('text').innerHTML = `<span class="ok">${esc(t.slice(0, ok))}</span><span class="bad">${esc(t.slice(ok, ok + bad))}</span><span class="cur"></span><span class="rest">${esc(t.slice(ok + bad))}</span>`;
+  const secs = startedAt ? (Date.now() - startedAt) / 1000 : 0;
+  $('stats').textContent = startedAt ? `${Math.round(ok / 5 / Math.max(secs, 1) * 60)} wpm · ${errors} mistake${errors === 1 ? '' : 's'}` : '';
+}
+$('inp').addEventListener('input', () => {
+  if (!R || R.status !== 'racing') return;
+  const before = typed; typed = $('inp').value;
+  const t = R.text; let ok = 0; while (ok < typed.length && typed[ok] === t[ok]) ok++;
+  if (typed.length > before.length && ok < typed.length) errors++;
+  drawText();
+  if (ok !== sentN && (ok - sentN >= 4 || ok === t.length)) { sentN = ok; ARC.call('/typing/prog', { room, gid: GID, n: ok }).then(j => { R = j.room; draw(); }).catch(e => { $('big').textContent = e.message; }); }
+});
+$('inp').addEventListener('paste', e => e.preventDefault());
+
+async function loadTop() {
+  const j = await ARC.call('/typing/top');
+  $('top').innerHTML = j.top.map((e, i) => `<tr><td>${i + 1}.</td><td>${e.u ? ARC.who({ ...e, name: e.name }) : esc(e.name)}</td><td class="n">${e.wpm}</td></tr>`).join('') || '<tr><td class="small">nobody yet</td></tr>';
+}
+(async () => {
+  me = await ARC.bar('typing race', '<a class="small" href="/games/">games</a><a class="small" href="/shop/">shop</a>');
+  if (me) { $('name').value = me.username; $('name').disabled = true; }
+  else try { $('name').value = localStorage.getItem('chatName') || ''; } catch (e) {}
+  loadTop();
+})();
+</script>
+</body>
+</html>

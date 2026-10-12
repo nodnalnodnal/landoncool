@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow games</title>
+<link rel="stylesheet" href="/assets/arcade.css">
+<style>
+.pickers{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.picker{background:#0a0a0a;border:2px solid #333;padding:10px;cursor:pointer;text-align:center;color:#efefef;font:13px Tahoma,sans-serif}
+.picker.on{border-color:#f2c230;background:#1d1a0d}
+.picker .ic{font-size:30px;display:block;margin-bottom:4px}
+.picker .ds{font-size:11px;color:#8a8a8a;display:block;margin-top:3px}
+.cols{display:grid;grid-template-columns:3fr 2fr;gap:14px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.list div{padding:4px 0;border-bottom:1px dotted #333;display:flex;justify-content:space-between;gap:6px;align-items:center;flex-wrap:wrap}
+.seeking{color:#f2c230;font-weight:700}
+.players{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pl{display:flex;gap:6px;align-items:center;padding:4px 8px;border:2px solid #333;background:#0a0a0a;min-width:0}
+.pl.turn{border-color:#f2c230}
+.pl .chip{width:16px;height:16px;border-radius:50%;border:1px solid #000;flex:none;display:grid;place-items:center;font-size:12px}
+.clock{font:700 16px monospace;color:#f2c230;min-width:44px;text-align:right}
+.status{font-weight:700;margin:8px 0;min-height:20px;text-align:center}
+.face{width:62%;height:62%;image-rendering:pixelated;display:block;pointer-events:none}
+.chipface{width:14px;height:14px;image-rendering:pixelated}
+.sea div.hit::after{content:"";width:40%;height:40%;background:#fff;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.board{margin:0 auto;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+/* tic-tac-toe */
+.ttt{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:min(320px,86vw)}
+.ttt button{aspect-ratio:1;background:#efefef;border:2px solid #000;cursor:pointer;padding:0;display:grid;place-items:center}
+.ttt button.win{background:#f2c230}
+/* connect 4 */
+.c4{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;width:min(440px,92vw);background:#1d4fa8;padding:8px;border:2px solid #000}
+.c4 button{aspect-ratio:1;border-radius:50%;border:2px solid #0b2a63;background:#000;cursor:pointer;padding:0}
+.c4 button.p0{background:radial-gradient(circle at 35% 35%,#fff,#ddd);}
+.c4 button.p1{background:radial-gradient(circle at 35% 35%,#b0784a,#6b3f1f)}
+.c4 button.win{box-shadow:0 0 0 3px #f2c230 inset}
+.c4 button.last{outline:2px solid #f2c230}
+/* checkers */
+.ck{display:grid;grid-template-columns:repeat(8,1fr);width:min(440px,92vw);border:3px solid #000}
+.ck div{aspect-ratio:1;display:grid;place-items:center;position:relative}
+.ck .l{background:#e8dcc0}.ck .d{background:#6b4a2a;cursor:pointer}
+.ck .d.can{box-shadow:0 0 0 3px #f2c230 inset}
+.ck .d.to::after{content:"";width:30%;height:30%;border-radius:50%;background:#f2c230;opacity:.9}
+.ck .d.sel{background:#8a6a3a}
+.ck .d.lm{background:#7a5a30}
+.ck .pc{width:78%;height:78%;border-radius:50%;border:2px solid #000;display:grid;place-items:center;font-size:min(22px,4.5vw);box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.ck .pc.p0{background:#f4f4f4}.ck .pc.p1{background:#1a1a1a;color:#f2c230}
+/* battlecow */
+.bc{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.bc .side{text-align:center}
+.sea{display:grid;grid-template-columns:repeat(8,1fr);width:min(300px,88vw);background:#123a6b;border:2px solid #000;gap:1px;padding:1px}
+.sea div{aspect-ratio:1;background:#2f6db3;display:grid;place-items:center;font-size:min(18px,4.4vw);cursor:default}
+.sea.shoot div.open{cursor:crosshair}.sea.shoot div.open:hover{background:#4d8bd1}
+.sea div.cow{background:#f4f4f4}
+.sea div.ghost{background:#9fd39f}
+.sea div.bad{background:#d97a7a}
+.sea div.hit{background:#e5484d}
+.sea div.sunk{background:#5a1a1a}
+.sea div.miss::after{content:"";width:22%;height:22%;border-radius:50%;background:#cfe3ff}
+.herdlist{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:6px 0}
+.herdlist span{padding:2px 6px;border:1px solid #555;font-size:11px}
+.herdlist span.on{border-color:#f2c230;color:#f2c230}.herdlist span.done{opacity:.4;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="lobby">
+    <div class="win"><div class="tb"><span>pick a game</span><span class="small" id="online"></span></div><div class="in">
+      <div class="pickers" id="pickers"></div>
+      <div class="row">
+        <button class="btn go" id="seek">find me a game</button>
+        <button class="btn" id="npc">practice vs an npc</button>
+        <span class="row" id="betRow"><span class="small">bet</span><input id="bet" type="number" min="0" max="1000" value="0" style="width:70px"><span class="small">moo coins</span></span>
+      </div>
+      <div class="row" style="margin-top:8px"><input id="vs" placeholder="challenge a cowspace user" style="width:200px"><button class="btn" id="chal">challenge</button></div>
+      <div class="status seeking" id="seekMsg"></div>
+      <div class="err" id="err"></div>
+      <p class="small">live games: 60 seconds a move or you lose. wins pay 10 moo coins (3 a day against the same person), npcs pay 3. elo only counts between two cowspace accounts. bets: both put in the same amount, winner takes it all</p>
+    </div></div>
+    <div class="cols">
+      <div>
+        <div class="win"><div class="tb"><span>challenges</span></div><div class="in list" id="chals"><span class="small">none right now</span></div></div>
+        <div class="win"><div class="tb"><span>games being played</span></div><div class="in list" id="live"><span class="small">nobody's playing</span></div></div>
+      </div>
+      <div class="win"><div class="tb"><span>leaderboard</span></div><div class="in"><div class="tabs" id="lbTabs"></div><table class="lb" id="lb"></table></div></div>
+    </div>
+  </div>
+  <div id="game" hidden>
+    <div class="win"><div class="tb"><span id="gTitle">game</span><span class="small" id="gInfo"></span></div><div class="in">
+      <div class="players" id="players"></div>
+      <div class="status" id="gStatus"></div>
+      <div id="board"></div>
+      <div class="row" style="justify-content:center;margin-top:12px" id="gBtns"></div>
+      <div class="err" id="gErr" style="text-align:center"></div>
+    </div></div>
+  </div>
+</div>
+<script src="/cowspace/cs.js"></script>
+<script src="/assets/arcade.js"></script>
+<script>
+const $ = id => document.getElementById(id), esc = CS.esc, GID = ARC.gid();
+const INFO = { ttt: ['❌', 'tic-tac-toe', 'cows vs pigs. 3 in a row'], c4: ['\u{1F535}', 'connect 4', 'drop discs, get 4 in a line'], checkers: ['⚫', 'checkers', 'captures are forced. jumps chain'], cow: ['\u{1F404}', 'battlecow', 'battleship, but you hide cows'] };
+let me = null, type = 'ttt', lbType = 'ttt', gameId = null, G = null, poller = null;
+try { type = localStorage.getItem('gameType') || 'ttt'; } catch (e) {}
+const call = (p, b) => ARC.call('/games' + p, b ? { gid: GID, ...b } : undefined);
+
+// ---------- lobby ----------
+function pickers() {
+  $('pickers').innerHTML = Object.entries(INFO).map(([k, [ic, n, d]]) => `<button class="picker${k === type ? ' on' : ''}" data-k="${k}"><span class="ic">${ic}</span><b>${n}</b><span class="ds">${d}</span></button>`).join('');
+}
+$('pickers').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; type = b.dataset.k; try { localStorage.setItem('gameType', type); } catch (x) {} pickers(); };
+const bet = () => Math.max(0, Math.floor(Number($('bet').value)) || 0);
+const err = (e, el = 'err') => { $(el).textContent = e ? e.message || e : ''; };
+$('seek').onclick = async () => { err(); try { const j = await call('/seek', { type, wager: bet() }); if (j.game) enter(j.game); else lobbyTick(); } catch (e) { err(e); } };
+$('npc').onclick = async () => { err(); try { enter((await call('/npc', { type })).game); } catch (e) { err(e); } };
+$('chal').onclick = async () => {
+  err(); const to = $('vs').value.trim().replace(/^@/, ''); if (!to) return;
+  try { const j = await call('/challenge', { to, type, wager: bet() }); if (j.game) enter(j.game); else { ARC.toast(`challenge sent to @${to}`); lobbyTick(); } } catch (e) { err(e); }
+};
+$('chals').onclick = async e => {
+  const a = e.target.closest('[data-acc]'), d = e.target.closest('[data-dec]'), u = e.target.closest('[data-unseek]');
+  try {
+    if (a) enter((await call('/challenge/accept', { id: a.dataset.acc })).game);
+    if (d) { await call('/challenge/decline', { id: d.dataset.dec }); lobbyTick(); }
+    if (u) { await call('/unseek', {}); lobbyTick(); }
+  } catch (x) { err(x); lobbyTick(); }
+};
+$('live').onclick = e => { const w = e.target.closest('[data-watch]'); if (w) enter(w.dataset.watch); };
+$('lbTabs').onclick = e => { const b = e.target.closest('[data-k]'); if (b) { lbType = b.dataset.k; lobbyTick(true); } };
+let lobbyData = null;
+async function lobbyTick(full) {
+  try {
+    const m = await ARC.call(`/games/me?gid=${GID}`);
+    if (m.game && m.game !== gameId) return enter(m.game);
+    $('seekMsg').innerHTML = m.seeking ? `looking for someone to play ${INFO[m.seeking][1]}... <button class="btn" id="unseek">stop</button>` : '';
+    if ($('unseek')) $('unseek').onclick = async () => { await call('/unseek', {}); lobbyTick(); };
+    const rows = [...m.incoming.map(c => `<div><span>@${esc(c.from)} wants to play <b>${INFO[c.type][1]}</b>${c.wager ? ` for ${CS.COIN} ${c.wager}` : ''}</span><span><button class="btn go" data-acc="${c.id}">play</button> <button class="btn" data-dec="${c.id}">no</button></span></div>`),
+      ...m.outgoing.map(c => `<div><span>you challenged @${esc(c.to)} to <b>${INFO[c.type][1]}</b>${c.wager ? ` for ${CS.COIN} ${c.wager}` : ''}. waiting...</span><button class="btn" data-dec="${c.id}">cancel</button></div>`)];
+    $('chals').innerHTML = rows.join('') || '<span class="small">none right now</span>';
+    if (full || !lobbyData || Math.random() < 0.3) {
+      lobbyData = await ARC.call('/games/lobby');
+      $('online').textContent = `${lobbyData.online} in the games room`;
+      const q = lobbyData.queue.map(s => `<div><span>${esc(s.name)}${s.guest ? ' <span class="npc">guest</span>' : ''} is looking for <b>${INFO[s.type][1]}</b>${s.wager ? ` (${CS.COIN} ${s.wager})` : ''}</span></div>`);
+      const l = lobbyData.live.map(g => `<div><span><b>${INFO[g.type][1]}</b>: ${g.players.map(ARC.who).join(' vs ')}${g.wager ? ` ${CS.COIN} ${g.wager}` : ''}</span><button class="btn" data-watch="${g.id}">watch</button></div>`);
+      $('live').innerHTML = [...q, ...l].join('') || '<span class="small">nobody\'s playing right now</span>';
+      $('lbTabs').innerHTML = Object.entries(INFO).map(([k, [, n]]) => `<button class="${k === lbType ? 'on' : ''}" data-k="${k}">${n}</button>`).join('');
+      $('lb').innerHTML = (lobbyData.top[lbType] || []).map((u, i) => `<tr><td>${i + 1}.</td><td>${ARC.who({ ...u, name: u.username })}</td><td class="n">${u.elo}</td><td class="n small">${u.w}-${u.l}${u.d ? '-' + u.d : ''}</td></tr>`).join('') || '<tr><td class="small">no rated games yet. play another cowspace account!</td></tr>';
+    }
+  } catch (e) {}
+}
+
+// ---------- in a game ----------
+function enter(id) {
+  gameId = id; G = null; sel = null; placing = { i: 0, d: 'h', ships: [] };
+  history.replaceState(null, '', '?g=' + id);
+  $('lobby').hidden = true; $('game').hidden = false; err(null, 'gErr');
+  clearInterval(poller); poller = setInterval(gameTick, 900); gameTick();
+}
+function leave() { gameId = null; G = null; history.replaceState(null, '', location.pathname); $('game').hidden = true; $('lobby').hidden = false; clearInterval(poller); poller = setInterval(lobbyTick, 1500); lobbyTick(true); }
+let lastV = -1, gotAt = 0;
+async function gameTick() {
+  try {
+    const j = await ARC.call(`/games/state?id=${gameId}&gid=${GID}`);
+    if (j.game.v !== lastV || !G) { G = j.game; lastV = G.v; gotAt = Date.now(); draw(); }
+    else { G.left = j.game.left; gotAt = Date.now(); }
+    if (G.status === 'over' && G.next && G.you >= 0 && G.rematch.includes(G.you)) enter(G.next);
+  } catch (e) { $('gStatus').textContent = 'that game is gone'; clearInterval(poller); $('gBtns').innerHTML = '<button class="btn" onclick="leave()">back to the lobby</button>'; }
+}
+setInterval(() => { if (!G || G.status === 'over') return; const left = Math.max(0, G.left - (Date.now() - gotAt)); const el = document.querySelector('.pl.turn .clock'); if (el) el.textContent = Math.ceil(left / 1000) + 's'; }, 250);
+// pieces are little pixel faces (emoji look different on every device, or not at all)
+const PIGC = { p: 'f0a0a8', d: 'd07080', k: '1a1a1a' };
+const PIG = CS.avatarUrl({ w: 8, px: ['pppppppp', 'pppppppp', 'pkppppkp', 'pppppppp', 'ppddddpp', 'pdkddkdp', 'ppddddpp', 'pppppppp'].join('').split('').map(c => PIGC[c]).join('') });
+const COW = CS.avatarUrl(null), face = (src, cls = 'face') => `<img class="${cls}" src="${src}" alt="">`;
+const chip = (t, i) => t === 'ttt' ? face(i ? PIG : COW, 'chipface') : '';
+const chipBg = (t, i) => t === 'c4' ? (i ? '#8a5a30' : '#f4f4f4') : t === 'checkers' ? (i ? '#1a1a1a' : '#f4f4f4') : 'transparent';
+function draw() {
+  const g = G, mine = g.you >= 0;
+  $('gTitle').textContent = g.name; $('gInfo').textContent = (g.rated ? 'rated' : 'unrated') + (g.wager ? ` · bet ${g.wager} coins each` : '');
+  $('players').innerHTML = g.players.map((p, i) => `<div class="pl${g.status !== 'over' && (g.status === 'placing' || g.turn === i) ? ' turn' : ''}"><span class="chip" style="background:${chipBg(g.type, i)}">${chip(g.type, i)}</span>${ARC.who(p)}${p.elo ? ` <span class="small">${p.elo}</span>` : ''}${i === g.you ? ' <span class="small">(you)</span>' : ''}<span class="clock"></span></div>`).join('<b>vs</b>');
+  let s;
+  if (g.status === 'over') {
+    const w = g.winner;
+    s = w === null ? "it's a draw" : (mine ? (w === g.you ? 'you win! \u{1F389}' : 'you lose') : `${g.players[w].name} wins`);
+    if (g.reason === 'time') s += ' (time ran out)'; if (g.reason === 'resigned') s += ' (resigned)';
+    if (mine && g.eloChange) s += ` · elo ${g.eloChange[g.you] >= 0 ? '+' : ''}${g.eloChange[g.you]}`;
+    if (mine && w === g.you && g.coins) s += ` · +${g.coins} moo coins`;
+    if (mine && g.wager && w === g.you) s += ` · won the ${g.wager * 2} coin pot`;
+  } else if (g.status === 'placing') s = mine ? (g.board.placed[g.you] ? 'waiting for them to hide their cows...' : 'hide your herd! tap a spot, "turn" flips the cow') : 'they are hiding their cows...';
+  else s = mine ? (g.turn === g.you ? 'your turn' : 'their turn...') : `${g.players[g.turn].name}'s turn`;
+  $('gStatus').textContent = s;
+  ({ ttt: drawTTT, c4: drawC4, checkers: drawCK, cow: drawCow })[g.type]();
+  const btns = [];
+  if (g.status !== 'over' && mine) btns.push('<button class="btn" id="resign">resign</button>');
+  if (g.status === 'over' && mine) btns.push(`<button class="btn go" id="again">${g.rematch.includes(g.you) ? 'waiting for them...' : g.rematch.length ? 'they want a rematch! play again' : 'rematch'}</button>`);
+  btns.push('<button class="btn" id="back">lobby</button>');
+  $('gBtns').innerHTML = btns.join('');
+  if ($('resign')) $('resign').onclick = async () => { if (confirm('give up this game?')) G = (await call('/resign', { id: g.id })).game, draw(); };
+  if ($('again')) $('again').onclick = async () => { try { const j = await call('/rematch', { id: g.id }); if (j.game) enter(j.game); else gameTick(); } catch (e) { err(e, 'gErr'); } };
+  $('back').onclick = () => { if (g.status !== 'over' && mine && !confirm('leave? the clock keeps running and you will lose on time')) return; leave(); };
+  if (g.status === 'over') ARC.refreshCoins();
+}
+async function move(m) {
+  err(null, 'gErr');
+  try { G = (await call('/move', { id: G.id, ...m })).game; lastV = G.v; gotAt = Date.now(); draw(); } catch (e) { err(e, 'gErr'); }
+}
+const myTurn = () => G.status === 'playing' && G.you >= 0 && G.turn === G.you;
+function drawTTT() {
+  const b = G.board.b, line = G.line || [];
+  $('board').innerHTML = `<div class="board ttt">${b.map((v, i) => `<button data-i="${i}" class="${line.includes(i) ? 'win' : ''}" ${v !== null || !myTurn() ? 'disabled' : ''}>${v === null ? '' : face(v ? PIG : COW)}</button>`).join('')}</div>`;
+  $('board').querySelector('.ttt').onclick = e => { const x = e.target.closest('[data-i]'); if (x && myTurn()) move({ i: Number(x.dataset.i) }); };
+}
+function drawC4() {
+  const b = G.board.b, line = G.line || [];
+  $('board').innerHTML = `<div class="board c4">${b.map((v, i) => `<button data-c="${i % 7}" class="${v === null ? '' : 'p' + v}${line.includes(i) ? ' win' : ''}${G.board.lastCell === i ? ' last' : ''}" aria-label="column ${i % 7 + 1}"></button>`).join('')}</div>`;
+  $('board').querySelector('.c4').onclick = e => { const x = e.target.closest('[data-c]'); if (x && myTurn()) move({ c: Number(x.dataset.c) }); };
+}
+let sel = null;
+function drawCK() {
+  const b = G.board.b, flip = G.you === 1, moves = G.moves || [], lm = G.board.lastMove;
+  const from = new Set(moves.map(m => m.from.join())), to = new Set(moves.filter(m => sel && m.from.join() === sel.join()).map(m => m.to.join()));
+  let h = '';
+  for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+    const r = flip ? 7 - rr : rr, c = flip ? 7 - cc : cc, pc = b[r * 8 + c], dark = (r + c) % 2 === 1, k = r + ',' + c;
+    const cls = [dark ? 'd' : 'l', from.has(k) && !sel ? 'can' : '', sel && sel.join() === k ? 'sel' : '', to.has(k) ? 'to' : '', lm && (lm.from.join() === k || lm.to.join() === k) ? 'lm' : ''].join(' ');
+    h += `<div class="${cls}" data-r="${r}" data-c="${c}">${pc ? `<span class="pc p${pc.o}">${pc.k ? '♛' : ''}</span>` : ''}</div>`;
+  }
+  $('board').innerHTML = `<div class="board ck">${h}</div>`;
+  $('board').querySelector('.ck').onclick = e => {
+    const x = e.target.closest('[data-r]'); if (!x || !myTurn()) return;
+    const k = [Number(x.dataset.r), Number(x.dataset.c)];
+    if (sel && to.has(k.join())) { const m = { from: sel, to: k }; sel = null; return move(m); }
+    sel = from.has(k.join()) ? k : null; drawCK();
+  };
+}
+// battlecow
+const HERD = [4, 3, 3, 2];
+let placing = { i: 0, d: 'h', ships: [] };
+const cellsOf = s => [...Array(s.l).keys()].map(k => s.d === 'h' ? [s.x + k, s.y] : [s.x, s.y + k]);
+function fits(ship, ships) { return cellsOf(ship).every(([x, y]) => x >= 0 && x < 8 && y >= 0 && y < 8 && !ships.some(o => cellsOf(o).some(([a, b]) => a === x && b === y))); }
+function drawCow() {
+  const g = G, bd = g.board, me_ = g.you >= 0 ? g.you : 0, op = 1 - me_;
+  if (g.status === 'placing' && g.you >= 0 && !bd.placed[g.you]) return drawPlace();
+  // left: your herd and their shots at you. right: your shots at them
+  const herd = bd.herds ? bd.herds[me_] : bd.herd, theirHerd = bd.herds ? bd.herds[op] : null;
+  const grid = (shots, ships, sunk, shoot) => { let h = ''; for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const s = shots.find(q => q.x === x && q.y === y), cow = ships && ships.some(sh => cellsOf(sh).some(([a, b]) => a === x && b === y)), sk = sunk.some(sh => cellsOf(sh).some(([a, b]) => a === x && b === y));
+      const cls = sk ? 'sunk' : s ? (s.hit ? 'hit' : 'miss') : cow ? 'cow' : shoot ? 'open' : '';
+      h += `<div class="${cls}" data-x="${x}" data-y="${y}">${sk || (cow && !s) ? face(COW) : ''}</div>`;
+    } return h; };
+  const shootable = myTurn();
+  $('board').innerHTML = `<div class="bc"><div class="side"><b>${g.you >= 0 ? 'your herd' : g.players[me_].name + "'s herd"}</b><div class="sea">${grid(bd.at[op], herd, bd.sunk[op], false)}</div></div>
+    <div class="side"><b>${g.you >= 0 ? 'their field' : g.players[op].name + "'s herd"}</b><div class="sea${shootable ? ' shoot' : ''}" id="enemy">${grid(bd.at[me_], theirHerd, bd.sunk[me_], shootable)}</div>
+    <div class="small">${bd.sunk[me_].length} of 4 cows found</div></div></div>`;
+  $('enemy').onclick = e => { const c = e.target.closest('.open'); if (c && myTurn()) move({ x: Number(c.dataset.x), y: Number(c.dataset.y) }); };
+}
+function drawPlace() {
+  const p = placing, next = p.i < HERD.length ? { l: HERD[p.i], d: p.d } : null;
+  let h = '';
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) h += `<div data-x="${x}" data-y="${y}" class="${p.ships.some(s => cellsOf(s).some(([a, b]) => a === x && b === y)) ? 'cow' : ''}">${p.ships.some(s => cellsOf(s).some(([a, b]) => a === x && b === y)) ? face(COW) : ''}</div>`;
+  $('board').innerHTML = `<div class="bc"><div class="side"><div class="herdlist">${HERD.map((l, i) => `<span class="${i < p.i ? 'done' : i === p.i ? 'on' : ''}">${l}-cow</span>`).join('')}</div>
+    <div class="sea shoot" id="placeSea">${h}</div>
+    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="turn">turn (${p.d === 'h' ? 'sideways' : 'up/down'})</button><button class="btn" id="rand">random</button><button class="btn" id="redo">start over</button><button class="btn go" id="ready" ${next ? 'disabled' : ''}>ready</button></div></div></div>`;
+  const sea = $('placeSea');
+  const ghost = (x, y) => { sea.querySelectorAll('.ghost,.bad').forEach(d => d.classList.remove('ghost', 'bad')); if (!next) return; const s = { ...next, x, y }, ok = fits(s, p.ships);
+    for (const [a, b] of cellsOf(s)) { const d = sea.querySelector(`[data-x="${a}"][data-y="${b}"]`); if (d) d.classList.add(ok ? 'ghost' : 'bad'); } };
+  sea.onmousemove = e => { const c = e.target.closest('[data-x]'); if (c) ghost(Number(c.dataset.x), Number(c.dataset.y)); };
+  sea.onclick = e => { const c = e.target.closest('[data-x]'); if (!c || !next) return; const s = { ...next, x: Number(c.dataset.x), y: Number(c.dataset.y) }; if (fits(s, p.ships)) { p.ships.push(s); p.i++; drawPlace(); } };
+  $('turn').onclick = () => { p.d = p.d === 'h' ? 'v' : 'h'; drawPlace(); };
+  $('redo').onclick = () => { placing = { i: 0, d: p.d, ships: [] }; drawPlace(); };
+  $('rand').onclick = () => { for (;;) { const ships = []; let ok = true; for (const l of HERD) { let s, t = 0; do { const d = Math.random() < 0.5 ? 'h' : 'v'; s = { l, d, x: Math.floor(Math.random() * 8), y: Math.floor(Math.random() * 8) }; } while (!fits(s, ships) && ++t < 200); if (t >= 200) { ok = false; break; } ships.push(s); } if (ok) { placing = { i: 4, d: p.d, ships }; break; } } drawPlace(); };
+  $('ready').onclick = () => move({ ships: p.ships });
+}
+addEventListener('keydown', e => { if (e.key === 'r' && G && G.type === 'cow' && G.status === 'placing') { placing.d = placing.d === 'h' ? 'v' : 'h'; drawPlace(); } });
+
+(async () => {
+  me = await ARC.bar('games', '<a class="small" href="/typing/">typing race</a><a class="small" href="/shop/">shop</a>');
+  if (!me) $('betRow').hidden = true;
+  pickers();
+  const q = new URLSearchParams(location.search);
+  if (q.get('vs')) { $('vs').value = q.get('vs'); $('vs').focus(); }
+  // ?c= comes from a challenge notification. it shows up under challenges with play / no buttons
+  if (q.get('g')) return enter(q.get('g'));
+  poller = setInterval(lobbyTick, 1500); lobbyTick(true);
+})();
+</script>
+</body>
+</html>

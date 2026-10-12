@@ -2,6 +2,7 @@
 // the taskbar tray. logged out, the tray opens the login window. logged in, it
 // goes to your profile
 (() => {
+  const coinsEl = document.getElementById('trCoins');
   const win = document.getElementById('w-cs'), frame = document.getElementById('csWin');
   const tray = document.getElementById('trCs'), trayName = document.getElementById('trCsName');
   if (!win || !tray || !window.CS) return;
@@ -32,6 +33,7 @@
       if (reqs) tray.setAttribute('data-open', 'w-cs');
       tray.onclick = reqs ? null : () => { location.href = '/@' + me.username; };
       syncAch(); checkNotes();
+      if (coinsEl) { coinsEl.hidden = false; coinsEl.innerHTML = CS.COIN + ' ' + CS.coins(me.coins); }
     } else {
       tray.setAttribute('data-open', 'w-cs'); // main.js opens windows for anything with data-open
       tray.title = 'cowspace: log in';
@@ -39,6 +41,7 @@
       img.hidden = true; icon.style.display = '';
       tray.onclick = null;
       if (bell) bell.hidden = true;
+      if (coinsEl) coinsEl.hidden = true;
     }
   }
 
@@ -56,7 +59,8 @@
 
   // notifications: a bell in the tray with how many are unread. click it for the list
   const bell = document.getElementById('trBell'), bellN = document.getElementById('trBellN'), panel = document.getElementById('bellPanel');
-  const ICON = { wall: '\u{1F4AC}', request: '\u{1F91D}', friend: '\u{1F91D}', flappy: '\u{1F426}', mention: '@', badge: '\u2605' };
+  const ICON = { wall: '\u{1F4AC}', request: '\u{1F91D}', friend: '\u{1F91D}', flappy: '\u{1F426}', mention: '@', badge: '\u2605',
+    coins: CS.COIN, trade: '\u{1F0CF}', game: '\u{1F3AE}', forum: '\u{1F4CB}', like: '\u2665' };
   let notes = [];
   async function checkNotes() {
     if (!CS.token() || !bell) { if (bell) bell.hidden = true; return; }

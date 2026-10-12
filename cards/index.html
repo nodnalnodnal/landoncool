@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cow trading cards</title>
+<link rel="stylesheet" href="/assets/arcade.css">
+<style>
+.cards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.cards .lccard{cursor:pointer}
+.cards .lccard.sel{outline:3px solid #f2c230;outline-offset:2px}
+.packs{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.reveal .lccard{animation:flip .5s ease-out both}
+@keyframes flip{from{transform:rotateY(90deg) scale(.8);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.reveal .lccard{animation:none}}
+.pct{height:12px;background:#000;border:1px solid #333;margin:6px 0}
+.pct i{display:block;height:100%;background:linear-gradient(90deg,#8a8a8a,#3d7be0,#9b5de5,#d4a017)}
+.trade{border:2px solid #333;padding:8px;margin-bottom:8px;background:#0a0a0a}
+.trade .sides{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
+.trade .side{font-size:12px}
+.pick{max-height:420px;overflow:auto;border:1px solid #333;padding:6px}
+.pick .lccard{zoom:.7}
+dialog{background:#151515;color:#efefef;border:2px solid #6a6a6a;max-width:min(560px,94vw)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="win"><div class="tb"><span id="title">your binder</span><span class="small" id="sum"></span></div><div class="in">
+    <div class="pct"><i id="pctBar" style="width:0"></i></div>
+    <div class="packs" id="packs"></div>
+    <div class="err" id="err"></div>
+  </div></div>
+  <div class="win" id="openWin" hidden><div class="tb"><span>new cards!</span><button class="btn" id="openClose">nice</button></div><div class="in"><div class="cards reveal" id="opened"></div></div></div>
+  <div class="win" id="tradeWin" hidden><div class="tb"><span id="trades">trades</span></div><div class="in" id="tradeList"></div></div>
+  <div class="win"><div class="tb"><span>cards</span><span class="small" id="tip">tap a card you have extras of to sell them</span></div><div class="in">
+    <div class="tabs" id="filters"></div>
+    <div class="cards" id="binder">loading...</div>
+  </div></div>
+</div>
+<dialog id="tradeDlg">
+  <b>trade with @<span id="tdWho"></span></b>
+  <p class="small">pick what you give and what you want. they get a notification and can accept or say no</p>
+  <div class="row"><b>you give</b> <span class="small" id="tdGiveN"></span></div><div class="pick cards" id="tdGive"></div>
+  <div class="row" style="margin-top:8px"><b>you get</b> <span class="small" id="tdGetN"></span></div><div class="pick cards" id="tdGet"></div>
+  <div class="err" id="tdErr"></div>
+  <div class="row"><button class="btn go" id="tdSend">send trade</button><button class="btn" id="tdCancel">cancel</button></div>
+</dialog>
+<script src="/cowspace/cs.js"></script>
+<script src="/assets/arcade.js"></script>
+<script src="/assets/cards.js"></script>
+<script>
+const $ = id => document.getElementById(id), esc = CS.esc;
+let me = null, cat = null, mine = null, view = null, filter = 'all';
+const params = new URLSearchParams(location.search);
+const RANK = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
+function owned(cards, key) { return (cards[key] || 0) + (cards[key + '*'] || 0); }
+function render() {
+  const cards = view.cards, self = me && view.username === me.username;
+  $('title').textContent = self ? 'your binder' : `@${view.username}'s binder`;
+  const b = view.binder;
+  $('sum').textContent = `${b.have} of ${b.total} cards${b.shiny ? `, ${b.shiny} shiny` : ''}`;
+  $('pctBar').style.width = (100 * b.have / Math.max(1, b.total)) + '%';
+  const sets = ['all', 'cow breeds', 'site lore', 'npcs', 'shiny', 'have', 'missing'];
+  $('filters').innerHTML = sets.map(s => `<button class="${s === filter ? 'on' : ''}" data-f="${s}">${s}</button>`).join('');
+  let list = cat.list.slice().sort((a, b) => a.set.localeCompare(b.set) || RANK[b.rarity] - RANK[a.rarity] || a.name.localeCompare(b.name));
+  if (['cow breeds', 'site lore', 'npcs'].includes(filter)) list = list.filter(c => c.set === filter);
+  if (filter === 'have') list = list.filter(c => owned(cards, c.key));
+  if (filter === 'missing') list = list.filter(c => !owned(cards, c.key));
+  let out = '';
+  for (const c of list) {
+    if (filter === 'shiny') { if (cards[c.key + '*']) out += LC_CARDS.html(c, c.key + '*', cards[c.key + '*']); continue; }
+    if (cards[c.key]) out += LC_CARDS.html(c, c.key, cards[c.key]);
+    if (cards[c.key + '*']) out += LC_CARDS.html(c, c.key + '*', cards[c.key + '*']);
+    if (!owned(cards, c.key)) out += LC_CARDS.html(c, c.key, 0, { missing: true });
+  }
+  $('binder').innerHTML = out || '<span class="small">nothing here</span>';
+  $('tip').textContent = self ? 'tap a card you have extras of to sell them' : '';
+}
+function packs() {
+  const self = me && view.username === me.username;
+  if (!me) { $('packs').innerHTML = '<a class="btn go" href="/cowspace/">log in to collect cards</a>'; return; }
+  if (!self) { $('packs').innerHTML = `<a class="btn" href="/cards/">back to your binder</a> <button class="btn go" id="tradeBtn">trade with @${esc(view.username)}</button>`; $('tradeBtn').onclick = openTrade; return; }
+  $('packs').innerHTML = `<button class="btn gold" id="free" ${mine.freeReady ? '' : 'disabled'}>${mine.freeReady ? 'open your free pack' : 'free pack opened today'}</button>
+    <button class="btn go" id="buy">buy a pack (${CS.COIN} 50)</button><span class="small">5 cards, at least one rare. 1 in 50 cards is shiny</span>
+    <span class="sp"></span><span class="small">trade: open a friend's binder (cards/?u=name)</span>`;
+  $('free').onclick = () => open(true); $('buy').onclick = () => open(false);
+}
+async function open(free) {
+  $('err').textContent = '';
+  try {
+    const j = await CS.api('/cards/open', { free });
+    $('opened').innerHTML = j.cards.map((k, i) => LC_CARDS.html(cat.by[LC_CARDS.base(k)], k).replace('class="lccard', `style="animation-delay:${i * 0.25}s" class="lccard`)).join('');
+    $('openWin').hidden = false; $('openWin').scrollIntoView({ behavior: 'smooth' });
+    ARC.refreshCoins(j.coins);
+    await load();
+  } catch (e) { $('err').textContent = e.message; }
+}
+$('openClose').onclick = () => { $('openWin').hidden = true; };
+$('filters').onclick = e => { const b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; render(); } };
+$('binder').onclick = async e => {
+  const el = e.target.closest('.lccard'); if (!el || !me || view.username !== me.username) return;
+  const key = el.dataset.key, n = view.cards[key] || 0, c = cat.by[LC_CARDS.base(key)];
+  if (n < 2) return ARC.toast(n ? "that's your only one, you keep it" : "you don't have that one yet");
+  const each = cat.sell[c.rarity] * (key.endsWith('*') ? 5 : 1);
+  const k = prompt(`sell extra ${c.name}${key.endsWith('*') ? ' (shiny)' : ''}? you have ${n}, you keep 1.\neach sells for ${each} moo coins. how many?`, String(n - 1));
+  if (!k) return;
+  try { const j = await CS.api('/cards/sell', { key, n: Number(k) }); ARC.refreshCoins(j.coins); ARC.toast(`sold for ${each * Number(k)} moo coins`); await load(); } catch (err) { ARC.toast(err.message); }
+};
+
+// ---------- trades ----------
+async function trades() {
+  if (!me) return;
+  const j = await CS.api('/cards/trades');
+  $('tradeWin').hidden = !j.trades.length;
+  const names = keys => keys.map(k => { const c = cat.by[LC_CARDS.base(k)]; return c ? esc(c.name) + (k.endsWith('*') ? ' ✦' : '') : 'retired card'; }).join(', ') || 'nothing';
+  $('tradeList').innerHTML = j.trades.map(t => `<div class="trade"><b>${t.mine ? `you offered @${esc(t.to)}` : `@${esc(t.from)} offered you`}</b> <span class="small">${new Date(t.t).toLocaleString()}</span>
+    <div class="sides"><div class="side"><b>${t.mine ? 'you give' : 'you get'}:</b> ${names(t.give)}</div><div class="side"><b>${t.mine ? 'you get' : 'you give'}:</b> ${names(t.get)}</div></div>
+    <div class="row">${t.mine ? '' : `<button class="btn go" data-acc="${t.id}">accept</button>`}<button class="btn" data-dec="${t.id}">${t.mine ? 'cancel' : 'no thanks'}</button></div></div>`).join('');
+}
+$('tradeList').onclick = async e => {
+  const a = e.target.closest('[data-acc]'), d = e.target.closest('[data-dec]');
+  try {
+    if (a) { await CS.api('/cards/trade/accept', { id: a.dataset.acc }); ARC.toast('traded!'); }
+    if (d) await CS.api('/cards/trade/decline', { id: d.dataset.dec });
+    await load(); await trades();
+  } catch (err) { ARC.toast(err.message); trades(); }
+};
+let give = [], get = [];
+function pickHtml(cards, chosen) {
+  return Object.keys(cards).filter(k => cards[k] > 0).sort().map(k => {
+    const left = cards[k] - chosen.filter(x => x === k).length;
+    return LC_CARDS.html(cat.by[LC_CARDS.base(k)], k, left).replace('class="lccard', `class="lccard${chosen.includes(k) ? ' sel' : ''}`);
+  }).join('') || '<span class="small">no cards</span>';
+}
+function drawTrade() {
+  $('tdGive').innerHTML = pickHtml(mine.cards, give); $('tdGet').innerHTML = pickHtml(view.cards, get);
+  $('tdGiveN').textContent = give.length + ' picked'; $('tdGetN').textContent = get.length + ' picked';
+}
+function openTrade() { give = []; get = []; $('tdWho').textContent = view.username; $('tdErr').textContent = ''; drawTrade(); $('tradeDlg').showModal(); }
+const toggle = (list, cards) => e => { const el = e.target.closest('.lccard'); if (!el) return; const k = el.dataset.key, i = list.lastIndexOf(k);
+  if (e.shiftKey && i >= 0) list.splice(i, 1); else if (list.filter(x => x === k).length < cards[k] && list.length < 10) list.push(k); else if (i >= 0) list.splice(i, 1); drawTrade(); };
+$('tdGive').onclick = e => toggle(give, mine.cards)(e); $('tdGet').onclick = e => toggle(get, view.cards)(e);
+$('tdCancel').onclick = () => $('tradeDlg').close();
+$('tdSend').onclick = async () => {
+  try { await CS.api('/cards/trade', { to: view.username, give, get }); $('tradeDlg').close(); ARC.toast('trade sent!'); trades(); } catch (e) { $('tdErr').textContent = e.message; }
+};
+
+async function load() {
+  const who = (params.get('u') || '').toLowerCase();
+  if (me) mine = await CS.api('/cards');
+  view = who && (!me || who !== me.username) ? await CS.api('/cards?u=' + encodeURIComponent(who)) : mine;
+  if (!view) { $('binder').innerHTML = '<span class="small">log in to cowspace to start collecting. you get a free pack every day</span>'; view = { username: '', cards: {}, binder: { have: 0, total: cat.list.length, shiny: 0 } }; }
+  render(); packs();
+}
+(async () => {
+  me = await ARC.bar('cards', '<a class="small" href="/shop/">shop</a><a class="small" href="/games/">games</a>');
+  cat = await LC_CARDS.catalog();
+  try { await load(); await trades(); } catch (e) { $('err').textContent = e.message; }
+})();
+</script>
+</body>
+</html>

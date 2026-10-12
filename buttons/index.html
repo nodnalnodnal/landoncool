@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>88x31 button maker</title>
+<link rel="stylesheet" href="/assets/arcade.css">
+<style>
+.ed{display:grid;grid-template-columns:1fr 220px;gap:12px}
+@media (max-width:760px){.ed{grid-template-columns:1fr}}
+#stage{width:100%;overflow:auto;background:repeating-conic-gradient(#222 0 25%,#111 0 50%) 0 0/12px 12px;border:2px solid #333;padding:6px}
+#cv{display:block;image-rendering:pixelated;cursor:crosshair;touch-action:none;margin:0 auto;background:#000}
+.tools{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.tools button{font:12px Tahoma;background:#0a0a0a;color:#ccc;border:2px solid #333;padding:4px 9px;cursor:pointer}
+.tools button.on{background:#efefef;color:#000;border-color:#efefef;font-weight:700}
+.pal{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.pal button{aspect-ratio:1;border:2px solid #333;padding:0;cursor:pointer;min-width:0}
+.pal button.on{border-color:#fff;outline:2px solid #f2c230}
+.pal button.on2{border-color:#f2c230;border-style:dashed}
+.frames{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.frames img{width:88px;height:31px;image-rendering:pixelated;border:2px solid #333;cursor:pointer;background:#000}
+.frames img.on{border-color:#f2c230}
+.side label{display:block;font-size:11px;color:#8a8a8a;margin:8px 0 3px}
+.prev{text-align:center;padding:10px;background:#1d1d1d;border:1px solid #2a2a2a}
+.prev img{width:176px;height:62px;image-rendering:pixelated}
+.prev .real{width:88px;height:31px;display:block;margin:6px auto 0}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.wb{background:#0a0a0a;border:2px solid #333;padding:6px;text-align:center;font-size:11px;min-width:0}
+.wb img{width:88px;height:31px;image-rendering:pixelated;display:block;margin:2px auto 5px}
+.wb .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wb button{font:11px Tahoma;background:none;border:0;color:#aaa;cursor:pointer;text-decoration:underline;padding:0 3px}
+.wb button.liked{color:#e85d9e}
+.official{display:flex;gap:14px;flex-wrap:wrap}
+.official div{text-align:center}
+.official img{width:88px;height:31px;image-rendering:pixelated;display:block;margin:0 auto 4px}
+.official textarea{width:220px;height:62px;font:10px monospace;resize:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="win"><div class="tb"><span>88x31 button maker</span><span class="small">old-web buttons, like the ones sites used to link each other with</span></div><div class="in">
+    <div class="ed">
+      <div>
+        <div class="tools" id="tools"></div>
+        <div id="stage"><canvas id="cv" width="88" height="31"></canvas></div>
+        <div class="row" style="margin-top:6px" id="textRow" hidden>
+          <input id="txt" maxlength="30" placeholder="type text, then tap the button to stamp it" style="flex:1;min-width:140px"><select id="font"><option value="big">big font</option><option value="small">small font</option></select>
+        </div>
+        <div class="row" style="margin-top:6px" id="gradRow" hidden><span class="small">gradient from your color to the dashed one, in a filled area:</span><select id="gdir"><option value="h">left to right</option><option value="v">top to bottom</option></select></div>
+        <div class="frames" id="frames"></div>
+        <div class="row" style="margin-top:6px"><button class="btn" id="fAdd">+ blank frame</button><button class="btn" id="fDup">copy frame</button><button class="btn" id="fDel">delete frame</button>
+          <span class="small">speed</span><input id="delay" type="number" min="50" max="2000" step="50" value="300" style="width:70px"><span class="small">ms a frame</span></div>
+      </div>
+      <div class="side">
+        <div class="prev"><img id="prevBig" alt="preview"><img class="real" id="prev" alt="real size"></div>
+        <label>colors (tap = draw color, right-click or long-press = second color). <span id="palN"></span></label>
+        <div class="pal" id="pal"></div>
+        <div class="row" style="margin-top:6px"><input type="color" id="pick" value="#f2c230"><button class="btn" id="addCol">add color</button></div>
+        <label>undo</label><div class="row"><button class="btn" id="undo">undo</button><button class="btn" id="clear">clear frame</button></div>
+        <label>title</label><input id="title" maxlength="40" placeholder="my button" style="width:100%">
+        <div class="row" style="margin-top:8px"><button class="btn" id="dl">download gif</button><button class="btn go" id="pub">put it on the wall</button></div>
+        <div class="err" id="err"></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="win"><div class="tb"><span>official landon.cool buttons</span><span class="small">copy the code onto your own site</span></div><div class="in"><div class="official" id="official"></div></div></div>
+  <div class="win"><div class="tb"><span>the button wall</span><span class="small" id="wallN"></span></div><div class="in"><div class="wall" id="wall">loading...</div><div class="row" style="justify-content:center;margin-top:10px" id="pager"></div></div></div>
+</div>
+<script src="/cowspace/cs.js"></script>
+<script src="/assets/arcade.js"></script>
+<script src="/assets/gif.js"></script>
+<script src="/assets/pixfont.js"></script>
+<script>
+const $ = id => document.getElementById(id), esc = CS.esc, W = 88, H = 31;
+const START = ['000000', 'ffffff', 'ee0000', 'ff8800', 'ffff00', '66ff33', '007700', '00ffff', '0033ff', '9900ff', 'ff66cc', '884422', '888888', 'cccccc', 'ffcc99', '003366'];
+let pal = START.slice(), frames = [], cur = 0, col = 1, col2 = 0, tool = 'pen', undo = [], me = null;
+const TOOLS = [['pen', 'pencil'], ['line', 'line'], ['rect', 'box'], ['fillrect', 'filled box'], ['fill', 'bucket'], ['grad', 'gradient'], ['text', 'text'], ['pick', 'eyedropper']];
+// start with a black button and a grey border, like the old ones
+function blank() { const f = new Uint8Array(W * H); for (let x = 0; x < W; x++) { f[x] = 12; f[(H - 1) * W + x] = 12; } for (let y = 0; y < H; y++) { f[y * W] = 12; f[y * W + W - 1] = 12; } return f; }
+try { const s = JSON.parse(localStorage.getItem('btnDraft') || 'null'); if (s && s.pal && s.frames) { pal = s.pal; frames = s.frames.map(f => Uint8Array.from(f)); $('delay').value = s.delay || 300; $('title').value = s.title || ''; } } catch (e) {}
+if (!frames.length) frames = [blank()];
+
+const cv = $('cv'), g = cv.getContext('2d'), img = g.createImageData(W, H);
+let zoom = 6;
+function fit() { zoom = Math.max(2, Math.min(8, Math.floor(($('stage').clientWidth - 16) / W))); cv.style.width = W * zoom + 'px'; cv.style.height = H * zoom + 'px'; }
+addEventListener('resize', fit);
+const rgb = h => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+function paint(f = frames[cur], ghost) {
+  for (let i = 0; i < W * H; i++) { const [r, gg, b] = rgb(pal[(ghost && ghost[i] !== undefined) ? ghost[i] : f[i]] || '000000'); img.data.set([r, gg, b, 255], i * 4); }
+  g.putImageData(img, 0, 0);
+}
+let saveT = null;
+function changed() {
+  paint(); drawFrames();
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    try { localStorage.setItem('btnDraft', JSON.stringify({ pal, frames: frames.map(f => [...f]), delay: Number($('delay').value), title: $('title').value })); } catch (e) {}
+    const u = LC_GIF.url(W, H, pal, frames, Number($('delay').value) || 300); $('prev').src = $('prevBig').src = u;
+  }, 150);
+}
+function thumb(f) { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'), d = x.createImageData(W, H); for (let i = 0; i < W * H; i++) d.data.set([...rgb(pal[f[i]] || '000000'), 255], i * 4); x.putImageData(d, 0, 0); return c.toDataURL(); }
+function drawFrames() { $('frames').innerHTML = frames.map((f, i) => `<img src="${thumb(f)}" data-i="${i}" class="${i === cur ? 'on' : ''}" title="frame ${i + 1}">`).join('') + `<span class="small">${frames.length}/8 frames</span>`; }
+function drawPal() {
+  $('pal').innerHTML = pal.map((c, i) => `<button data-c="${i}" class="${i === col ? 'on' : ''}${i === col2 ? ' on2' : ''}" style="background:#${c}" title="#${c}"></button>`).join('');
+  $('palN').textContent = `${pal.length}/64`;
+}
+function drawTools() { $('tools').innerHTML = TOOLS.map(([k, n]) => `<button data-t="${k}" class="${k === tool ? 'on' : ''}">${n}</button>`).join(''); $('textRow').hidden = tool !== 'text'; $('gradRow').hidden = tool !== 'grad'; }
+$('tools').onclick = e => { const b = e.target.closest('[data-t]'); if (b) { tool = b.dataset.t; drawTools(); } };
+$('pal').onclick = e => { const b = e.target.closest('[data-c]'); if (b) { col = Number(b.dataset.c); drawPal(); } };
+$('pal').oncontextmenu = e => { const b = e.target.closest('[data-c]'); if (b) { e.preventDefault(); col2 = Number(b.dataset.c); drawPal(); } };
+let lp = null; $('pal').addEventListener('touchstart', e => { const b = e.target.closest('[data-c]'); if (b) lp = setTimeout(() => { col2 = Number(b.dataset.c); drawPal(); }, 500); }, { passive: true });
+$('pal').addEventListener('touchend', () => clearTimeout(lp));
+$('addCol').onclick = () => { const c = $('pick').value.slice(1).toLowerCase(); if (pal.includes(c)) { col = pal.indexOf(c); return drawPal(); } if (pal.length >= 64) return ($('err').textContent = '64 colors max'); pal.push(c); col = pal.length - 1; drawPal(); };
+function addColor(c) { let i = pal.indexOf(c); if (i >= 0) return i; if (pal.length >= 64) { let best = 0, bd = 1e9; const [r, gg, b] = rgb(c); pal.forEach((p, k) => { const [r2, g2, b2] = rgb(p), d = (r - r2) ** 2 + (gg - g2) ** 2 + (b - b2) ** 2; if (d < bd) { bd = d; best = k; } }); return best; } pal.push(c); return pal.length - 1; }
+
+// ---------- drawing ----------
+const snap = () => { undo.push({ i: cur, f: frames[cur].slice() }); if (undo.length > 40) undo.shift(); };
+const at = e => { const r = cv.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * W), Math.floor((e.clientY - r.top) / r.height * H)]; };
+const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+function lineDots(x0, y0, x1, y1) { const out = []; const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy; for (;;) { out.push([x0, y0]); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } } return out; }
+function region(f, x, y) { const want = f[y * W + x], seen = new Uint8Array(W * H), out = [], st = [[x, y]]; while (st.length) { const [a, b] = st.pop(); if (!inb(a, b)) continue; const i = b * W + a; if (seen[i] || f[i] !== want) continue; seen[i] = 1; out.push(i); st.push([a + 1, b], [a - 1, b], [a, b + 1], [a, b - 1]); } return out; }
+function shapeDots(t, a, b) {
+  if (t === 'line') return lineDots(a[0], a[1], b[0], b[1]);
+  const [x0, x1] = [Math.min(a[0], b[0]), Math.max(a[0], b[0])], [y0, y1] = [Math.min(a[1], b[1]), Math.max(a[1], b[1])], out = [];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (t === 'fillrect' || x === x0 || x === x1 || y === y0 || y === y1) out.push([x, y]);
+  return out;
+}
+let down = null;
+cv.onpointerdown = e => {
+  cv.setPointerCapture(e.pointerId); const [x, y] = at(e), f = frames[cur]; if (!inb(x, y)) return;
+  if (tool === 'pick') { col = f[y * W + x]; drawPal(); return; }
+  snap();
+  if (tool === 'fill') { for (const i of region(f, x, y)) f[i] = col; return changed(); }
+  if (tool === 'grad') {
+    const cells = region(f, x, y), dir = $('gdir').value, xs = cells.map(i => dir === 'h' ? i % W : Math.floor(i / W)), lo = Math.min(...xs), hi = Math.max(...xs);
+    const [a, b] = [rgb(pal[col]), rgb(pal[col2])], steps = Math.max(2, Math.min(12, hi - lo + 1)), idx = [];
+    for (let s = 0; s < steps; s++) { const t = s / (steps - 1); idx.push(addColor(a.map((v, k) => Math.round(v + (b[k] - v) * t).toString(16).padStart(2, '0')).join(''))); }
+    cells.forEach((i, k) => { f[i] = idx[Math.round((xs[k] - lo) / Math.max(1, hi - lo) * (steps - 1))]; });
+    drawPal(); return changed();
+  }
+  if (tool === 'text') { const t = $('txt').value; if (!t) { $('err').textContent = 'type some text first'; return; } for (const [a, b] of LC_FONT.layout(t, $('font').value).dots) if (inb(x + a, y + b)) f[(y + b) * W + x + a] = col; return changed(); }
+  down = { start: [x, y], last: [x, y] };
+  if (tool === 'pen') { f[y * W + x] = col; paint(); }
+};
+cv.onpointermove = e => {
+  const [x, y] = at(e);
+  if (!down) { if (tool === 'text' && $('txt').value && inb(x, y)) { const ghost = {}; for (const [a, b] of LC_FONT.layout($('txt').value, $('font').value).dots) if (inb(x + a, y + b)) ghost[(y + b) * W + x + a] = col; paint(frames[cur], ghost); } return; }
+  const f = frames[cur];
+  if (tool === 'pen') { for (const [a, b] of lineDots(down.last[0], down.last[1], x, y)) if (inb(a, b)) f[b * W + a] = col; down.last = [x, y]; paint(); }
+  else { const ghost = {}; for (const [a, b] of shapeDots(tool, down.start, [x, y])) if (inb(a, b)) ghost[b * W + a] = col; paint(f, ghost); }
+};
+cv.onpointerup = e => {
+  if (!down) return; const [x, y] = at(e), f = frames[cur];
+  if (['line', 'rect', 'fillrect'].includes(tool)) for (const [a, b] of shapeDots(tool, down.start, [x, y])) if (inb(a, b)) f[b * W + a] = col;
+  down = null; changed();
+};
+cv.onpointerleave = () => { if (!down) paint(); };
+$('undo').onclick = () => { const u = undo.pop(); if (!u) return; if (frames[u.i]) frames[u.i] = u.f; cur = Math.min(u.i, frames.length - 1); changed(); };
+$('clear').onclick = () => { snap(); frames[cur] = blank(); changed(); };
+$('frames').onclick = e => { const i = e.target.closest('[data-i]'); if (i) { cur = Number(i.dataset.i); changed(); } };
+$('fAdd').onclick = () => { if (frames.length >= 8) return; frames.splice(cur + 1, 0, blank()); cur++; changed(); };
+$('fDup').onclick = () => { if (frames.length >= 8) return; frames.splice(cur + 1, 0, frames[cur].slice()); cur++; changed(); };
+$('fDel').onclick = () => { if (frames.length < 2) return; frames.splice(cur, 1); cur = Math.max(0, cur - 1); changed(); };
+$('delay').onchange = changed; $('title').oninput = changed;
+$('dl').onclick = () => { const a = document.createElement('a'); a.href = LC_GIF.url(W, H, pal, frames, Number($('delay').value) || 300); a.download = ($('title').value.trim().replace(/[^a-z0-9_-]+/gi, '_') || 'button') + '.gif'; a.click(); };
+// only send the colors that are actually used
+function packed() {
+  const used = [...new Set(frames.flatMap(f => [...f]))].sort((a, b) => a - b), map = new Map(used.map((c, i) => [c, i]));
+  const b64 = f => { const m = f.map(v => map.get(v)); let s = ''; for (const v of m) s += String.fromCharCode(v); return btoa(s); };
+  return { pal: used.map(i => pal[i]), frames: frames.map(b64), delay: Number($('delay').value) || 300, title: $('title').value };
+}
+$('pub').onclick = async () => {
+  $('err').textContent = '';
+  if (!me) { $('err').innerHTML = '<a href="/cowspace/">log in to cowspace</a> to put buttons on the wall'; return; }
+  try { await ARC.call('/buttons', packed()); ARC.toast('it\'s on the wall!'); wall(0); } catch (e) { $('err').textContent = e.message; }
+};
+
+// ---------- the wall ----------
+let page = 0;
+async function wall(p = page) {
+  page = p;
+  const j = await ARC.call('/buttons?page=' + p);
+  $('wallN').textContent = j.total + ' buttons';
+  $('wall').innerHTML = j.buttons.map(b => `<div class="wb"><img src="${LC_GIF.button(b)}" alt="${esc(b.title)}"><div class="t">${esc(b.title || 'untitled')}</div>
+    <div>by <a href="/@${encodeURIComponent(b.u)}">@${esc(b.u)}</a></div>
+    <div><button data-like="${b.id}" class="${b.liked ? 'liked' : ''}">♥ ${b.likes}</button>${me && b.u === me.username ? `<button data-prof="${b.id}">${b.onProfile ? 'on your profile ✓' : 'put on profile'}</button><button data-del="${b.id}">delete</button>` : ''}
+    <button data-edit="${b.id}">remix</button></div></div>`).join('') || '<span class="small">no buttons yet. make the first one!</span>';
+  const n = Math.ceil(j.total / 30);
+  $('pager').innerHTML = n > 1 ? [...Array(n).keys()].map(i => `<button class="btn${i === p ? ' go' : ''}" data-p="${i}">${i + 1}</button>`).join('') : '';
+  wallData = Object.fromEntries(j.buttons.map(b => [b.id, b]));
+}
+let wallData = {};
+$('pager').onclick = e => { const b = e.target.closest('[data-p]'); if (b) wall(Number(b.dataset.p)); };
+$('wall').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  try {
+    if (b.dataset.like) { if (!me) return ARC.toast('log in to like buttons'); await ARC.call('/buttons/like', { id: Number(b.dataset.like) }); wall(); }
+    if (b.dataset.prof) { await ARC.call('/buttons/profile', { id: Number(b.dataset.prof) }); ARC.toast('it\'s on your profile now'); wall(); }
+    if (b.dataset.del) { if (!confirm('delete this button?')) return; await ARC.call('/buttons/delete', { id: Number(b.dataset.del) }); wall(); }
+    if (b.dataset.edit) { const w = wallData[b.dataset.edit]; if (!confirm('open this button in the editor? it replaces what you have there now')) return;
+      pal = w.pal.slice(); frames = w.frames.map(LC_GIF.unb64); cur = 0; undo = []; $('delay').value = w.delay; $('title').value = (w.title || '') + ' remix'; col = Math.min(col, pal.length - 1); drawPal(); changed(); scrollTo({ top: 0, behavior: 'smooth' }); }
+  } catch (err) { ARC.toast(err.message); }
+};
+const OFFICIAL = [['landoncool', 'landon.cool', 'https://landon.cool/'], ['cowspace', 'cowspace', 'https://landon.cool/cowspace/'], ['100cow', '100% cow', 'https://landon.cool/']];
+$('official').innerHTML = OFFICIAL.map(([f, alt, href]) => `<div><img src="/assets/buttons/${f}.gif" alt="${alt}"><textarea readonly onclick="this.select()">&lt;a href="${href}"&gt;&lt;img src="https://landon.cool/assets/buttons/${f}.gif" width="88" height="31" alt="${alt}"&gt;&lt;/a&gt;</textarea></div>`).join('');
+
+(async () => {
+  me = await ARC.bar('buttons', '<a class="small" href="/webring.jpg/">webring</a>');
+  fit(); drawTools(); drawPal(); changed();
+  wall(0).catch(() => { $('wall').innerHTML = '<span class="small">couldn\'t load the wall</span>'; });
+})();
+</script>
+</body>
+</html>

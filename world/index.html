@@ -62,9 +62,11 @@ function drawGround() {
 }
 
 // ---------- cows ----------
-function avatarImg(key, av) {
-  if (!av || avatars.has(key)) return;
-  const i = new Image(); i.src = CS.avatarUrl(av); avatars.set(key, i);
+function avatarImg(key, av, hat) {
+  // hats from the moo coin shop come drawn into the picture (cs.js makes it a bit bigger)
+  hat = hat || null;
+  if ((!av && !hat) || (avatars.has(key) && avatars.get(key).hat === hat)) return;
+  const i = new Image(); i.src = CS.avatarUrl(av, hat); i.hat = hat; avatars.set(key, i);
 }
 function drawCow(o, sx, sy, s, t) {
   const f = o.dir < 0 ? -1 : 1, base = o.npc ? '#f4f4f4' : '#' + (o.c || 'f4f4f4'), spot = '#2a2a2a';
@@ -76,7 +78,7 @@ function drawCow(o, sx, sy, s, t) {
   g.fillStyle = base; g.fillRect(-7, -6, 13, 8);
   g.fillStyle = spot; g.fillRect(-5, -5, 3, 2); g.fillRect(0, -3, 3, 3); g.fillRect(-6, -1, 2, 2);
   const img = avatars.get(o.key);
-  if (img && img.complete && img.naturalWidth) g.drawImage(img, 3, -11, 8, 8);
+  if (img && img.complete && img.naturalWidth) img.hat ? g.drawImage(img, 2, -13, 10, 10) : g.drawImage(img, 3, -11, 8, 8);
   else { g.fillStyle = base; g.fillRect(3, -11, 8, 8); g.fillStyle = '#f2b8b8'; g.fillRect(3, -6, 8, 3); g.fillStyle = '#111'; g.fillRect(5, -9, 1, 1); g.fillRect(9, -9, 1, 1); }
   g.restore();
 }
@@ -92,7 +94,7 @@ function bubble(text, x, y) {
 }
 
 // ---------- the loop ----------
-let S = 3, last = performance.now(), mySay = null, mySayT = 0, meName = 'guest';
+let S = 3, last = performance.now(), mySay = null, mySayT = 0, meName = 'guest', myLook = null;
 function resize() { const dpr = devicePixelRatio || 1; cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.imageSmoothingEnabled = false; S = innerWidth < 600 ? 2.5 : 3; }
 addEventListener('resize', resize);
 function frame(t) {
@@ -117,13 +119,14 @@ function frame(t) {
     g.fillStyle = 'rgba(255,255,255,.18)';
     for (let i = 0; i < 12; i++) { const wx = 31 + ((i * 7 + t / 900) % 11), wy = 19 + (i * 5 % 7); if (MAP[Math.floor(wy)] && MAP[Math.floor(wy)][Math.floor(wx)] === '~') g.fillRect((wx * T - cx) * S, (wy * T - cy) * S, 3 * S, S); }
     // everyone, back to front
-    const all = [...others.values(), { ...me, key: 'me', name: meName, me: true, avatar: null, say: mySay && t - mySayT < 6000 ? mySay : null, c: me.c }];
+    const all = [...others.values(), { ...me, key: 'me', name: meName, me: true, avatar: null, look: myLook, say: mySay && t - mySayT < 6000 ? mySay : null, c: me.c }];
     all.sort((a, b) => a.y - b.y);
     for (const o of all) {
       const sx = (o.x * T - cx) * S, sy = (o.y * T - cy) * S;
       if (sx < -60 || sy < -60 || sx > innerWidth + 60 || sy > innerHeight + 60) continue;
       drawCow(o, sx, sy, S, t);
-      label(o.name + (o.npc ? ' (npc)' : o.u && !o.me ? ' ✓' : ''), sx, sy - 13 * S, o.me ? '#ffe14d' : o.npc ? '#c9c9c9' : '#ffffff');
+      const lc = o.look && o.look.color, nameCol = lc === 'rainbow' ? `hsl(${(t / 8) % 360} 90% 65%)` : /^#[0-9a-f]{6}$/i.test(lc || '') ? lc : null;
+      label(o.name + (o.npc ? ' (npc)' : o.u && !o.me ? ' ✓' : ''), sx, sy - 14 * S, nameCol || (o.me ? '#ffe14d' : o.npc ? '#c9c9c9' : '#ffffff'));
       if (o.say) bubble(o.say, sx, sy - 17 * S);
     }
   }
@@ -170,7 +173,7 @@ async function sync() {
         let o = others.get(p.id);
         if (!o) { o = { key: p.id, x: p.x, y: p.y }; others.set(p.id, o); }
         Object.assign(o, { name: p.name, u: p.u, npc: p.npc, tx: p.x, ty: p.y, dir: p.dir, m: p.m, c: p.c, say: p.say || null });
-        if (p.avatar !== undefined) avatarImg(p.id, p.avatar);
+        if (p.avatar !== undefined) { avatarImg(p.id, p.avatar, p.look && p.look.hat); o.look = p.look || null; }
       }
       for (const k of [...others.keys()]) if (!seen.has(k)) others.delete(k);
       const people = j.players.filter(p => !p.npc).length, npcs = j.players.length - people;
@@ -188,7 +191,7 @@ async function sync() {
   drawGround();
   requestAnimationFrame(frame);
   sync();
-  CS.me().then(u => { if (u) { meName = u.username; avatarImg('me', u.avatar); $('me').textContent = '@' + u.username; } });
+  CS.me().then(u => { if (u) { meName = u.username; myLook = u.look || null; avatarImg('me', u.avatar, myLook && myLook.hat); $('me').textContent = '@' + u.username; } });
 })();
 </script>
 </body>

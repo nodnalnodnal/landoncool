@@ -72,11 +72,16 @@ function add(m) {
   n.className = 'n';
   n.style.color = color(m.name, m.npc);
   n.textContent = m.name;
+  // name colors + chat badges from the moo coin shop
+  const lk = m.look || {};
+  if (lk.color === 'rainbow') n.classList.add('lc-rainbow'); else if (/^#[0-9a-f]{6}$/i.test(lk.color || '')) n.style.color = lk.color;
   if (m.u) { n.href = '/@' + encodeURIComponent(m.u); n.target = '_blank'; n.title = m.npc ? 'npc (a landon.cool character)' : 'cowspace account'; }
   const ok = document.createElement('span');
   if (m.u && !m.npc) { ok.className = 'ok'; ok.textContent = ' \u2713'; }
   if (m.npc) { ok.className = 'npc'; ok.textContent = ' npc'; }
-  d.append(t, n, ok, document.createTextNode(': ' + m.msg));
+  const cb = document.createElement('span');
+  if (lk.cb) { cb.textContent = lk.cb + ' '; cb.title = 'chat badge'; }
+  d.append(t, cb, n, ok, document.createTextNode(': ' + m.msg));
   if (modOn) {
     const x = document.createElement('button');
     x.textContent = '\u2715'; x.title = 'delete (mod)';

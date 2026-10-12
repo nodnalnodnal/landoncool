@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moo coin shop</title>
+<link rel="stylesheet" href="/assets/arcade.css">
+<style>
+.wallet{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.wallet .big{font:700 30px Tahoma,sans-serif;color:#f2c230}
+.bars{flex:1;min-width:220px}
+.meter{height:10px;background:#000;border:1px solid #333;margin:3px 0 8px}
+.meter i{display:block;height:100%;background:#f2c230}
+.items{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.item{background:#0a0a0a;border:2px solid #333;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.item.own{border-color:#4a7a4a}
+.item.worn{border-color:#f2c230}
+.item .pic{height:84px;display:grid;place-items:center;background:#1d1d1d;border:1px solid #2a2a2a;font-size:38px;overflow:hidden}
+.item .pic img{height:76px;image-rendering:pixelated}
+.item .nm{font-weight:700}
+.item .ds{color:#8a8a8a;font-size:11px;min-height:14px}
+.item .pr{color:#f2c230;font-weight:700}
+.item .row{justify-content:space-between}
+.item .namep{font:700 15px Tahoma,sans-serif;background:#fff;color:#111;padding:4px 8px}
+.ledger{max-height:260px;overflow:auto}
+.ledger div{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px dotted #333;font-size:12px}
+.ledger .p{color:#7ddc7d}.ledger .m{color:#ff8a8a}
+.cols{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.pack{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="win"><div class="tb"><span>your wallet</span><span class="small" id="cap"></span></div><div class="in" id="wallet">loading...</div></div>
+  <div class="cols">
+    <div>
+      <div class="win"><div class="tb"><span>the moo coin shop</span></div><div class="in">
+        <div class="tabs" id="tabs"></div>
+        <div class="err" id="err"></div>
+        <div class="grid items" id="items"></div>
+      </div></div>
+      <div class="win" id="packWin" hidden><div class="tb"><span>you opened a pack!</span><button class="btn" id="packClose">close</button></div><div class="in"><div class="pack" id="pack"></div></div></div>
+    </div>
+    <div>
+      <div class="win"><div class="tb"><span>how to earn</span></div><div class="in small" style="line-height:1.6;color:#bbb">
+        <b>games</b> (up to 400 a day): flappy bird (1 per pipe, up to 30), cowdle (20 + bonus for fewer guesses), <a href="/games/">minigames</a> (10 a win), <a href="/typing/">typing race</a><br>
+        <b>being around</b> (up to 60 a day): chat 1, placing a pixel 1, forum posts 3<br>
+        <b>friends</b> can send you coins from your profile<br>
+        you start with 100. coins need a <a href="/cowspace/">cowspace</a> account
+      </div></div>
+      <div class="win"><div class="tb"><span>send coins to a friend</span></div><div class="in">
+        <div class="row"><input id="gTo" placeholder="username" style="width:110px"><input id="gN" type="number" min="1" max="1000" value="10" style="width:70px"><button class="btn" id="gGo">send</button></div>
+        <div class="err" id="gErr"></div>
+      </div></div>
+      <div class="win"><div class="tb"><span>history</span></div><div class="in ledger" id="ledger"><span class="small">log in to see it</span></div></div>
+      <div class="win"><div class="tb"><span>richest cows</span></div><div class="in"><table class="lb" id="rich"></table></div></div>
+    </div>
+  </div>
+</div>
+<script src="/cowspace/cs.js"></script>
+<script src="/assets/arcade.js"></script>
+<script src="/assets/cards.js"></script>
+<script>
+const $ = id => document.getElementById(id), esc = CS.esc;
+const TABS = [['hat', 'hats'], ['color', 'name colors'], ['fx', 'profile effects'], ['trail', 'cursor trails'], ['sticker', 'wall stickers'], ['cb', 'chat badges'], ['token', 'tokens'], ['pack', 'card packs'], ['custom', 'limited']];
+let me = null, items = [], inv = {}, eq = {}, coins = 0, tab = 'hat';
+try { tab = sessionStorage.getItem('shopTab') || 'hat'; } catch (e) {}
+
+function pic(it) {
+  if (it.kind === 'hat') return `<img src="${CS.avatarUrl(me && me.avatar, it.id.slice(4))}" alt="">`;
+  if (it.kind === 'color') return `<span class="namep">${CS.nameHtml(me ? me.username : 'your name', { color: it.color })}</span>`;
+  if (it.kind === 'fx') return { fx_sparkle: '✨', fx_snow: '❄️', fx_hearts: '\u{1F495}', fx_glitter: '\u{1F308}' }[it.id] || '✨';
+  if (it.kind === 'trail') return { trail_stars: '⭐', trail_moo: '<span style="font:700 22px Verdana">moo</span>', trail_rainbow: '\u{1F308}' }[it.id];
+  if (it.kind === 'token') return it.id === 'tok_rename' ? '✏️' : '\u{1F4CC}';
+  if (it.kind === 'pack') return '\u{1F0CF}';
+  return esc(it.icon || '★');
+}
+function render() {
+  $('tabs').innerHTML = TABS.filter(([k]) => k !== 'custom' || items.some(i => i.kind === 'custom')).map(([k, n]) => `<button class="${k === tab ? 'on' : ''}" data-t="${k}">${n}</button>`).join('');
+  const list = items.filter(i => i.kind === tab);
+  $('items').innerHTML = list.map(it => {
+    const own = (inv[it.id] || 0) > 0, worn = eq[it.kind] === it.id, stack = it.kind === 'token';
+    let act;
+    if (!me) act = '<a class="btn" href="/cowspace/">log in</a>';
+    else if (it.kind === 'pack') act = `<button class="btn gold" data-buy="${it.id}">buy + open</button>`;
+    else if (own && !stack) act = ['hat', 'color', 'fx', 'trail', 'cb'].includes(it.kind) ? `<button class="btn ${worn ? '' : 'go'}" data-eq="${it.id}" data-slot="${it.kind}">${worn ? 'take off' : 'wear'}</button>` : '<span class="ok">yours</span>';
+    else if (it.left === 0) act = '<span class="small">sold out</span>';
+    else act = `<button class="btn gold" data-buy="${it.id}">buy</button>`;
+    const use = it.id === 'tok_rename' && inv.tok_rename ? `<button class="btn" data-rename>use one</button>` : '';
+    return `<div class="item${own ? ' own' : ''}${worn ? ' worn' : ''}"><div class="pic">${pic(it)}</div><div class="nm">${esc(it.name)}${stack && inv[it.id] ? ` <span class="small">(you have ${inv[it.id]})</span>` : ''}</div>
+      <div class="ds">${esc(it.desc || '')}${it.left != null ? ` ${it.left} left` : ''}${it.until ? ` &middot; until ${new Date(it.until).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric' })}` : ''}</div>
+      <div class="row"><span class="pr">${CS.COIN} ${it.price.toLocaleString()}</span><span>${use}${act}</span></div></div>`;
+  }).join('') || '<span class="small">nothing here right now</span>';
+}
+function wallet(j) {
+  coins = j.coins; ARC.refreshCoins(coins);
+  const t = j.today || { game: 0, social: 0 }, c = j.caps || { game: 400, social: 60 };
+  $('wallet').innerHTML = `<div class="wallet"><div><div class="small">moo coins</div><div class="big">${CS.COIN} ${CS.coins(coins)}</div></div>
+    <div class="bars"><div class="small">earned from games today: ${t.game} / ${c.game}</div><div class="meter"><i style="width:${Math.min(100, 100 * t.game / c.game)}%"></i></div>
+    <div class="small">earned from chatting, place + forum today: ${t.social} / ${c.social}</div><div class="meter"><i style="width:${Math.min(100, 100 * t.social / c.social)}%"></i></div></div></div>`;
+  $('ledger').innerHTML = (j.ledger || []).map(l => `<div><span>${esc(l.why)}<br><span class="small">${new Date(l.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span></span><b class="${l.n >= 0 ? 'p' : 'm'}">${l.n >= 0 ? '+' : ''}${l.n}</b></div>`).join('') || '<span class="small">nothing yet</span>';
+}
+async function load() {
+  const j = await CS.api('/shop');
+  items = j.items; inv = j.inv || {}; eq = j.eq || {};
+  render();
+  if (me) wallet(await CS.api('/coins'));
+  else $('wallet').innerHTML = 'moo coins are for <a href="/cowspace/">cowspace</a> accounts. log in or sign up and you start with <b>100</b>.';
+  const r = await CS.api('/coins/top');
+  $('rich').innerHTML = r.top.map((u, i) => `<tr><td>${i + 1}.</td><td>${ARC.who({ ...u, name: u.username })}</td><td class="n">${CS.COIN} ${u.coins.toLocaleString()}</td></tr>`).join('') || '<tr><td class="small">nobody yet</td></tr>';
+}
+$('tabs').onclick = e => { const b = e.target.closest('[data-t]'); if (!b) return; tab = b.dataset.t; try { sessionStorage.setItem('shopTab', tab); } catch (x) {} render(); };
+$('items').onclick = async e => {
+  const buy = e.target.closest('[data-buy]'), wear = e.target.closest('[data-eq]'), ren = e.target.closest('[data-rename]');
+  $('err').textContent = '';
+  try {
+    if (buy) {
+      const it = items.find(i => i.id === buy.dataset.buy);
+      if (!confirm(`buy ${it.name} for ${it.price} moo coins?`)) return;
+      const j = await CS.api('/shop/buy', { id: it.id });
+      if (j.cards) showPack(j.cards);
+      else { inv = j.inv; eq = j.eq; ARC.toast(`you got the ${it.name}!`); }
+      CS.forget(); me = await CS.me();
+      wallet(await CS.api('/coins')); render();
+    } else if (wear) {
+      const on = eq[wear.dataset.slot] === wear.dataset.eq;
+      const j = await CS.api('/shop/equip', { slot: wear.dataset.slot, id: on ? null : wear.dataset.eq });
+      eq = j.eq; render();
+    } else if (ren) {
+      const to = prompt('your new username (3-16 letters, numbers or _). your old one will be free for anyone to take');
+      if (!to) return;
+      const j = await CS.api('/shop/rename', { to });
+      alert(`you're @${j.username} now!`); location.reload();
+    }
+  } catch (err) { $('err').textContent = err.message; }
+};
+async function showPack(keys) {
+  const cat = await LC_CARDS.catalog();
+  $('pack').innerHTML = keys.map(k => LC_CARDS.html(cat.by[LC_CARDS.base(k)], k)).join('');
+  $('packWin').hidden = false; $('packWin').scrollIntoView({ behavior: 'smooth' });
+}
+$('packClose').onclick = () => { $('packWin').hidden = true; };
+$('gGo').onclick = async () => {
+  $('gErr').textContent = '';
+  try { const j = await CS.api('/coins/gift', { to: $('gTo').value.trim(), n: Number($('gN').value) }); ARC.toast('sent!'); wallet(await CS.api('/coins')); void j; }
+  catch (err) { $('gErr').textContent = err.message; }
+};
+(async () => {
+  me = await ARC.bar('shop', '<a class="small" href="/cards/">cards</a><a class="small" href="/games/">games</a>');
+  const gift = new URLSearchParams(location.search).get('gift'); if (gift) $('gTo').value = gift;
+  load().catch(e => { $('err').textContent = e.message; });
+})();
+</script>
+</body>
+</html>

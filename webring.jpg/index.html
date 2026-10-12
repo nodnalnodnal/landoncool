@@ -33,12 +33,26 @@ section:last-child{border-bottom:0}
 .dim{color:#666}
 .count{float:right;font-weight:normal;color:#777;font-size:12px}
 .links{text-align:center;color:#888;font-size:11px;margin:10px}
+.btns{display:flex;gap:14px;flex-wrap:wrap}
+.btns div{text-align:center}
+.btns img{width:88px;height:31px;image-rendering:pixelated;display:block;margin:0 auto 4px}
+.btns textarea{width:210px;height:58px;font:10px monospace;resize:none}
 .links a{color:#666}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>the landon.cool webring<small>every site of mine, all of them, no random button</small></h1>
+
+<section>
+<h2>link to landon.cool</h2>
+<p class="dim" style="margin:0 0 10px">88x31 buttons for your own site. copy the code under one. <a href="/buttons/">make your own</a></p>
+<div class="btns">
+<div><img src="/assets/buttons/landoncool.gif" alt="landon.cool"><textarea readonly onclick="this.select()">&lt;a href="https://landon.cool/"&gt;&lt;img src="https://landon.cool/assets/buttons/landoncool.gif" width="88" height="31" alt="landon.cool"&gt;&lt;/a&gt;</textarea></div>
+<div><img src="/assets/buttons/cowspace.gif" alt="cowspace"><textarea readonly onclick="this.select()">&lt;a href="https://landon.cool/cowspace/"&gt;&lt;img src="https://landon.cool/assets/buttons/cowspace.gif" width="88" height="31" alt="cowspace"&gt;&lt;/a&gt;</textarea></div>
+<div><img src="/assets/buttons/100cow.gif" alt="100% cow"><textarea readonly onclick="this.select()">&lt;a href="https://landon.cool/"&gt;&lt;img src="https://landon.cool/assets/buttons/100cow.gif" width="88" height="31" alt="100% cow"&gt;&lt;/a&gt;</textarea></div>
+</div>
+</section>
 
 <section>
 <h2>sites <span class="count" id="siteCount"></span></h2>
@@ -62,7 +76,7 @@ section:last-child{border-bottom:0}
 <ul class="ring" id="mirrors"><li class="dim">loading...</li></ul>
 </section>
 </div>
-<div class="links">checked by the server every 5 minutes &middot; <a href="/assets.mp3/">every asset</a> &middot; <a href="/">back to landon.cool</a></div>
+<div class="links">checked by the server every minute &middot; <a href="/status/">status</a> &middot; <a href="/assets.mp3/">every asset</a> &middot; <a href="/">back to landon.cool</a></div>
 
 <script>
 // same as the mirrors page: on landon.cool (github pages) go through api.landon.cool

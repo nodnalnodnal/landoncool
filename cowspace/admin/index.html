@@ -97,6 +97,16 @@ async function render() {
         <input id="bDesc" placeholder="what it's for" maxlength="100" style="flex:1;min-width:160px"><input id="bColor" type="color" value="#ffcc00" title="color">
         <button id="bMake">make badge</button></div><div class="msg" id="bMsg"></div>
     </div></div>` : ''}
+    ${staff ? `<div class="box"><h2>moo coins</h2><div class="in">
+      <div class="acts"><input id="cU" placeholder="username" style="width:120px"><input id="cN" type="number" value="100" style="width:90px" title="negative takes coins away"><button class="sec" id="cGive">give</button><button class="bad" id="cTake">take</button></div>
+      <div class="msg" id="cMsg"></div>
+      <div style="margin-top:12px"><b>limited shop items</b> <span class="dim">(show up in the shop's "limited" tab, then on buyers' profiles)</span></div>
+      <div id="shopList" style="margin-top:6px">loading...</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
+        <input id="sIcon" placeholder="&#9733;" maxlength="4" style="width:46px"><input id="sName" placeholder="item name" maxlength="30"><input id="sPrice" type="number" min="0" placeholder="price" style="width:80px">
+        <input id="sStock" type="number" min="0" placeholder="stock (0 = no limit)" style="width:140px"><input id="sHours" type="number" min="0" placeholder="hours (0 = forever)" style="width:140px">
+        <input id="sDesc" placeholder="description" maxlength="100" style="flex:1;min-width:160px"><button id="sMake">add item</button></div><div class="msg" id="sMsg"></div>
+    </div></div>` : ''}
     ${staff ? `<div class="box"><h2>npcs</h2><div class="in"><div id="npcInfo">loading...</div>
       <div class="acts" style="margin-top:8px"><button class="sec" id="npcToggle">pause</button>
       <input id="npcN" type="number" min="1" max="100" value="10" style="width:60px"><button class="sec" id="npcAdd">add npcs</button>
@@ -106,7 +116,7 @@ async function render() {
   if (!on) return;
   let t = null;
   $('q').oninput = () => { clearTimeout(t); t = setTimeout(loadUsers, 250); };
-  if (staff) { $('bMake').onclick = makeBadge; await loadBadges(); npcBox(); }
+  if (staff) { $('bMake').onclick = makeBadge; await loadBadges(); npcBox(); coinBox(); }
   await loadUsers();
   loadLog();
 }
@@ -183,6 +193,18 @@ async function makeBadge() {
     $('bName').value = $('bDesc').value = $('bIcon').value = '';
     say('bMsg', 'badge made! give it to people from the user list', true); await loadBadges(); loadUsers(); loadLog();
   } catch (e) { say('bMsg', e.message); }
+}
+// moo coins: give/take, and limited items for the shop (econ.js on the server)
+async function coinBox() {
+  const coins = async sign => { try { const j = await CS.api('/admin/coins', { u: $('cU').value.trim(), n: sign * Math.abs(Number($('cN').value)) }); say('cMsg', `done, they have ${CS.coins(j.coins)} now`); loadLog(); } catch (e) { say('cMsg', e.message); } };
+  $('cGive').onclick = () => coins(1); $('cTake').onclick = () => coins(-1);
+  const list = items => { $('shopList').innerHTML = items.map(i => `<div>${esc(i.icon)} <b>${esc(i.name)}</b> &middot; ${i.price} coins &middot; ${i.stock ? `${i.sold}/${i.stock} sold` : `${i.sold} sold`}${i.until ? ` &middot; until ${when(i.until)}` : ''} <button class="bad" data-del="${esc(i.id)}" style="font-size:10px">remove</button></div>`).join('') || '<span class="dim">none yet</span>'; };
+  list((await CS.api('/admin/shop')).items);
+  $('shopList').onclick = async e => { const b = e.target.closest('[data-del]'); if (b && confirm('remove it from the shop? people who bought it lose it from their shelf')) list((await CS.api('/admin/shop/delete', { id: b.dataset.del })).items); };
+  $('sMake').onclick = async () => {
+    try { list((await CS.api('/admin/shop/create', { icon: $('sIcon').value, name: $('sName').value, price: Number($('sPrice').value), stock: Number($('sStock').value), hours: Number($('sHours').value), desc: $('sDesc').value })).items); say('sMsg', 'added'); }
+    catch (e) { say('sMsg', e.message); }
+  };
 }
 // npcs: labeled cow/minecraft characters that chat and post (npcs.js on the server)
 async function npcBox() {

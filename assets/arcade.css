@@ -1,0 +1,34 @@
+/* shared look for the shop, cards, games, typing race and buttons pages. same noir style as cow/place */
+*{box-sizing:border-box}
+html,body{margin:0;background:#000;color:#efefef;font:13px Tahoma,Verdana,sans-serif}
+body{background-image:repeating-conic-gradient(#0d0d0d 0 25%,#000 0 50%);background-size:16px 16px;min-height:100vh}
+a{color:#efefef}
+.top{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#151515;border-bottom:2px solid #333;z-index:10;flex-wrap:wrap}
+.top .logo{font:700 16px Tahoma,sans-serif;text-decoration:none}
+.top .sp{flex:1}
+.top .small,.small{color:#8a8a8a;font-size:11px}
+.top .coins{font-weight:700;color:#f2c230;white-space:nowrap}
+.wrap{max-width:980px;margin:0 auto;padding:14px 16px 60px}
+.win{background:#151515;border:2px solid;border-color:#6a6a6a #000 #000 #6a6a6a;box-shadow:4px 4px 0 rgba(0,0,0,.45);margin-bottom:14px}
+.win>.tb{background:#efefef;color:#000;font-weight:700;padding:3px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.win>.in{padding:10px 12px}
+.btn{font:12px Tahoma,sans-serif;color:#efefef;background:#151515;border:2px solid;border-color:#6a6a6a #000 #000 #6a6a6a;padding:4px 12px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:active{border-color:#000 #6a6a6a #6a6a6a #000}
+.btn.go{background:#efefef;color:#000;font-weight:700}
+.btn.gold{background:#f2c230;color:#000;font-weight:700}
+.btn:disabled{opacity:.45;cursor:default}
+input,select,textarea{font:13px Tahoma,sans-serif;background:#000;color:#efefef;border:2px solid;border-color:#000 #6a6a6a #6a6a6a #000;padding:4px 6px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{font:12px Tahoma,sans-serif;background:#0a0a0a;color:#aaa;border:2px solid #333;padding:4px 10px;cursor:pointer}
+.tabs button.on{background:#efefef;color:#000;border-color:#efefef;font-weight:700}
+.err{color:#ff6b6b;min-height:16px}
+.ok{color:#7ddc7d}
+.grid{display:grid;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.npc{color:#999;font-size:10px}
+.av{width:20px;height:20px;image-rendering:pixelated;vertical-align:middle;background:#fff}
+table.lb{width:100%;border-collapse:collapse}
+table.lb td{padding:3px 4px;border-bottom:1px dotted #333}
+table.lb td.n{text-align:right;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#efefef;color:#000;font-weight:700;padding:8px 14px;border:2px solid #000;z-index:50;box-shadow:4px 4px 0 rgba(0,0,0,.5)}
+@media (max-width:600px){.wrap{padding:10px 10px 50px}}

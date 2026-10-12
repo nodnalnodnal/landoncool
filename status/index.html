@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>landon.cool status</title>
+<style>
+body{margin:0;background:#e9e9e9;font:13px Verdana,Geneva,sans-serif;color:#000}
+.wrap{max-width:760px;margin:16px auto;background:#fff;border:1px solid #999}
+h1{font:bold 20px Verdana,sans-serif;margin:0;padding:12px 16px;border-bottom:1px solid #999;background:#d6dde8}
+h1 small{font-weight:normal;font-size:12px;color:#555;display:block;margin-top:2px}
+.all{padding:12px 16px;font-weight:bold;font-size:15px;border-bottom:1px solid #ccc}
+.all.good{background:#e3f4e3;color:#1a6a1a}.all.bad{background:#fbe3e3;color:#9a1a1a}
+section{padding:12px 16px;border-bottom:1px solid #ccc}
+section:last-child{border-bottom:0}
+h2{font:bold 14px Verdana,sans-serif;margin:0 0 10px}
+.site{padding:10px 0;border-bottom:1px dotted #ccc}
+.site:last-child{border-bottom:0}
+.head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.head a{font-weight:bold;color:#0033cc;word-break:break-all}
+.head .note{color:#666;font-size:12px}
+.head .r{margin-left:auto;font-size:12px;color:#555;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#aaa;flex:none}
+.dot.up{background:#1a1}.dot.down{background:#c22}
+.bars{display:flex;gap:1px;height:34px;align-items:flex-end;margin-top:6px;background:#f6f6f6;padding:2px;border:1px solid #ddd}
+.bars i{flex:1;min-width:1px;background:#4a9a4a;position:relative}
+.bars i.down{background:#c22!important;height:100%!important}
+.bars i.some{background:#e0a020}
+.bars i.none{background:#ddd;height:3px!important}
+.axis{display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:2px}
+.mirrors{list-style:none;margin:0;padding:0;columns:220px 3}
+.mirrors li{padding:3px 0;break-inside:avoid;word-break:break-all}
+.dim{color:#666}
+.links{text-align:center;color:#888;font-size:11px;margin:10px}
+.links a{color:#666}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>landon.cool status<small>is it up? checked every minute from the server</small></h1>
+<div class="all" id="all">checking...</div>
+<section><h2>sites</h2><div id="sites"><span class="dim">loading...</span></div>
+<p class="dim" style="font-size:11px;margin:8px 0 0">bars are 15 minutes each, the last 24 hours. taller = slower. red = down, orange = some checks failed</p></section>
+<section><h2>mirrors</h2><ul class="mirrors" id="mirrors"><li class="dim">loading...</li></ul></section>
+</div>
+<div class="links"><a href="/webring.jpg/">webring</a> &middot; <a href="/">back to landon.cool</a></div>
+<script>
+const API = /(^|\.)landon\.cool$/.test(location.hostname) ? 'https://api.landon.cool/api' : '/api';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? s + 's ago' : Math.round(s / 60) + 'm ago'; };
+async function load() {
+  try {
+    const j = await (await fetch(API + '/status')).json();
+    const down = j.sites.filter(s => !s.up);
+    $('all').className = 'all ' + (down.length ? 'bad' : 'good');
+    $('all').textContent = down.length ? `${down.length} thing${down.length === 1 ? ' is' : 's are'} down: ${down.map(s => s.host).join(', ')}` : 'everything is up ✓';
+    $('sites').innerHTML = j.sites.map(s => {
+      const max = Math.max(200, ...s.bars.map(b => b.ms || 0));
+      const bars = s.bars.map(b => {
+        const cls = !b.n ? 'none' : b.down === b.n ? 'down' : b.down ? 'some' : '';
+        const tip = `${new Date(b.t * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: ${!b.n ? 'no checks' : b.ms ? b.ms + 'ms' : 'down'}${b.down && b.down < b.n ? `, ${b.down} failed` : ''}`;
+        return `<i class="${cls}" style="height:${b.ms ? Math.max(8, 100 * b.ms / max) : 100}%" title="${esc(tip)}"></i>`;
+      }).join('');
+      return `<div class="site"><div class="head"><span class="dot ${s.up ? 'up' : 'down'}"></span><a href="https://${esc(s.host)}/">${esc(s.host)}</a><span class="note">${esc(s.note || s.title || '')}</span>
+        <span class="r">${s.up ? `${s.ms}ms` : 'down'} &middot; ${s.uptime == null ? '' : s.uptime + '% up'}${s.avg ? ` &middot; avg ${s.avg}ms` : ''} &middot; ${ago(s.last_checked)}</span></div>
+        <div class="bars">${bars}</div><div class="axis"><span>24h ago</span><span>12h</span><span>now</span></div></div>`;
+    }).join('') || '<span class="dim">the server just started checking, give it a minute</span>';
+    $('mirrors').innerHTML = j.mirrors.map(m => `<li><span class="dot ${m.up ? 'up' : 'down'}"></span> <a href="https://${esc(m.domain)}/">${esc(m.domain)}</a>${m.ms ? ` <span class="dim">${m.ms}ms</span>` : ''}</li>`).join('') || '<li class="dim">no mirrors yet</li>';
+  } catch (e) { $('all').className = 'all bad'; $('all').textContent = "can't reach the status checker (so something is probably down)"; }
+}
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>

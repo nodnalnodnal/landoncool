@@ -27,7 +27,7 @@ const csProfile = async () => {
   const frame = document.getElementById('csframe');
 
   // everything the profile shows. the frame gets rebuilt from this after every click
-  const st = { user: null, relation: 'guest', canPost: false, comments: [], total: 0, more: false, error: '', draft: '' };
+  const st = { user: null, relation: 'guest', canPost: false, comments: [], total: 0, more: false, error: '', draft: '', thumbs: [], buttonUrl: null, stickers: [] };
 
   async function loadUser(view) {
     const j = await CS.api(`/user?u=${encodeURIComponent(name)}${view ? '&view=1' : ''}`);
@@ -41,7 +41,8 @@ const csProfile = async () => {
   }
   function render(scroll) {
     frame.srcdoc = CS.profileDoc(st.user, { live: true, site: location.origin, relation: st.relation, canPost: st.canPost,
-      wall: { comments: st.comments, total: st.total, more: st.more }, error: st.error, draft: st.draft, scroll });
+      wall: { comments: st.comments, total: st.total, more: st.more }, error: st.error, draft: st.draft, scroll,
+      binderThumbs: st.thumbs, buttonUrl: st.buttonUrl, stickers: st.canPost ? st.stickers : [] });
   }
 
   try { await Promise.all([loadUser(true), loadWall()]); }
@@ -50,11 +51,31 @@ const csProfile = async () => {
     document.body.insertAdjacentHTML('beforeend', `<div class="csmsg"><h2>no cow here</h2><p>${esc(e.message)}</p><p><a href="/cowspace/#signup">make a cowspace</a></p></div>`);
     return;
   }
+  // the extras: their best cards, their 88x31 button, and your stickers to post with
+  async function extras() {
+    try {
+      const b = st.user.binder;
+      if (b && b.best && b.best.length && window.LC_CARDS) {
+        const cat = await LC_CARDS.catalog();
+        st.thumbs = b.best.map(k => { const c = cat.by[LC_CARDS.base(k)]; return c ? { name: c.name, rarity: c.rarity, shiny: k.endsWith('*'), url: LC_CARDS.art(c) } : null; }).filter(Boolean);
+      }
+    } catch (e) {}
+    try { if (st.user.button && window.LC_GIF) st.buttonUrl = LC_GIF.button(st.user.button); } catch (e) {}
+    try {
+      if (CS.token()) {
+        const shop = await CS.api('/shop');
+        st.stickers = shop.items.filter(i => i.kind === 'sticker' && (shop.inv || {})[i.id]);
+      }
+    } catch (e) {}
+  }
   render(0);
+  extras().then(() => render(0));
+  effects(st.user.look || {});
 
   // clicks inside the frame arrive here. only trust messages from our own frame
   addEventListener('message', async e => {
     if (e.source !== frame.contentWindow || !e.data || !e.data.csAct) return;
+    if (e.source === frame.contentWindow && e.data && e.data.csMouse) return trail(e.data.csMouse);
     const { csAct: act, id, msg, scroll } = e.data;
     st.error = '';
     try {
@@ -62,9 +83,15 @@ const csProfile = async () => {
       else if (act === 'accept') await CS.api('/friend/accept', { u: name });
       else if (act === 'decline' || act === 'cancel') await CS.api('/friend/decline', { u: name });
       else if (act === 'unfriend') { if (!confirm(`unfriend ${name}?`)) return; await CS.api('/friend/remove', { u: name }); }
-      else if (act === 'post') {
+      else if (act === 'gift') {
+        const n = prompt(`send how many moo coins to ${name}?`, '10');
+        if (!n) return;
+        const j = await CS.api('/coins/gift', { to: name, n: Number(n) });
+        alert(`sent! you have ${CS.coins(j.coins)} moo coins left`);
+        return;
+      } else if (act === 'post' || act === 'sticker') {
         st.draft = String(msg || '');
-        await CS.api('/wall', { u: name, msg: st.draft });
+        await CS.api('/wall', { u: name, msg: st.draft, ...(act === 'sticker' ? { st: id } : {}) });
         st.draft = '';
         await loadWall(); return render(scroll);
       } else if (act === 'del') {
@@ -125,4 +152,51 @@ const csProfile = async () => {
     });
   }
 };
+// ---------- profile effects + cursor trails from the moo coin shop ----------
+// drawn on a see-through canvas over the profile frame, so they don't touch anyone's css
+let fxCanvas = null, trailKind = null;
+const parts = [];
+function effects(look) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || (!look.fx && !look.trail)) return;
+  trailKind = look.trail || null;
+  fxCanvas = document.createElement('canvas');
+  fxCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5';
+  document.body.appendChild(fxCanvas);
+  const g = fxCanvas.getContext('2d');
+  const size = () => { fxCanvas.width = innerWidth; fxCanvas.height = innerHeight; };
+  size(); addEventListener('resize', size);
+  const fx = look.fx;
+  const spawn = () => {
+    const W = innerWidth, H = innerHeight;
+    if (fx === 'snow') parts.push({ k: 'snow', x: Math.random() * W, y: -5, vx: (Math.random() - 0.5) * 0.4, vy: 0.6 + Math.random() * 0.8, life: 99999, r: 1.5 + Math.random() * 2 });
+    if (fx === 'sparkle') parts.push({ k: 'spark', x: Math.random() * W, y: Math.random() * H, vx: 0, vy: -0.15, life: 60 + Math.random() * 40, c: '#fff6b0' });
+    if (fx === 'hearts') parts.push({ k: 'heart', x: Math.random() * W, y: H + 10, vx: (Math.random() - 0.5) * 0.3, vy: -0.6 - Math.random() * 0.6, life: 99999 });
+    if (fx === 'glitter') parts.push({ k: 'spark', x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0.2, life: 40 + Math.random() * 30, c: `hsl(${Math.random() * 360} 90% 65%)` });
+  };
+  (function loop() {
+    g.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+    if (fx && parts.filter(p => !p.trail).length < (fx === 'snow' ? 80 : 45) && Math.random() < 0.5) spawn();
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.x += p.vx; p.y += p.vy; p.life--;
+      if (p.life <= 0 || p.y > innerHeight + 20 || p.y < -30) { parts.splice(i, 1); continue; }
+      const a = Math.min(1, p.life / 30);
+      g.globalAlpha = p.k === 'snow' || p.k === 'heart' ? 0.8 : a;
+      if (p.k === 'snow') { g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.strokeStyle = 'rgba(0,0,0,.15)'; g.stroke(); }
+      else if (p.k === 'heart') { g.font = '16px sans-serif'; g.fillStyle = '#e85d9e'; g.fillText('\u2665', p.x, p.y); }
+      else if (p.k === 'spark') { g.fillStyle = p.c; const s = 2 + (p.life % 10 < 5 ? 1 : 0); g.fillRect(p.x - s, p.y, s * 2 + 1, 1); g.fillRect(p.x, p.y - s, 1, s * 2 + 1); }
+      else if (p.k === 'moo') { g.font = 'bold 11px Verdana'; g.fillStyle = '#141414'; g.fillText('moo', p.x, p.y); }
+      else if (p.k === 'rb') { g.fillStyle = p.c; g.fillRect(p.x - 3, p.y - 3, 6, 6); }
+    }
+    g.globalAlpha = 1;
+    requestAnimationFrame(loop);
+  })();
+}
+// mouse positions come from inside the frame (see cs.js), which starts below the top bar
+function trail([mx, my]) {
+  if (!trailKind || !fxCanvas) return;
+  const r = document.getElementById('csframe').getBoundingClientRect(), x = r.left + mx, y = r.top + my;
+  if (trailKind === 'stars') parts.push({ k: 'spark', trail: 1, x, y, vx: (Math.random() - 0.5), vy: Math.random() * 0.8, life: 35, c: '#f2c230' });
+  if (trailKind === 'moo' && Math.random() < 0.3) parts.push({ k: 'moo', trail: 1, x, y, vx: 0, vy: -0.6, life: 45 });
+  if (trailKind === 'rainbow') parts.push({ k: 'rb', trail: 1, x, y, vx: 0, vy: 0, life: 25, c: `hsl(${(Date.now() / 5) % 360} 90% 60%)` });
+}
 document.readyState === 'loading' ? addEventListener('DOMContentLoaded', csProfile) : csProfile();
