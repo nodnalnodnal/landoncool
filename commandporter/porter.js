@@ -117,17 +117,20 @@ const ns = (id) => (id.includes(":") ? id : "minecraft:" + id);
 const unns = (id) => id.replace(/^minecraft:/, "");
 
 // snbt <-> plain js (for text components)
-function toJS(n) {
+class Raw { constructor(n) { this.n = n; } }
+// keep=true keeps typed numbers / arrays exact (for predicates), false gives plain json values (for text)
+function toJS(n, keep) {
   switch (n.t) {
-    case "comp": { const o = {}; n.v.forEach(([k, v]) => (o[k] = toJS(v))); return o; }
-    case "list": return n.v.map(toJS);
-    case "arr": return n.v.map((x) => parseFloat(x));
-    case "num": return parseFloat(n.raw);
+    case "comp": { const o = {}; n.v.forEach(([k, v]) => (o[k] = toJS(v, keep))); return o; }
+    case "list": return n.v.map((x) => toJS(x, keep));
+    case "arr": return keep ? new Raw(n) : n.v.map((x) => parseFloat(x));
+    case "num": return keep && /[a-z]$/i.test(n.raw) ? new Raw(n) : parseFloat(n.raw);
     case "bool": return n.v;
     case "str": return n.v;
   }
 }
 function fromJS(o) {
+  if (o instanceof Raw) return o.n;
   if (Array.isArray(o)) return L(o.map(fromJS));
   if (o && typeof o === "object") return C(Object.entries(o).map(([k, v]) => [k, fromJS(v)]));
   if (typeof o === "boolean") return { t: "bool", v: o };
@@ -558,11 +561,23 @@ function nested(cmd, fn) {
 // ---------------------------------------------------------------- inline predicates (26.x)
 
 // every "execute if|unless predicate {...}" in a command, as plain js
+// standing signs / banners: default rotation changed 0 -> 8 in 26.1, pin the old default explicitly
+function rotFix(cmd, val, W) {
+  const t = toks(cmd); const ix = t[0] === "setblock" ? 4 : t[0] === "fill" ? 7 : -1;
+  if (ix < 0 || !t[ix]) return cmd;
+  const m = /^([a-z0-9_:]+)(\[[^\]]*\])?(.*)$/s.exec(t[ix]);
+  if (!m) return cmd;
+  const id = unns(m[1]);
+  const standing = (/_sign$/.test(id) && !/wall_|hanging/.test(id)) || (/_banner$/.test(id) && !/wall_/.test(id));
+  if (!standing || (m[2] && m[2].includes("rotation"))) return cmd;
+  t[ix] = m[1] + (m[2] ? m[2].slice(0, -1) + ",rotation=" + val + "]" : "[rotation=" + val + "]") + m[3];
+  return t.join(" ");
+}
 function eachPred(cmd, fn) {
   const t = toks(cmd);
   for (let i = 2; i < t.length; i++) {
     if (t[i - 1] === "predicate" && (t[i - 2] === "if" || t[i - 2] === "unless") && /^[\[{]/.test(t[i])) {
-      try { t[i] = toSNBT(fromJS(fn(toJS(parseSNBT(t[i]))))); } catch (e) { WARN.push("couldn't read the inline predicate, left it alone"); }
+      try { t[i] = toSNBT(fromJS(fn(toJS(parseSNBT(t[i]), true)))); } catch (e) { WARN.push("couldn't read the inline predicate, left it alone"); }
     }
   }
   return t.join(" ");
@@ -603,6 +618,19 @@ function eachCond(node, fn) {
   return node;
 }
 const condType = (c) => unns(String(c.condition ?? c.type ?? ""));
+// 1.21.11 gamerule renames that aren't just camelCase -> snake_case. [new name, value inverted]
+const GR = {
+  disableElytraMovementCheck: ["elytra_movement_check", true], disablePlayerMovementCheck: ["player_movement_check", true],
+  disableRaids: ["raids", true], commandModificationBlockLimit: ["max_block_modifications"], doDaylightCycle: ["advance_time"],
+  doMobLoot: ["mob_drops"], announceAdvancements: ["show_advancement_messages"], commandBlocksEnabled: ["command_blocks_work"],
+  doEntityDrops: ["entity_drops"], doImmediateRespawn: ["immediate_respawn"], doInsomnia: ["spawn_phantoms"],
+  doLimitedCrafting: ["limited_crafting"], doMobSpawning: ["spawn_mobs"], doPatrolSpawning: ["spawn_patrols"],
+  doTileDrops: ["block_drops"], doTraderSpawning: ["spawn_wandering_traders"], doVinesSpread: ["spread_vines"],
+  doWardenSpawning: ["spawn_wardens"], doWeatherCycle: ["advance_weather"], maxCommandChainLength: ["max_command_sequence_length"],
+  maxCommandForkCount: ["max_command_forks"], naturalRegeneration: ["natural_health_regeneration"],
+  snowAccumulationHeight: ["max_snow_accumulation_height"], spawnRadius: ["respawn_radius"], spawnerBlocksEnabled: ["spawner_blocks_work"],
+  doFireTick: ["fire_spread_radius_around_player"],
+};
 const COLOR_NAMES = ["black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray", "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white", "reset"];
 
 // ---------------------------------------------------------------- steps
@@ -805,23 +833,37 @@ const STEPS = [
     },
   },
   { // 1.21.10 -> 1.21.11
-    name: "1.21.11 (snake_case gamerules)",
+    name: "1.21.11 (gamerule renames, worldborder ticks, angry_at)",
     up(cmd, W) {
-      return nested(cmd, (c) => {
+      cmd = nested(cmd, (c) => {
         const t = toks(c);
-        if (t[0] === "gamerule" && t[1] && /[A-Z]/.test(t[1])) {
-          if (/^do[A-Z]/.test(t[1])) W.push(`gamerule ${t[1]}: some do* rules got brand new names in 1.21.11, check /gamerule tab complete`);
-          t[1] = t[1].replace(/[A-Z]/g, (m) => "_" + m.toLowerCase());
+        if (t[0] === "gamerule" && t[1]) {
+          const r = GR[t[1]];
+          if (r) { t[1] = r[0]; if (r[1] && t[2]) t[2] = t[2] === "true" ? "false" : t[2] === "false" ? "true" : t[2]; }
+          if (t[1] === "fire_spread_radius_around_player" && t[2] === "false") t[2] = "0";
+          else if (/[A-Z]/.test(t[1])) t[1] = t[1].replace(/[A-Z]/g, (m) => "_" + m.toLowerCase());
+          if (t[1] === "fire_spread_radius_around_player") W.push("doFireTick became fire_spread_radius_around_player (a radius, 0 = off), check the value");
         }
+        if (t[0] === "worldborder" && ["set", "add"].includes(t[1]) && t[3] && /^\d+(\.\d+)?$/.test(t[3])) t[3] += "s";
+        if (t[0] === "worldborder" && ["warning"].includes(t[1]) && t[2] === "time" && t[3] && /^\d+$/.test(t[3])) t[3] += "s";
         return t.join(" ");
       });
+      return eachNbt(cmd, (tree) => walkItems(tree, (n) => { const a = get(n, "AngryAt"); if (a) { del(n, "AngryAt"); set(n, "angry_at", a); } if (get(n, "AngerTime")) { del(n, "AngerTime"); W.push("AngerTime is gone in 1.21.11 (it's anger_end_time, a game tick), dropped it"); } }));
     },
-    down(cmd) {
-      return nested(cmd, (c) => {
+    down(cmd, W) {
+      cmd = nested(cmd, (c) => {
         const t = toks(c);
-        if (t[0] === "gamerule" && t[1] && t[1].includes("_")) t[1] = t[1].replace(/_([a-z])/g, (_, m) => m.toUpperCase());
+        if (t[0] === "gamerule" && t[1]) {
+          const id = unns(t[1]); const back = Object.entries(GR).find(([, v]) => v[0] === id);
+          if (back) { t[1] = back[0]; if (back[1][1] && t[2]) t[2] = t[2] === "true" ? "false" : t[2] === "false" ? "true" : t[2]; }
+          else if (id === "fire_spread_radius_around_player") { t[1] = "doFireTick"; if (t[2]) t[2] = t[2] === "0" ? "false" : "true"; }
+          else t[1] = id.replace(/_([a-z])/g, (_, m) => m.toUpperCase());
+        }
+        if (t[0] === "worldborder" && ["set", "add"].includes(t[1]) && t[3]) { if (/s$/.test(t[3])) t[3] = t[3].slice(0, -1); else if (/^\d+$/.test(t[3])) t[3] = String(parseInt(t[3]) / 20); }
+        if (t[0] === "stopwatch") W.push("/stopwatch doesn't exist before 1.21.11");
         return t.join(" ");
       });
+      return eachNbt(cmd, (tree) => walkItems(tree, (n) => { const a = get(n, "angry_at"); if (a) { del(n, "angry_at"); set(n, "AngryAt", a); } if (get(n, "anger_end_time")) { del(n, "anger_end_time"); W.push("anger_end_time has no old version (AngerTime), dropped it"); } }));
     },
   },
   { // 1.21.11 -> 26.1
@@ -829,27 +871,35 @@ const STEPS = [
     up(cmd, W) {
       return nested(cmd, (c) => {
         const t = toks(c);
-        if (t[0] === "time" && t[1] === "set" && ["day", "noon", "night", "midnight"].includes(t[2])) W.push("/time set day/night now goes through time markers in 26.1, if it errors use the number (day 1000, noon 6000, night 13000, midnight 18000)");
-        return c;
+        if (t[0] === "time" && t[1] === "set" && ["day", "noon", "night", "midnight"].includes(t[2])) W.push("/time set day/night now skips ahead to the next one in 26.1 instead of jumping straight there");
+        if (t[0] === "time" && t[1] === "query" && t[2] === "daytime") t[2] = "minecraft:day";
+        else if (t[0] === "time" && t[1] === "query" && t[2] === "day") { t[2] = "minecraft:day"; t.splice(3, 0, "repetition"); }
+        let out = t.join(" ").replace(/\bvillager\.(\d+)\b/g, "mob.inventory.$1");
+        out = rotFix(out, "0", W);
+        return out;
       });
+      return eachPred(cmd, (p) => eachCond(p, (c) => { if (condType(c) === "time_check" && !c.clock) c.clock = "minecraft:overworld"; return c; }));
     },
     down(cmd, W) {
-      return nested(cmd, (c) => {
+      cmd = nested(cmd, (c) => {
         let t = toks(c);
         if (t[0] === "time") {
           if (t[1] === "of") { W.push(`world clock ${t[2]} doesn't exist in 1.21.11, used the normal day cycle`); t = ["time", ...t.slice(3)]; }
           if (t[1] === "set" && t[2] && t[2].includes(":")) { const m = unns(t[2]); if (["day", "noon", "night", "midnight"].includes(m)) t[2] = m; else W.push(`time marker ${t[2]} has no 1.21.11 version, use a number`); }
           if (t[1] === "pause" || t[1] === "resume") { W.push(`/time ${t[1]} doesn't exist in 1.21.11, toggle the daylight cycle gamerule instead`); }
           if (t[1] === "rate") W.push("/time rate doesn't exist in 1.21.11");
-          if (t[1] === "query" && !["daytime", "gametime", "day"].includes(t[2])) { W.push("only time query daytime/gametime/day exist in 1.21.11"); }
+          if (t[1] === "query" && t[2] === "minecraft:day") { if (t[3] === "repetition") { t[2] = "day"; t.splice(3, 1); } else t[2] = "daytime"; }
+          else if (t[1] === "query" && !["daytime", "gametime", "day"].includes(t[2])) { W.push("only time query daytime/gametime/day exist in 1.21.11"); }
         }
         if (t[0] === "swing") W.push("/swing doesn't exist in 1.21.11, no equivalent");
-        c = t.join(" ");
-        return eachItem(c, (it) => {
+        c = rotFix(t.join(" ").replace(/\bmob\.inventory\.(\d+)\b/g, "villager.$1"), "8", W);
+        c = eachItem(c, (it) => {
           if (!it.comps) return;
           it.comps = it.comps.filter(([k]) => { const kk = unns(k); if (kk === "dye" || kk === "additional_trade_cost") { W.push(`component ${kk} doesn't exist in 1.21.11, dropped it`); return false; } return true; });
         });
+        return c;
       });
+      return eachPred(cmd, (p) => eachCond(p, (c) => { if (condType(c) === "time_check") delete c.clock; return c; }));
     },
   },
   { // 26.1 -> 26.2
@@ -930,6 +980,13 @@ function portLine(line, from, to, W) {
   try {
     if (a < b) for (let i = a; i < b; i++) cmd = STEPS[i].up(cmd, W);
     else for (let i = a - 1; i >= b; i--) cmd = STEPS[i].down(cmd, W);
+    // command blocks / minecarts carry commands as strings, port those too
+    if (/Command:/.test(cmd)) {
+      cmd = eachNbt(cmd, (tree) => walkItems(tree, (n) => {
+        const c = get(n, "Command");
+        if (c && c.t === "str" && c.v.trim()) { const sub = []; const v = portLine(c.v, from, to, sub); WARN = W; sub.forEach((m) => W.push("inside a command block: " + m)); set(n, "Command", S(v)); }
+      }));
+    }
   } catch (e) { W.push("couldn't fully parse this one (" + e.message + "), left it partly converted"); }
   return lead + (slash ? "/" : "") + cmd;
 }
