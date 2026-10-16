@@ -869,7 +869,7 @@ const STEPS = [
   { // 1.21.11 -> 26.1
     name: "26.1 (world clocks, /swing)",
     up(cmd, W) {
-      return nested(cmd, (c) => {
+      cmd = nested(cmd, (c) => {
         const t = toks(c);
         if (t[0] === "time" && t[1] === "set" && ["day", "noon", "night", "midnight"].includes(t[2])) W.push("/time set day/night now skips ahead to the next one in 26.1 instead of jumping straight there");
         if (t[0] === "time" && t[1] === "query" && t[2] === "daytime") t[2] = "minecraft:day";
