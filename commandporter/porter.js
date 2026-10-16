@@ -12,7 +12,10 @@ const VERSIONS = [
   { id: "1.20.5", label: "1.20.5 - 1.21.3" },
   { id: "1.21.4", label: "1.21.4" },
   { id: "1.21.5", label: "1.21.5 - 1.21.10" },
-  { id: "1.21.11", label: "1.21.11 and newer" },
+  { id: "1.21.11", label: "1.21.11" },
+  { id: "26.1", label: "26.1" },
+  { id: "26.2", label: "26.2" },
+  { id: "26.3", label: "26.3 and newer" },
 ];
 
 // ---------------------------------------------------------------- tokenizing
@@ -499,6 +502,8 @@ function eachNbt(cmd, fn) {
     if (TEXT_CMDS.includes(t) || (t === "scoreboard" && all[i + 1] === "objectives")) stop = true;
     if (stop) return t;
     if (t.startsWith("{") && t.endsWith("}")) { try { const tree = parseSNBT(t); fn(tree); return toSNBT(tree); } catch (e) { WARN.push("couldn't read the NBT " + t.slice(0, 30) + "..., left it alone"); return t; } }
+    const glued = /^([#a-z0-9_.:\/-]+(?:\[[^\]]*\])?)(\{.*\})$/is.exec(t);
+    if (glued) { try { const tree = parseSNBT(glued[2]); fn(tree); return glued[1] + toSNBT(tree); } catch (e) { WARN.push("couldn't read the NBT on " + glued[1] + ", left it alone"); return t; } }
     const m = /^(@[pares]\[)(.*)\]$/s.exec(t);
     if (m && m[2].includes("nbt=")) {
       const s = parseSel(t);
@@ -507,6 +512,16 @@ function eachNbt(cmd, fn) {
     }
     return t;
   }).join(" ");
+}
+// nbt glued onto a block: setblock ~ ~ ~ oak_sign[...]{...}
+function eachBlockNbt(cmd, fn) {
+  return nested(cmd, (c) => {
+    const t = toks(c); const ix = t[0] === "setblock" ? 4 : t[0] === "fill" ? 7 : -1;
+    if (ix < 0 || !t[ix]) return c;
+    const m = /^([^{]*?)(\{.*\})$/s.exec(t[ix]); if (!m) return c;
+    try { const tree = parseSNBT(m[2]); fn(tree); t[ix] = m[1] + toSNBT(tree); } catch (e) { WARN.push("couldn't read the block NBT, left it alone"); }
+    return t.join(" ");
+  });
 }
 // which token is an item, per command
 function itemIndex(t) {
@@ -538,6 +553,57 @@ function nested(cmd, fn) {
   if (t[0] === "execute") { const r = t.indexOf("run"); if (r >= 0) return t.slice(0, r + 1).join(" ") + " " + nested(t.slice(r + 1).join(" "), fn); return cmd; }
   return fn(cmd);
 }
+
+
+// ---------------------------------------------------------------- inline predicates (26.x)
+
+// every "execute if|unless predicate {...}" in a command, as plain js
+function eachPred(cmd, fn) {
+  const t = toks(cmd);
+  for (let i = 2; i < t.length; i++) {
+    if (t[i - 1] === "predicate" && (t[i - 2] === "if" || t[i - 2] === "unless") && /^[\[{]/.test(t[i])) {
+      try { t[i] = toSNBT(fromJS(fn(toJS(parseSNBT(t[i]))))); } catch (e) { WARN.push("couldn't read the inline predicate, left it alone"); }
+    }
+  }
+  return t.join(" ");
+}
+const TS = { lightning: "lightning", fishing_hook: "fishing_hook", player: "player", raider: "raider", sheep: "sheep", slime: "cube_mob" };
+// entity predicate: 26.1 style <-> 26.2 style (namespaced keys, type_specific/x)
+function epUp(ep) {
+  if (!ep || typeof ep !== "object" || Array.isArray(ep)) return ep;
+  const r = {};
+  for (const [k, v] of Object.entries(ep)) {
+    if (k === "type") r["minecraft:entity_type"] = v;
+    else if (k === "type_specific" && v && v.type) { const { type, ...rest } = v; r["minecraft:type_specific/" + (TS[unns(type)] || unns(type))] = rest; }
+    else if (["vehicle", "passenger", "targeted_entity"].includes(k)) r[ns(k)] = epUp(v);
+    else r[k.includes(":") ? k : ns(k)] = v;
+  }
+  return r;
+}
+function epDown(ep) {
+  if (!ep || typeof ep !== "object" || Array.isArray(ep)) return ep;
+  const r = {};
+  for (const [k0, v] of Object.entries(ep)) {
+    const k = unns(k0);
+    if (k === "entity_type") r.type = v;
+    else if (k.startsWith("type_specific/")) { const kind = k.split("/")[1]; const back = inv(TS)[kind] || kind; r.type_specific = { type: ns(back), ...v }; }
+    else if (k === "entity_tags") WARN.push("entity_tags predicate doesn't exist before 26.2, use tag= in the selector instead");
+    else if (["vehicle", "passenger", "targeted_entity"].includes(k)) r[k] = epDown(v);
+    else r[k] = v;
+  }
+  return r;
+}
+// walk loot conditions (root, any_of/all_of terms, inverted term) and touch each one
+function eachCond(node, fn) {
+  if (Array.isArray(node)) return node.map((n) => eachCond(n, fn));
+  if (!node || typeof node !== "object") return node;
+  node = fn(node);
+  if (Array.isArray(node.terms)) node.terms = node.terms.map((n) => eachCond(n, fn));
+  if (node.term) node.term = eachCond(node.term, fn);
+  return node;
+}
+const condType = (c) => unns(String(c.condition ?? c.type ?? ""));
+const COLOR_NAMES = ["black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray", "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white", "reset"];
 
 // ---------------------------------------------------------------- steps
 
@@ -756,6 +822,91 @@ const STEPS = [
         if (t[0] === "gamerule" && t[1] && t[1].includes("_")) t[1] = t[1].replace(/_([a-z])/g, (_, m) => m.toUpperCase());
         return t.join(" ");
       });
+    },
+  },
+  { // 1.21.11 -> 26.1
+    name: "26.1 (world clocks, /swing)",
+    up(cmd, W) {
+      return nested(cmd, (c) => {
+        const t = toks(c);
+        if (t[0] === "time" && t[1] === "set" && ["day", "noon", "night", "midnight"].includes(t[2])) W.push("/time set day/night now goes through time markers in 26.1, if it errors use the number (day 1000, noon 6000, night 13000, midnight 18000)");
+        return c;
+      });
+    },
+    down(cmd, W) {
+      return nested(cmd, (c) => {
+        let t = toks(c);
+        if (t[0] === "time") {
+          if (t[1] === "of") { W.push(`world clock ${t[2]} doesn't exist in 1.21.11, used the normal day cycle`); t = ["time", ...t.slice(3)]; }
+          if (t[1] === "set" && t[2] && t[2].includes(":")) { const m = unns(t[2]); if (["day", "noon", "night", "midnight"].includes(m)) t[2] = m; else W.push(`time marker ${t[2]} has no 1.21.11 version, use a number`); }
+          if (t[1] === "pause" || t[1] === "resume") { W.push(`/time ${t[1]} doesn't exist in 1.21.11, toggle the daylight cycle gamerule instead`); }
+          if (t[1] === "rate") W.push("/time rate doesn't exist in 1.21.11");
+          if (t[1] === "query" && !["daytime", "gametime", "day"].includes(t[2])) { W.push("only time query daytime/gametime/day exist in 1.21.11"); }
+        }
+        if (t[0] === "swing") W.push("/swing doesn't exist in 1.21.11, no equivalent");
+        c = t.join(" ");
+        return eachItem(c, (it) => {
+          if (!it.comps) return;
+          it.comps = it.comps.filter(([k]) => { const kk = unns(k); if (kk === "dye" || kk === "additional_trade_cost") { W.push(`component ${kk} doesn't exist in 1.21.11, dropped it`); return false; } return true; });
+        });
+      });
+    },
+  },
+  { // 26.1 -> 26.2
+    name: "26.2 (namespaced entity predicates, team colors)",
+    up(cmd, W) {
+      cmd = nested(cmd, (c) => {
+        const t = toks(c);
+        if ((t[0] === "team" || t[0] === "waypoint") && t[1] === "modify" && t[3] === "color" && t[4]) {
+          const want = t[4].replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+          t[4] = COLOR_NAMES.includes(want) ? want : COLOR_NAMES.find((n) => n.replace("_", "") === want.replace("_", "")) || want;
+        }
+        return t.join(" ");
+      });
+      return eachPred(cmd, (p) => eachCond(p, (c) => { if (condType(c) === "entity_properties" && c.predicate) c.predicate = epUp(c.predicate); return c; }));
+    },
+    down(cmd, W) {
+      cmd = nested(cmd, (c) => {
+        const t = toks(c);
+        if (t[0] === "unpublish") W.push("/unpublish doesn't exist before 26.2");
+        if (t[0] === "summon" && unns(t[1] || "") === "sulfur_cube") W.push("sulfur cubes don't exist before 26.2");
+        return eachItem(c, (it) => { if (it.comps) it.comps = it.comps.filter(([k]) => { if (unns(k) === "sulfur_cube_content") { W.push("sulfur_cube_content doesn't exist before 26.2, dropped it"); return false; } return true; }); });
+      });
+      return eachPred(cmd, (p) => eachCond(p, (c) => { if (condType(c) === "entity_properties" && c.predicate) c.predicate = epDown(c.predicate); return c; }));
+    },
+  },
+  { // 26.2 -> 26.3
+    name: "26.3 (predicate condition -> type, signs, new commands)",
+    up(cmd, W) {
+      cmd = eachPred(cmd, (p) => eachCond(p, (c) => {
+        if ("condition" in c) { const v = c.condition; delete c.condition; c = { type: unns(String(v)) === "block_state_property" ? "minecraft:match_block" : v, ...c }; }
+        if (unns(String(c.type)) === "value_check") WARN.push("value_check got split into int / float versions in 26.3, pick the right one");
+        return c;
+      }));
+      const fix = (tree) => walkItems(tree, (n) => {
+        const has = (side) => { const st = get(n, side); return st && toSNBT(st).includes("click_event"); };
+        if ((has("front_text") || has("back_text")) && !get(n, "allow_op_features")) { set(n, "allow_op_features", { t: "bool", v: true }); W.push("sign click events need allow_op_features:true in 26.3, added it"); }
+      });
+      return eachNbt(cmd, fix);
+    },
+    down(cmd, W) {
+      cmd = nested(cmd, (c) => {
+        const t = toks(c);
+        if (["posteffect", "compute"].includes(t[0])) W.push(`/${t[0]} doesn't exist before 26.3`);
+        if (t[0] === "item" && (t[1] === "fill" || t[1] === "override")) W.push(`/item ${t[1]} doesn't exist before 26.3`);
+        if (t[0] === "execute" && /\b(if|unless) slots\b/.test(c)) W.push("execute if slots doesn't exist before 26.3");
+        return eachItem(c, (it) => {
+          if (!it.comps) return;
+          it.comps = it.comps.filter(([k]) => { const kk = unns(k); if (kk === "brewing_fuel" || kk === "cooking_fuel") { W.push(`component ${kk} doesn't exist before 26.3, dropped it`); return false; } if (kk === "pot_decorations") W.push("pot_decorations was a list of 4 item ids before 26.3, redo it"); return true; });
+        });
+      });
+      if (/\bslots\b/.test(cmd) && toks(cmd)[0] === "execute") W.push("execute if slots doesn't exist before 26.3");
+      cmd = eachPred(cmd, (p) => eachCond(p, (c) => {
+        if ("type" in c && !("condition" in c)) { const v = c.type; delete c.type; c = { condition: unns(String(v)) === "match_block" ? "minecraft:block_state_property" : v, ...c }; }
+        return c;
+      }));
+      const strip = (tree) => walkItems(tree, (n) => { if (get(n, "allow_op_features")) del(n, "allow_op_features"); });
+      return eachNbt(cmd, strip);
     },
   },
 ];

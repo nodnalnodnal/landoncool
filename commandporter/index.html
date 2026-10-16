@@ -76,6 +76,9 @@ footer a{color:var(--dim)}
   <li><b>1.21.4:</b> custom_model_data number &harr; {floats:[...]}</li>
   <li><b>1.21.5:</b> json text &harr; snbt text (tellraw, title, bossbar, team, scoreboard, CustomName, custom_name, lore, signs), clickEvent/hoverEvent &harr; click_event/hover_event, HandItems/ArmorItems &harr; equipment, enchantments levels wrapper, dyed_color rgb</li>
   <li><b>1.21.11:</b> camelCase &harr; snake_case gamerules</li>
+  <li><b>26.1:</b> /time of &lt;clock&gt; and time markers back to plain /time, notes for /time pause/resume/rate and /swing, drops dye / additional_trade_cost going down</li>
+  <li><b>26.2:</b> inline entity predicates in execute if predicate (type &harr; minecraft:entity_type, type_specific &harr; minecraft:type_specific/player etc, slime &harr; cube_mob), team colors forced to lowercase_underscore</li>
+  <li><b>26.3:</b> predicate condition &harr; type, block_state_property &harr; match_block, sign click events get allow_op_features, notes for /compute, /posteffect, /item fill/override, execute if slots, brewing_fuel / cooking_fuel / pot_decorations</li>
   <li>stuff with no equivalent in the target version gets a warning instead of being silently mangled</li>
 </ul>
 </details>
@@ -99,11 +102,12 @@ const EXAMPLES = [
   ["1.12 sword", "1.12", 'give @p diamond_sword 1 0 {ench:[{id:16,lvl:5}],display:{Name:"Cowslayer",Lore:["moo"]},Unbreakable:1b}'],
   ["1.20.4 item nbt", "1.20.3", "give @p diamond_pickaxe{Enchantments:[{id:\"minecraft:efficiency\",lvl:5s}],display:{Name:'{\"text\":\"Pick\",\"italic\":false}'},CustomModelData:7} 1"],
   ["1.20.4 tellraw", "1.20.3", 'tellraw @a {"text":"click me","color":"gold","clickEvent":{"action":"run_command","value":"/say hi"}}'],
-  ["1.21.11 to old", "1.21.11", "execute as @a[distance=..5,gamemode=creative] at @s if block ~ ~-1 ~ red_wool run give @s diamond_sword[enchantments={sharpness:5},unbreakable={}]"],
+  ["1.21.11 to old", "1.21.11", "execute as @a[distance=..5,gamemode=creative] at @s if block ~ ~-1 ~ red_wool run give @s diamond_sword[enchantments={sharpness:5},unbreakable={}]", "1.12"],
+  ["26.3 to 1.21.11", "26.3", 'execute as @a if predicate {type:"minecraft:entity_properties",entity:"this",predicate:{"minecraft:type_specific/player":{input:{forward:true}}}} run time of minecraft:overworld set minecraft:noon', "1.21.11"],
 ];
-EXAMPLES.forEach(([name, ver, cmd]) => {
+EXAMPLES.forEach(([name, ver, cmd, target]) => {
   const b = document.createElement("button"); b.className = "small"; b.textContent = name;
-  b.onclick = () => { from.value = ver; if (to.value === ver) to.value = ver === "1.12" ? "1.21.11" : "1.12"; inp.value = cmd; run(); };
+  b.onclick = () => { from.value = ver; to.value = target || (ver === "1.12" ? P.VERSIONS[P.VERSIONS.length - 1].id : (to.value === ver ? "1.12" : to.value)); inp.value = cmd; run(); };
   $("examples").appendChild(b);
 });
 
