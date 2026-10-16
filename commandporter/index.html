@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>command porter</title>
+<style>
+:root{--bg:#1b1b1f;--panel:#26262c;--line:#3a3a42;--ink:#eaeaea;--dim:#8b8b95;--green:#5fbf4a;--yellow:#e3c14b;--red:#e5604f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px "Courier New",monospace}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:1px}
+h1 span{color:var(--green)}
+.sub{color:var(--dim);margin:0 0 18px}
+.bar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px}
+label{display:flex;flex-direction:column;gap:4px;color:var(--dim);font-size:12px}
+select,button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:8px 10px;border-radius:0}
+select{min-width:190px}
+button{cursor:pointer}
+button:hover{border-color:var(--green)}
+#swap{font-size:16px;padding:7px 12px}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:760px){.panes{grid-template-columns:1fr}select{min-width:0;width:100%}label{flex:1}}
+.pane{display:flex;flex-direction:column;gap:6px}
+.pane .head{display:flex;justify-content:space-between;align-items:center;color:var(--dim);font-size:12px}
+textarea{width:100%;min-height:300px;resize:vertical;background:#111114;color:var(--ink);border:1px solid var(--line);padding:10px;font:13px/1.5 "Courier New",monospace;white-space:pre-wrap;word-break:break-all;overflow:auto}
+textarea:focus{outline:none;border-color:var(--green)}
+#out{color:#cfeec8}
+.small{padding:4px 8px;font-size:12px}
+#warn{margin-top:14px;padding:0;list-style:none}
+#warn li{border-left:3px solid var(--yellow);background:var(--panel);padding:6px 10px;margin-bottom:6px}
+#warn li b{color:var(--yellow);margin-right:6px}
+#ok{color:var(--green);margin-top:14px;min-height:1em}
+.ex{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 16px}
+details{margin-top:24px;background:var(--panel);border:1px solid var(--line);padding:10px 14px}
+summary{cursor:pointer;color:var(--green)}
+details li{margin:4px 0;color:#cfcfd6}
+footer{margin-top:24px;color:var(--dim);font-size:12px}
+footer a{color:var(--dim)}
+</style>
+</head>
+<body>
+<main>
+<h1>command <span>porter</span></h1>
+<p class="sub">paste minecraft java commands, pick versions, get them converted. works both ways, one command per line.</p>
+
+<div class="bar">
+  <label>from<select id="from"></select></label>
+  <button id="swap" title="swap">&#8646;</button>
+  <label>to<select id="to"></select></label>
+</div>
+
+<div class="ex" id="examples"></div>
+
+<div class="panes">
+  <div class="pane">
+    <div class="head"><span>input</span><button class="small" id="clear">clear</button></div>
+    <textarea id="in" spellcheck="false" placeholder="give @p diamond_sword 1 0 {ench:[{id:16,lvl:5}]}"></textarea>
+  </div>
+  <div class="pane">
+    <div class="head"><span>output</span><button class="small" id="copy">copy</button></div>
+    <textarea id="out" spellcheck="false" readonly></textarea>
+  </div>
+</div>
+
+<div id="ok"></div>
+<ul id="warn"></ul>
+
+<details>
+<summary>what it converts</summary>
+<ul>
+  <li><b>1.12 &harr; 1.13:</b> old execute (with detect) &harr; execute as/at/if/run, selector args (r, c, m, l, rx, score_x...), data values &harr; flattened block names, numeric enchant + effect ids, gamemode/difficulty numbers, testfor, testforblock, blockdata, entitydata, xp, scoreboard players tag, scoreboard teams, particle names, plain &harr; json item and entity names</li>
+  <li><b>1.17:</b> replaceitem &harr; item replace, zombie_pigman &harr; zombified_piglin</li>
+  <li><b>1.20.3:</b> grass &harr; short_grass</li>
+  <li><b>1.20.5:</b> item nbt &harr; data components (enchantments, names, lore, color, unbreakable, custom model data, damage, potions, skulls, custom tags &harr; custom_data), Count &harr; count inside summon / data / selector nbt</li>
+  <li><b>1.21.4:</b> custom_model_data number &harr; {floats:[...]}</li>
+  <li><b>1.21.5:</b> json text &harr; snbt text (tellraw, title, bossbar, team, scoreboard, CustomName, custom_name, lore, signs), clickEvent/hoverEvent &harr; click_event/hover_event, HandItems/ArmorItems &harr; equipment, enchantments levels wrapper, dyed_color rgb</li>
+  <li><b>1.21.11:</b> camelCase &harr; snake_case gamerules</li>
+  <li>stuff with no equivalent in the target version gets a warning instead of being silently mangled</li>
+</ul>
+</details>
+
+<footer><a href="/">landon.cool</a></footer>
+</main>
+
+<script src="porter.js"></script>
+<script>
+const P = window.CommandPorter;
+const $ = (id) => document.getElementById(id);
+const from = $("from"), to = $("to"), inp = $("in"), out = $("out");
+P.VERSIONS.forEach((v) => { from.add(new Option(v.label, v.id)); to.add(new Option(v.label, v.id)); });
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+from.value = store.get("cp_from", "1.12");
+to.value = store.get("cp_to", P.VERSIONS[P.VERSIONS.length - 1].id);
+inp.value = store.get("cp_in", "");
+
+const EXAMPLES = [
+  ["1.12 execute", "1.12", "execute @e[type=zombie,r=10,c=1] ~ ~ ~ detect ~ ~-1 ~ wool 14 say standing on red wool"],
+  ["1.12 sword", "1.12", 'give @p diamond_sword 1 0 {ench:[{id:16,lvl:5}],display:{Name:"Cowslayer",Lore:["moo"]},Unbreakable:1b}'],
+  ["1.20.4 item nbt", "1.20.3", "give @p diamond_pickaxe{Enchantments:[{id:\"minecraft:efficiency\",lvl:5s}],display:{Name:'{\"text\":\"Pick\",\"italic\":false}'},CustomModelData:7} 1"],
+  ["1.20.4 tellraw", "1.20.3", 'tellraw @a {"text":"click me","color":"gold","clickEvent":{"action":"run_command","value":"/say hi"}}'],
+  ["1.21.11 to old", "1.21.11", "execute as @a[distance=..5,gamemode=creative] at @s if block ~ ~-1 ~ red_wool run give @s diamond_sword[enchantments={sharpness:5},unbreakable={}]"],
+];
+EXAMPLES.forEach(([name, ver, cmd]) => {
+  const b = document.createElement("button"); b.className = "small"; b.textContent = name;
+  b.onclick = () => { from.value = ver; if (to.value === ver) to.value = ver === "1.12" ? "1.21.11" : "1.12"; inp.value = cmd; run(); };
+  $("examples").appendChild(b);
+});
+
+function run() {
+  store.set("cp_from", from.value); store.set("cp_to", to.value); store.set("cp_in", inp.value);
+  const r = P.port(inp.value, from.value, to.value);
+  out.value = r.output;
+  const w = $("warn"); w.innerHTML = "";
+  r.warnings.forEach(({ line, msg }) => { const li = document.createElement("li"); li.innerHTML = "<b>line " + line + "</b>"; li.appendChild(document.createTextNode(msg)); w.appendChild(li); });
+  const n = inp.value.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).length;
+  $("ok").textContent = !n ? "" : from.value === to.value ? "same version, nothing to change" : n + " command" + (n > 1 ? "s" : "") + " converted" + (r.warnings.length ? ", check the notes below" : "");
+}
+inp.addEventListener("input", run); from.addEventListener("change", run); to.addEventListener("change", run);
+$("swap").onclick = () => { const f = from.value; from.value = to.value; to.value = f; inp.value = out.value || inp.value; run(); };
+$("clear").onclick = () => { inp.value = ""; run(); inp.focus(); };
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText(out.value); } catch (e) { out.select(); document.execCommand("copy"); } $("copy").textContent = "copied"; setTimeout(() => ($("copy").textContent = "copy"), 1200); };
+run();
+</script>
+</body>
+</html>
