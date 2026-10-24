@@ -35,6 +35,17 @@ textarea:focus{outline:none;border-color:var(--green)}
 details{margin-top:24px;background:var(--panel);border:1px solid var(--line);padding:10px 14px}
 summary{cursor:pointer;color:var(--green)}
 details li{margin:4px 0;color:#cfcfd6}
+.batch{margin-top:24px;border:1px dashed var(--line);padding:16px;display:flex;flex-direction:column;gap:10px}
+.batch.over{border-color:var(--green);background:var(--panel)}
+.batch .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.batch h2{font-size:16px;margin:0}
+#files{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px}
+#files li{display:flex;justify-content:space-between;gap:10px;background:var(--panel);padding:6px 10px;border-left:3px solid var(--green)}
+#files li.warned{border-left-color:var(--yellow)}
+#files li span{color:var(--dim);white-space:nowrap}
+#files li details{margin:4px 0 0;padding:0;background:none;border:0}
+#files li details li{border:0;padding:2px 0;background:none;display:block}
+.hidden{display:none}
 footer{margin-top:24px;color:var(--dim);font-size:12px}
 footer a{color:var(--dim)}
 </style>
@@ -42,7 +53,7 @@ footer a{color:var(--dim)}
 <body>
 <main>
 <h1>command <span>porter</span></h1>
-<p class="sub">paste minecraft java commands, pick versions, get them converted. works both ways, one command per line.</p>
+<p class="sub">paste minecraft commands, pick versions, get them converted. java versions both ways plus bedrock, one command per line. or drop whole .mcfunction files and datapacks below.</p>
 
 <div class="bar">
   <label>from<select id="from"></select></label>
@@ -66,6 +77,16 @@ footer a{color:var(--dim)}
 <div id="ok"></div>
 <ul id="warn"></ul>
 
+<div class="batch" id="drop">
+  <h2>batch mode</h2>
+  <div class="row">
+    <span class="sub" style="margin:0">drop .mcfunction files or a datapack / behavior pack .zip here, or</span>
+    <label class="small" style="flex-direction:row"><input type="file" id="pick" multiple accept=".mcfunction,.zip,.txt" style="max-width:220px"></label>
+  </div>
+  <ul id="files"></ul>
+  <div class="row hidden" id="batchBar"><button id="dl">download converted</button><span id="batchSum" class="sub" style="margin:0"></span></div>
+</div>
+
 <details>
 <summary>what it converts</summary>
 <ul>
@@ -79,6 +100,8 @@ footer a{color:var(--dim)}
   <li><b>26.1:</b> /time of &lt;clock&gt; and time markers back to plain /time, notes for /time pause/resume/rate and /swing, drops dye / additional_trade_cost going down</li>
   <li><b>26.2:</b> inline entity predicates in execute if predicate (type &harr; minecraft:entity_type, type_specific &harr; minecraft:type_specific/player etc, slime &harr; cube_mob), team colors forced to lowercase_underscore</li>
   <li><b>26.3:</b> predicate condition &harr; type, block_state_property &harr; match_block, sign click events get allow_op_features, notes for /compute, /posteffect, /item fill/override, execute if slots, brewing_fuel / cooking_fuel / pot_decorations</li>
+  <li><b>bedrock:</b> old and new execute, selector args (r, rm, c, m, l, rx, ry, family, hasitem) &harr; java ones, rawtext tellraw / titleraw &harr; json text (&sect; colors &harr; color fields), effect, xp, testfor, testforblock, replaceitem &harr; item replace, give / clear data values, can_destroy / can_place_on, block states syntax, scoreboard players random / test, belowname, gamerule names, summon names, playsound source. bedrock-only and java-only commands get commented out with a note</li>
+  <li><b>batch:</b> datapack zips keep their folder layout, functions &harr; function (and the other folders that went singular in 1.21) get renamed when you cross 1.21</li>
   <li>stuff with no equivalent in the target version gets a warning instead of being silently mangled</li>
 </ul>
 </details>
@@ -87,11 +110,22 @@ footer a{color:var(--dim)}
 </main>
 
 <script src="porter.js"></script>
+<script src="bedrock.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const P = window.CommandPorter;
 const $ = (id) => document.getElementById(id);
 const from = $("from"), to = $("to"), inp = $("in"), out = $("out");
+const B = window.BedrockPorter;
 P.VERSIONS.forEach((v) => { from.add(new Option(v.label, v.id)); to.add(new Option(v.label, v.id)); });
+from.add(new Option("bedrock edition", "bedrock")); to.add(new Option("bedrock edition", "bedrock"));
+// bedrock goes through java 1.21.4, porter.js handles the java side
+function convert(text, a, b) {
+  if (a === b) return { output: text, warnings: [] };
+  if (a === "bedrock") { const r = B.toJava(text); if (b === B.JAVA_PIVOT) return r; const r2 = P.port(r.output, B.JAVA_PIVOT, b); return { output: r2.output, warnings: r.warnings.concat(r2.warnings).sort((x, y) => x.line - y.line) }; }
+  if (b === "bedrock") { const r = a === B.JAVA_PIVOT ? { output: text, warnings: [] } : P.port(text, a, B.JAVA_PIVOT); const r2 = B.fromJava(r.output); return { output: r2.output, warnings: r.warnings.concat(r2.warnings).sort((x, y) => x.line - y.line) }; }
+  return P.port(text, a, b);
+}
 const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 from.value = store.get("cp_from", "1.12");
 to.value = store.get("cp_to", P.VERSIONS[P.VERSIONS.length - 1].id);
@@ -103,6 +137,7 @@ const EXAMPLES = [
   ["1.20.4 item nbt", "1.20.3", "give @p diamond_pickaxe{Enchantments:[{id:\"minecraft:efficiency\",lvl:5s}],display:{Name:'{\"text\":\"Pick\",\"italic\":false}'},CustomModelData:7} 1"],
   ["1.20.4 tellraw", "1.20.3", 'tellraw @a {"text":"click me","color":"gold","clickEvent":{"action":"run_command","value":"/say hi"}}'],
   ["1.21.11 to old", "1.21.11", "execute as @a[distance=..5,gamemode=creative] at @s if block ~ ~-1 ~ red_wool run give @s diamond_sword[enchantments={sharpness:5},unbreakable={}]", "1.12"],
+  ["bedrock rawtext", "bedrock", 'execute @a[r=10,m=c] ~ ~ ~ detect ~ ~-1 ~ red_wool 0 tellraw @s {"rawtext":[{"text":"§aon red wool, "},{"selector":"@s"}]}', "26.3"],
   ["26.3 to 1.21.11", "26.3", 'execute as @a if predicate {type:"minecraft:entity_properties",entity:"this",predicate:{"minecraft:type_specific/player":{input:{forward:true}}}} run time of minecraft:overworld set minecraft:noon', "1.21.11"],
 ];
 EXAMPLES.forEach(([name, ver, cmd, target]) => {
@@ -113,7 +148,7 @@ EXAMPLES.forEach(([name, ver, cmd, target]) => {
 
 function run() {
   store.set("cp_from", from.value); store.set("cp_to", to.value); store.set("cp_in", inp.value);
-  const r = P.port(inp.value, from.value, to.value);
+  const r = convert(inp.value, from.value, to.value);
   out.value = r.output;
   const w = $("warn"); w.innerHTML = "";
   r.warnings.forEach(({ line, msg }) => { const li = document.createElement("li"); li.innerHTML = "<b>line " + line + "</b>"; li.appendChild(document.createTextNode(msg)); w.appendChild(li); });
@@ -125,6 +160,81 @@ $("swap").onclick = () => { const f = from.value; from.value = to.value; to.valu
 $("clear").onclick = () => { inp.value = ""; run(); inp.focus(); };
 $("copy").onclick = async () => { try { await navigator.clipboard.writeText(out.value); } catch (e) { out.select(); document.execCommand("copy"); } $("copy").textContent = "copied"; setTimeout(() => ($("copy").textContent = "copy"), 1200); };
 run();
+
+// ---------------------------------------------------------------- batch mode
+// 1.21 turned the plural datapack folders singular
+const PLURAL = ["functions", "structures", "advancements", "recipes", "loot_tables", "predicates", "item_modifiers"];
+const TAG_PLURAL = ["functions", "blocks", "items", "entity_types", "fluids", "game_events"];
+const sing = (w) => w.replace(/ies$/, "y").replace(/s$/, "");
+const isJava = (v) => v !== "bedrock";
+const javaIx = (v) => P.era(v);
+function renamePath(path, a, b, W) {
+  if (!isJava(a) || !isJava(b)) return path;
+  const newer = (v) => javaIx(v) >= javaIx("1.21.4"), older = (v) => javaIx(v) <= javaIx("1.20.3");
+  let mode = null;
+  if (older(a) && newer(b)) mode = "sing"; else if (newer(a) && older(b)) mode = "plur";
+  else if ((javaIx(a) === javaIx("1.20.5")) !== (javaIx(b) === javaIx("1.20.5"))) { W.add("1.20.5 - 1.21.3 is split on folder names (functions vs function), check the data folder names by hand"); return path; }
+  if (!mode) return path;
+  const parts = path.split("/"), d = parts.indexOf("data");
+  if (d < 0 || parts.length < d + 3) return path;
+  const f = d + 2;
+  if (mode === "sing" && PLURAL.includes(parts[f])) parts[f] = sing(parts[f]);
+  else if (mode === "plur" && PLURAL.map(sing).includes(parts[f])) parts[f] = PLURAL[PLURAL.map(sing).indexOf(parts[f])];
+  if (parts[f] === "tags" && parts[f + 1]) {
+    if (mode === "sing" && TAG_PLURAL.includes(parts[f + 1])) parts[f + 1] = sing(parts[f + 1]);
+    else if (mode === "plur" && TAG_PLURAL.map(sing).includes(parts[f + 1])) parts[f + 1] = TAG_PLURAL[TAG_PLURAL.map(sing).indexOf(parts[f + 1])];
+  }
+  return parts.join("/");
+}
+
+let batch = null; // { zip, name, results:[{path,warnings}] }
+async function handleFiles(list) {
+  const a = from.value, b = to.value, outZip = new JSZip(), results = [], notes = new Set();
+  let single = list.length === 1 && !/\.zip$/i.test(list[0].name), name = "converted";
+  for (const f of list) {
+    if (/\.zip$/i.test(f.name)) {
+      name = f.name.replace(/\.zip$/i, "") + "-" + b;
+      const z = await JSZip.loadAsync(f);
+      for (const path of Object.keys(z.files)) {
+        const e = z.files[path]; if (e.dir) continue;
+        const np = renamePath(path, a, b, notes);
+        if (/\.mcfunction$/i.test(path)) { const r = convert(await e.async("string"), a, b); outZip.file(np, r.output); results.push({ path: np, warnings: r.warnings }); }
+        else { if (/pack\.mcmeta$/.test(path) && a !== b) notes.add("update pack_format in pack.mcmeta for your target version"); outZip.file(np, await e.async("uint8array")); }
+      }
+    } else {
+      const r = convert(await f.text(), a, b); outZip.file(f.name, r.output); results.push({ path: f.name, warnings: r.warnings });
+      if (single) name = f.name.replace(/\.mcfunction$/i, "") + "-" + b;
+    }
+  }
+  if (a === "1.12" || b === "1.12") notes.add("1.12 has no datapacks, those functions only work as command block lists there");
+  batch = { zip: outZip, name, single, results };
+  const ul = $("files"); ul.innerHTML = "";
+  [...notes].forEach((n) => { const li = document.createElement("li"); li.className = "warned"; li.textContent = n; ul.appendChild(li); });
+  results.forEach(({ path, warnings }) => {
+    const li = document.createElement("li"); if (warnings.length) li.className = "warned";
+    const left = document.createElement("div"); left.textContent = path;
+    if (warnings.length) { const d = document.createElement("details"); const s = document.createElement("summary"); s.textContent = warnings.length + " note" + (warnings.length > 1 ? "s" : ""); d.appendChild(s); const wl = document.createElement("ul"); warnings.forEach(({ line, msg }) => { const x = document.createElement("li"); x.textContent = "line " + line + ": " + msg; wl.appendChild(x); }); d.appendChild(wl); left.appendChild(d); }
+    const right = document.createElement("span"); right.textContent = warnings.length ? "check" : "ok";
+    li.append(left, right); ul.appendChild(li);
+  });
+  const w = results.reduce((n, r) => n + r.warnings.length, 0);
+  $("batchBar").classList.toggle("hidden", !results.length);
+  $("batchSum").textContent = results.length + " function file" + (results.length === 1 ? "" : "s") + " converted, " + w + " note" + (w === 1 ? "" : "s");
+}
+$("dl").onclick = async () => {
+  if (!batch) return;
+  let blob, fname;
+  if (batch.single) { const [path] = Object.keys(batch.zip.files); blob = new Blob([await batch.zip.file(path).async("string")], { type: "text/plain" }); fname = batch.name + ".mcfunction"; }
+  else { blob = await batch.zip.generateAsync({ type: "blob" }); fname = batch.name + ".zip"; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => { if (e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files]); });
+$("pick").onchange = (e) => { if (e.target.files.length) handleFiles([...e.target.files]); };
+from.addEventListener("change", () => { batch = null; $("files").innerHTML = ""; $("batchBar").classList.add("hidden"); });
+to.addEventListener("change", () => { batch = null; $("files").innerHTML = ""; $("batchBar").classList.add("hidden"); });
 </script>
 </body>
 </html>
