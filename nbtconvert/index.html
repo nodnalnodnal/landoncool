@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>nbt converter</title>
+<style>
+:root{--bg:#1b1b1f;--panel:#26262c;--line:#3a3a42;--ink:#eaeaea;--dim:#8b8b95;--green:#5fbf4a;--yellow:#e3c14b;--red:#e5604f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px "Courier New",monospace}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:1px}
+h1 span{color:var(--green)}
+.sub{color:var(--dim);margin:0 0 18px}
+button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:8px 12px;border-radius:0;cursor:pointer}
+button:hover{border-color:var(--green)}
+button.go{border-color:var(--green);color:var(--green)}
+#drop{border:1px dashed var(--line);padding:28px 16px;text-align:center;color:var(--dim)}
+#drop.over{border-color:var(--green);background:var(--panel);color:var(--ink)}
+#drop input{margin-top:10px;color:var(--dim)}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:16px 0}
+.info div{background:var(--panel);padding:8px 10px;border-left:3px solid var(--green)}
+.info b{display:block;color:var(--dim);font-weight:normal;font-size:12px;margin-bottom:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
+#notes{padding:0;list-style:none;margin:0 0 16px}
+#notes li{border-left:3px solid var(--yellow);background:var(--panel);padding:6px 10px;margin-bottom:6px}
+#err{color:var(--red);min-height:1em;margin:10px 0}
+pre{background:#111114;border:1px solid var(--line);padding:12px;max-height:460px;overflow:auto;font:12px/1.45 "Courier New",monospace;color:#cfeec8;white-space:pre}
+details{margin-top:24px;background:var(--panel);border:1px solid var(--line);padding:10px 14px}
+summary{cursor:pointer;color:var(--green)}
+details li{margin:4px 0;color:#cfcfd6}
+.hidden{display:none}
+footer{margin-top:24px;color:var(--dim);font-size:12px}
+footer a{color:var(--dim)}
+</style>
+</head>
+<body>
+<main>
+<h1>nbt <span>converter</span></h1>
+<p class="sub">java nbt to bedrock nbt. drop a structure .nbt and get a .mcstructure you can load with a bedrock structure block, or flip any nbt file between java (big endian, gzipped) and bedrock (little endian). everything runs in your browser.</p>
+
+<div id="drop">
+  drop a .nbt / .mcstructure / .dat file here<br>
+  <input type="file" id="pick" accept=".nbt,.mcstructure,.dat,.dat_old,.schem,.litematic">
+</div>
+<div id="err"></div>
+
+<div id="result" class="hidden">
+  <div class="info" id="info"></div>
+  <div class="actions" id="actions"></div>
+  <ul id="notes"></ul>
+  <pre id="tree"></pre>
+</div>
+
+<details>
+<summary>how it works</summary>
+<ul>
+  <li><b>structure .nbt to .mcstructure:</b> palette, blocks and size get rebuilt in bedrock's layout (x, then y, then z), missing spots become structure void, waterlogged blocks get water on the second layer</li>
+  <li><b>block states:</b> axis, facing (stairs, doors, trapdoors, torches, buttons, levers, 6-way blocks), half, slab type, open, powered, lit (furnace, lamp, redstone torch, ore become their lit / unlit ids), age, level, layers, candles, pickles, eggs, bites, power, delay, comparator mode, bed parts, sign and banner rotation, plus renamed ids (dirt_path, magma_block, cobweb, sugar_cane, terracotta and more)</li>
+  <li><b>not carried over:</b> block entities (chest items, sign text, banner patterns, bed colors) and entities, since their nbt is different per edition. you get a note for each</li>
+  <li><b>raw flip:</b> any file converts between java and bedrock byte order. bedrock level.dat gets its 8 byte header added or removed</li>
+  <li>fence, wall, pane and stair connections are left out on purpose, bedrock recalculates them</li>
+</ul>
+</details>
+
+<footer><a href="/">landon.cool</a> · see also <a href="/commandporter">command porter</a></footer>
+</main>
+
+<script src="nbt.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let file = null; // { name, parsed, little, gz, header }
+
+async function gunzip(buf) {
+  const ds = new DecompressionStream(buf[0] === 0x1f ? "gzip" : "deflate");
+  return new Uint8Array(await new Response(new Blob([buf]).stream().pipeThrough(ds)).arrayBuffer());
+}
+async function gzip(buf) {
+  const cs = new CompressionStream("gzip");
+  return new Uint8Array(await new Response(new Blob([buf]).stream().pipeThrough(cs)).arrayBuffer());
+}
+
+function tryParse(buf) {
+  const errs = [];
+  for (const [little, skip] of [[false, 0], [true, 0], [true, 8]]) {
+    try { const r = NBT.read(skip ? buf.subarray(skip) : buf, little); return { parsed: r, little, header: skip ? buf.subarray(0, 4) : null }; }
+    catch (e) { errs.push(e.message); }
+  }
+  throw new Error("couldn't read this as nbt (" + errs[0] + ")");
+}
+
+async function load(f) {
+  $("err").textContent = ""; $("result").classList.add("hidden");
+  try {
+    let buf = new Uint8Array(await f.arrayBuffer()); let gz = false;
+    if (/\.(schem|litematic)$/i.test(f.name)) throw new Error(".schem and .litematic aren't vanilla structure files, save the build with a structure block to get a .nbt");
+    if (buf[0] === 0x1f && buf[1] === 0x8b) { buf = await gunzip(buf); gz = true; }
+    else if (buf[0] === 0x78) { try { buf = await gunzip(buf); gz = true; } catch (e) {} }
+    const r = tryParse(buf);
+    file = { name: f.name, gz, ...r };
+    show();
+  } catch (e) { $("err").textContent = e.message; }
+}
+
+function show() {
+  const { parsed, little, gz, header, name } = file;
+  const root = parsed.tag, structure = NBT.isStructure(root) && !little;
+  const keys = [...root.value.keys()];
+  const cells = [
+    ["file", name], ["edition", little ? "bedrock (little endian)" : "java (big endian)"], ["compression", gz ? "gzip" : "none"],
+    ["root tags", keys.length + (keys.length ? ": " + keys.slice(0, 4).join(", ") + (keys.length > 4 ? "…" : "") : "")],
+  ];
+  if (header) cells.push(["header", "bedrock level.dat, version " + new DataView(header.buffer, header.byteOffset).getInt32(0, true)]);
+  if (structure) { const s = Array.from(root.value.get("size").value.items, (x) => x.value); cells.push(["structure", s.join(" × ") + " blocks"]); }
+  $("info").innerHTML = ""; cells.forEach(([k, v]) => { const d = document.createElement("div"); const b = document.createElement("b"); b.textContent = k; d.append(b, document.createTextNode(v)); $("info").appendChild(d); });
+
+  const acts = $("actions"); acts.innerHTML = ""; $("notes").innerHTML = "";
+  const btn = (label, fn, go) => { const b = document.createElement("button"); b.textContent = label; if (go) b.className = "go"; b.onclick = fn; acts.appendChild(b); };
+  const base = name.replace(/\.[^.]+$/, "");
+  if (structure) btn("download .mcstructure (bedrock)", () => {
+    const res = NBT.javaStructureToBedrock(parsed);
+    const notes = [res.stats.blocks + " blocks, " + res.stats.palette + " bedrock palette entries", ...res.notes];
+    $("notes").innerHTML = ""; notes.forEach((n) => { const li = document.createElement("li"); li.textContent = n; $("notes").appendChild(li); });
+    save(NBT.write("", res.tag, true), base + ".mcstructure");
+  }, true);
+  if (!little) btn("download as bedrock nbt", async () => {
+    let out = NBT.write(parsed.name, parsed.tag, true);
+    if (/level\.dat/i.test(name)) out = withHeader(out);
+    save(out, base + (structure ? "-bedrock.nbt" : /\.dat/i.test(name) ? ".dat" : "-bedrock.nbt"));
+  }, !structure);
+  if (little) btn("download as java nbt (gzipped)", async () => save(await gzip(NBT.write(parsed.name, parsed.tag, false)), base + "-java" + (/\.dat/i.test(name) ? ".dat" : ".nbt")), true);
+  btn("copy snbt", async () => { try { await navigator.clipboard.writeText($("tree").textContent); } catch (e) {} });
+  $("tree").textContent = NBT.snbt(parsed.tag);
+  $("result").classList.remove("hidden");
+}
+
+function withHeader(body) {
+  const out = new Uint8Array(body.length + 8), dv = new DataView(out.buffer);
+  dv.setInt32(0, 10, true); dv.setInt32(4, body.length, true); out.set(body, 8); return out;
+}
+function save(bytes, fname) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+  a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => { if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]); });
+$("pick").onchange = (e) => { if (e.target.files[0]) load(e.target.files[0]); };
+</script>
+</body>
+</html>
