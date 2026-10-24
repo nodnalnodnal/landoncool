@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gradient Forge</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=VT323&display=swap">
+<style>
+/* layout: one column workbench, live chat preview on top, controls, then output */
+:root{
+  --bg:#eef0ea; --panel:#f8f9f5; --line:#d3d7cb; --fg:#1c2119; --muted:#5d6656; --accent:#3f8a2e;
+  --chat:#1b1d1a; --chat-fg:#e8e8e8;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --pixel:"VT323",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141712; --panel:#1c2019; --line:#30362b; --fg:#e4e8de; --muted:#949d8b; --accent:#7cc95f; --chat:#0b0c0a; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141712; --panel:#1c2019; --line:#30362b; --fg:#e4e8de; --muted:#949d8b; --accent:#7cc95f; --chat:#0b0c0a; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:14px}
+.wrap{max-width:760px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1{font-family:var(--display);font-weight:700;font-size:2rem;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0}
+.chat{background:var(--chat);border-radius:6px;padding:18px 16px;font-family:var(--pixel);font-size:30px;line-height:1.1;color:var(--chat-fg);min-height:40px;overflow-wrap:anywhere;text-shadow:3px 3px 0 rgba(0,0,0,.35)}
+.chat .b{font-weight:700}.chat .i{font-style:italic}
+.sec{display:grid;gap:10px}
+label.h{color:var(--muted);font-size:12px}
+input[type=text]{width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stop{display:flex;align-items:center;gap:6px;padding:4px 6px 4px 4px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.stop input[type=color]{width:34px;height:30px;border:0;padding:0;background:none;cursor:pointer}
+.stop code{font-size:12px;color:var(--muted)}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;padding:2px 4px}
+.x:hover{color:var(--fg)}
+.btn{font:inherit;font-size:13px;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.sw{width:64px;height:22px;border-radius:4px;border:1px solid var(--line);cursor:pointer;padding:0}
+.bar{height:10px;border-radius:5px;border:1px solid var(--line)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
+.meta{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.toast{color:var(--accent);font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>gradient forge</h1>
+    <p class="sub">hex gradient text for tellraw, minimessage and legacy chat</p>
+  </header>
+
+  <div class="chat" id="preview" aria-live="polite"></div>
+
+  <div class="sec">
+    <label class="h" for="text">text</label>
+    <input type="text" id="text" value="welcome to ridgesmp" maxlength="256">
+  </div>
+
+  <div class="sec">
+    <label class="h">color stops</label>
+    <div class="bar" id="bar"></div>
+    <div class="row" id="stops"></div>
+    <div class="row">
+      <button class="btn" id="add">add stop</button>
+      <button class="btn" id="rev">reverse</button>
+      <button class="btn" id="bold">bold</button>
+      <button class="btn" id="ital">italic</button>
+      <button class="btn" id="oklab">smooth blend</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <label class="h">presets</label>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="sec">
+    <div class="row" style="justify-content:space-between">
+      <div class="tabs" id="tabs"></div>
+      <div class="row"><span class="toast" id="toast"></span><button class="btn on" id="copy">copy</button></div>
+    </div>
+    <div class="row" id="targetRow"><label class="h" for="target">target</label><input type="text" id="target" value="@a" style="width:120px"></div>
+    <pre id="out"></pre>
+    <div class="meta" id="meta"></div>
+  </div>
+</div>
+
+<script>
+const S={stops:["#5ee7df","#b490ca"],bold:true,ital:false,ok:true,fmt:"tellraw"};
+const presets={
+  ridge:["#4facfe","#00f2fe","#43e97b"], ember:["#ff512f","#f09819","#ffd200"], cow:["#ffffff","#3a3a3a"],
+  nether:["#8e0e00","#ff4b1f","#1f1c18"], end:["#e0c3fc","#8ec5fc","#2a0845"], emerald:["#11998e","#38ef7d"],
+  rainbow:["#ff3b3b","#ffb13b","#f6ff3b","#3bff6a","#3bc8ff","#7a3bff","#ff3bd8"], gold:["#fceabb","#f8b500"]
+};
+const $=id=>document.getElementById(id);
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const rgb2hex=c=>"#"+c.map(v=>Math.round(Math.min(1,Math.max(0,v))*255).toString(16).padStart(2,"0")).join("");
+const lin=v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4, unlin=v=>v<=.0031308?v*12.92:1.055*v**(1/2.4)-.055;
+function toLab([r,g,b]){r=lin(r);g=lin(g);b=lin(b);
+  const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+  return[.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s]}
+function fromLab([L,a,b]){const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;
+  return[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s].map(unlin)}
+function colorAt(t){const n=S.stops.length-1;if(n===0)return S.stops[0];
+  const p=Math.min(n-1e-9,t*n),i=Math.floor(p),f=p-i;let a=hex2rgb(S.stops[i]),b=hex2rgb(S.stops[i+1]);
+  if(S.ok){a=toLab(a);b=toLab(b);return rgb2hex(fromLab(a.map((v,k)=>v+(b[k]-v)*f)))}
+  return rgb2hex(a.map((v,k)=>v+(b[k]-v)*f))}
+function chars(){
+  const txt=[...$("text").value],vis=txt.filter(c=>c!==" ").length;let k=0;
+  return txt.map(c=>{if(c===" ")return{c,col:null};const col=colorAt(vis<2?0:k++/(vis-1));return{c,col}})}
+function group(cs){const g=[];for(const x of cs){const col=x.col;const last=g[g.length-1];
+  if(last&&(col===null||last.col===col))last.t+=x.c;else g.push({t:x.c,col:col||(last&&last.col)||S.stops[0]})}return g}
+function esc(s){return s.replace(/\\/g,"\\\\").replace(/"/g,'\\"')}
+function render(){
+  const cs=chars(),g=group(cs);
+  const pv=$("preview");pv.innerHTML="";pv.className="chat"+(S.bold?" b":"")+(S.ital?" i":"");
+  for(const x of cs){const s=document.createElement("span");s.textContent=x.c;if(x.col)s.style.color=x.col;pv.appendChild(s)}
+  $("bar").style.background=`linear-gradient(90deg,${Array.from({length:24},(_,i)=>colorAt(i/23)).join(",")})`;
+  const fl=(S.bold?',"bold":true':"")+(S.ital?',"italic":true':"");
+  const comp='["",'+g.map(x=>`{"text":"${esc(x.t)}","color":"${x.col}"${fl}}`).join(",")+"]";
+  let out;
+  if(S.fmt==="tellraw")out=`tellraw ${$("target").value||"@a"} ${comp}`;
+  else if(S.fmt==="json")out=comp;
+  else if(S.fmt==="mini"){const tags=(S.bold?"<b>":"")+(S.ital?"<i>":"");out=`<gradient:${S.stops.join(":")}>${tags}${$("text").value}</gradient>`}
+  else{const fc=(S.bold?"&l":"")+(S.ital?"&o":"");out=g.map(x=>`&${x.col}${fc}${x.t}`).join("")}
+  $("out").textContent=out;
+  $("targetRow").hidden=S.fmt!=="tellraw";
+  const len=out.length;$("meta").textContent=`${len} chars`+(S.fmt==="tellraw"&&len>256?" · too long for chat, use a command block":"")+(S.fmt==="legacy"?" · &#rrggbb format, needs a plugin that parses hex (essentials, cmi, etc)":"")+(S.fmt==="mini"?" · paper / adventure servers":"");
+  drawStops();
+  for(const[id,k]of[["bold","bold"],["ital","ital"],["oklab","ok"]])$(id).classList.toggle("on",S[k]);
+}
+function drawStops(){
+  const box=$("stops");if(box.dataset.n==S.stops.join())return;box.dataset.n=S.stops.join();box.innerHTML="";
+  S.stops.forEach((c,i)=>{const d=document.createElement("div");d.className="stop";
+    d.innerHTML=`<input type="color" id="stop${i}" value="${c}" aria-label="stop ${i+1}"><code>${c}</code>`+(S.stops.length>2?`<button class="x" aria-label="remove">×</button>`:"");
+    d.querySelector("input").oninput=e=>{S.stops[i]=e.target.value;d.querySelector("code").textContent=e.target.value;box.dataset.n=S.stops.join();render()};
+    const x=d.querySelector(".x");if(x)x.onclick=()=>{S.stops.splice(i,1);render()};box.appendChild(d)})}
+$("text").oninput=render;$("target").oninput=render;
+$("add").onclick=()=>{if(S.stops.length<8){S.stops.push(colorAt(1));render()}};
+$("rev").onclick=()=>{S.stops.reverse();render()};
+$("bold").onclick=()=>{S.bold=!S.bold;render()};$("ital").onclick=()=>{S.ital=!S.ital;render()};$("oklab").onclick=()=>{S.ok=!S.ok;render()};
+for(const[n,cols]of Object.entries(presets)){const b=document.createElement("button");b.className="sw";b.title=n;b.setAttribute("aria-label",n+" preset");
+  b.style.background=`linear-gradient(90deg,${cols.join(",")})`;b.onclick=()=>{S.stops=[...cols];render()};$("presets").appendChild(b)}
+const fmts={tellraw:"tellraw",json:"json component",mini:"minimessage",legacy:"&# legacy"};
+for(const[k,v]of Object.entries(fmts)){const b=document.createElement("button");b.className="btn";b.textContent=v;b.dataset.k=k;
+  b.onclick=()=>{S.fmt=k;document.querySelectorAll("#tabs .btn").forEach(x=>x.classList.toggle("on",x.dataset.k===k));render()};$("tabs").appendChild(b)}
+document.querySelector('#tabs .btn').classList.add("on");
+$("copy").onclick=()=>{const t=$("out").textContent;const ok=()=>{$("toast").textContent="copied";setTimeout(()=>$("toast").textContent="",1400)};
+  navigator.clipboard.writeText(t).then(ok).catch(()=>{const r=document.createRange();r.selectNodeContents($("out"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("toast").textContent="selected, hit ctrl+c"})};
+render();
+</script>
+</body>
+</html>
